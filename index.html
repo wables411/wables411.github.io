@@ -3,27 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lawb Headquarters</title>
+    <title>Landing Page</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%; /* Full height */
+            background-image: url('images/oceanfloor.gif'); /* Background image */
+            background-position: center; /* Center the image */
+            background-repeat: no-repeat; /* Do not repeat the image */
+            background-size: cover; /* Resize the background image to cover the entire container */
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%; /* Full height */
+        }
+
+        /* Existing styles for link images */
+        .container a img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-     <!-- Navigation Menu -->
-     <nav>
-        <ul>
-            <li><a href="index.html">home</a></li>
-            <li><a href="lawbstation.html">lawbstation</a></li>
-        </ul>
-    </nav>
-    <h1>Lawb Headquarters</h1>
-    <p>Home of Lawbsters, LawbStarz, and LawbStations</p>
-    <h2>Welcome traveler! You've made it to Lawb Headquarters, updating you with any and all reported Lawb sightings. Stay tuned for further details on the degenerate lobster hijinks.</h2>
-    <img src="images/lawbstation_rare.gif" alt="lawbstation">
-    <p>First <a href="https://x.com/wables411/status/1738952634793685319?s=20" target="_blank">Reported</a> Ship Hijacking by LawbStation somewhere off coast of Korea, December 2023</p>
-    <img src="images/lawbsterhalloween.gif" alt="lawbster halloween">
-    <p><a href="https://twitter.com/wables411/status/1717199318715912240?s=12&t=CIqvVp-341WwPFJKLjylMw" target="_blank">Reported</a> hijacking and blowing up of a Spirit Halloween SuperStore by Lawbsters in October 2023</p>
-    <img src="images/lawbstarz_bg2.png" alt="LawbStarz sighting in Denver">
-    <p>First Lawbstarz sighting reported March 2023 in Denver Colorado, at Eth Denver Conference 2023. <a href="https://twitter.com/wables411/status/1669009492007354369?s=12&t=CIqvVp-341WwPFJKLjylMw" target="_blank">Official statement</a> released to public June 2023.</p>
-    <img src="images/lawbsterhijackmeme.jpg" alt="The Great Cigawrette Packs Cargo Ship Hijacking of 2023">
-    <p>First Lawbsters <a href="https://x.com/wables411/status/1620879129850834944?s=20" target="_blank">reportedly</a> sighted Hijacking a Cigawrette Packs cargo ship off the Pacific Coast, February 2023</p>
+    <div class="container">
+        <a href="index.html"><img src="images/lawbstation_documents.JPEG" alt="Lawb Sightings"></a>
+        <a href="lawbstation.html"><img src="images/lawbstation.GIF" alt="Lawbstation"></a>
+        <a href="link-for-gif2"><img src="images/lawbstarz_tease 2.gif" alt="Lawbstarz"></a>
+        <a href="link-for-gif3"><img src="images/lawbsters.gif" alt="Lawbsters"></a>
+    </div>
 </body>
 </html>
