@@ -31,8 +31,16 @@ img {
 }
 
 .container img {
-    height: 150px; /* Fixed height for images */
+    height: auto; /* Auto-adjust the height */
+    max-height: 150px; /* Fixed maximum height for images */
     width: auto; /* Auto-adjust the width */
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 600px) {
+    .container img {
+        max-height: 100px; /* Smaller maximum height for images */
+    }
 }
 
 /* Page 2 image container styles */
@@ -44,7 +52,7 @@ img {
 
 .image-container img {
     width: calc(10% - 10px); /* Width for 10 images per row, accounting for gap */
-    height: auto;
+    height: auto; /* Auto-adjust the height */
     transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth transition for hover effect */
 }
 
