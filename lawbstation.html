@@ -4,6 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>lawbstation</title>
+    <style>
+        /* Include your existing styles here */
+
+        #imageDisplay img {
+            /* Slight drop shadow */
+            box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .search-container {
+            margin-bottom: 20px;
+        }
+
+        .search-button {
+            padding: 5px 10px;
+            margin-left: 5px;
+            cursor: pointer;
+        }
+    </style>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -23,6 +41,15 @@
     <p>Living on the <a href="https://www.tensor.trade/trade/lawbstation" target="_blank">Solana Blockchain.</a></p>
     <img src="images/lawbstationgame.png" alt="LawbStation Player Select">
     <p>CHOOSE YOUR FIGHTER. right click save. THIS IS MEMETIC WARFARE.</p>
+
+    <!-- Search Bar, Enter and Clear Buttons, and Image Display -->
+    <div class="search-container">
+        <input type="number" id="imageSearch" placeholder="Enter image number" min="0" max="419">
+        <button id="enterButton" class="search-button">Enter</button>
+        <button id="clearButton" class="search-button">Clear</button>
+    </div>
+    <div id="imageDisplay"></div>
+
     <div id="imageGallery" class="image-container">
         <!-- Images will be loaded here -->
     </div>
@@ -30,3 +57,4 @@
     <script src="loadImages.js"></script>
 </body>
 </html>
+
