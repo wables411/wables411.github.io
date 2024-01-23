@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageDisplay = document.getElementById('imageDisplay');
     const enterButton = document.getElementById('enterButton');
     const clearButton = document.getElementById('clearButton');
-    const baseURL = 'https://nftstorage.link/ipfs/bafybeif3xrtpeonao3fkiezshu5pehyr27gqxkgjt5w2oanetotdmjnqam/';
+    const baseURL = 'https://nftstorage.link/ipfs/bafybeiclv57f23hra6e6p2ucwe2bs2bvo27m62kjjxr3gglinyy6hvs7xq';
 
     enterButton.addEventListener('click', async () => {
         const imageNumber = searchInput.value;
