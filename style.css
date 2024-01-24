@@ -33,82 +33,12 @@ img {
     padding: 20px; /* Space around the content */
 }
 
-/* Responsive design for smaller screens */
-@media (max-width: 600px) {
-    .link-container {
-        flex-direction: column-reverse; /* Text above and images below */
-        align-items: center; /* Center align items */
-    }
-
-    .link-text {
-        position: static; /* Normal flow */
-        margin: 10px 0; /* Space above and below the text */
-        left: auto; /* Reset left alignment */
-        transform: none; /* Reset transform */
-    }
-
-    .container a img {
-        width: 50%; /* Adjust image width */
-    }
-}
-
-/* Page 2 image container styles */
-.image-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px; /* Space between images */
-    justify-content: center; /* Center images in the container */
-}
-
-.image-container img {
-    width: calc(50% - 10px); /* Adjust width for larger screens */
-    height: auto; /* Auto-adjust the height */
-    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth transition for hover effect */
-}
-
-.image-container img:hover {
-    transform: scale(1.05); /* Enlarge image on hover */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow effect on hover */
-}
-
-nav {
-    display: flex;
-    justify-content: center; /* Center navigation items */
-    align-items: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background-color: #000000;
-    z-index: 10;
-}
-
-nav ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    align-items: center;
-}
-
-nav li {
-    display: inline;
-    margin: 0 10px; /* Reduced margin for mobile view */
-}
-
-nav a {
-    text-decoration: none;
-    color: white;
-    text-shadow: none;
-    cursor: url('images/lawbpointer.png'), auto; /* Custom lobster cursor for links */
-}
-
-/* Styles for the link containers */
+/* Link container styles */
 .link-container {
     display: flex;
-    justify-content: center; /* Center link container content */
     align-items: center;
-    margin-bottom: 10px;
+    justify-content: flex-end; /* Align items to the end (right) */
+    width: 100%; /* Full width */
 }
 
 .link-text {
@@ -116,23 +46,27 @@ nav a {
     opacity: 0.7; /* Semi-transparent */
     color: #ffffff; /* White text color */
     text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; /* Black stroke */
-    margin-bottom: 10px; /* Space between text and image */
     font-size: 14px; /* Adjust the font size as needed */
+    margin-right: 20px; /* Space between text and image */
 }
 
-/* Styles for "Collect Lawb Lore" section */
-.collect-lawb-lore {
-    text-align: center; /* Center the text and image */
-    margin-top: 20px; /* Add some space above the section */
+.container a img {
+    max-width: 30%; /* Adjust image width */
+    height: auto;
 }
 
-.collect-lawb-lore span {
-    display: block; /* Make the span take up the full width */
-    opacity: 0.8; /* Slightly transparent */
-    color: white; /* Adjust the color as needed */
-    font-size: 18px; /* Adjust the font size as needed */
-    margin-bottom: 10px; /* Space between text and image */
+/* Responsive design for smaller screens */
+@media (max-width: 600px) {
+    .link-container {
+        flex-direction: column-reverse; /* Text above and images below on small screens */
+        align-items: center; /* Center align items */
+    }
+
+    .link-text {
+        margin-right: 0; /* Reset margin for mobile */
+    }
+
+    .container a img {
+        max-width: 50%; /* Larger images for mobile */
+    }
 }
-
-
-
