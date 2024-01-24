@@ -28,12 +28,12 @@ img {
 .container {
     display: flex;
     flex-direction: column; /* Align items vertically */
-    align-items: center; /* Center items horizontally */
+    align-items: flex-start; /* Align items to the left */
     gap: 10px; /* Space between elements */
     padding: 20px; /* Space around the content */
+    width: 100%; /* Full width */
 }
 
-/* Link container styles */
 .link-container {
     display: flex;
     align-items: center;
@@ -47,12 +47,14 @@ img {
     color: #ffffff; /* White text color */
     text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; /* Black stroke */
     font-size: 14px; /* Adjust the font size as needed */
-    margin-right: 20px; /* Space between text and image */
+    margin-right: auto; /* Push everything to the right */
+    padding-left: 20px; /* Padding from the left edge */
 }
 
 .container a img {
-    max-width: 30%; /* Adjust image width */
+    max-width: 20%; /* Adjust image width */
     height: auto;
+    margin-left: 20px; /* Space from the text */
 }
 
 /* Responsive design for smaller screens */
@@ -63,10 +65,8 @@ img {
     }
 
     .link-text {
-        margin-right: 0; /* Reset margin for mobile */
+        margin: 10px 0; /* Space around the text */
     }
 
     .container a img {
-        max-width: 50%; /* Larger images for mobile */
-    }
-}
+        max-width: 50%;
