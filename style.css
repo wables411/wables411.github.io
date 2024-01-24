@@ -20,6 +20,8 @@ body {
 img {
     max-width: 100%; /* Make the image width not exceed 100% of its container */
     height: auto; /* Adjust the height automatically */
+    display: block; /* Center images */
+    margin: 0 auto; /* Center images */
 }
 
 /* Container styles */
@@ -31,40 +33,31 @@ img {
     padding: 20px; /* Space around the content */
 }
 
-.container img {
-    height: auto; /* Auto-adjust the height */
-    max-height: 150px; /* Fixed maximum height for images */
-    width: auto; /* Auto-adjust the width */
-}
-
 /* Responsive design for smaller screens */
 @media (max-width: 600px) {
     .container img {
         max-height: 100px; /* Smaller maximum height for images */
+    }
+
+    .link-text {
+        left: 50%; /* Center the link text */
+        transform: translateX(-50%); /* Adjust for exact center alignment */
+        position: relative; /* Change position context */
+        margin: 10px 0; /* Add margin around the text */
     }
 }
 
 /* Page 2 image container styles */
 .image-container {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column; /* Stack images vertically on small screens */
+    align-items: center; /* Center images */
     gap: 10px; /* Space between images */
-}
-
-.image-container img {
-    width: calc(10% - 10px); /* Width for 10 images per row, accounting for gap */
-    height: auto; /* Auto-adjust the height */
-    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth transition for hover effect */
-}
-
-.image-container img:hover {
-    transform: scale(1.05); /* Enlarge image on hover */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow effect on hover */
 }
 
 nav {
     display: flex;
-    justify-content: flex-start; /* Align items to the start */
+    justify-content: center; /* Center navigation items */
     align-items: center;
     position: fixed;
     top: 0;
@@ -72,20 +65,19 @@ nav {
     width: 100%;
     background-color: #000000;
     z-index: 10;
-    padding-left: 10px; /* Add padding to push content from the very edge */
 }
 
 nav ul {
     list-style-type: none;
     padding: 0;
     margin: 0;
-    display: flex; /* Ensure list items are in a flex container */
-    align-items: center; /* Center items vertically within the nav */
+    display: flex;
+    align-items: center;
 }
 
 nav li {
     display: inline;
-    margin-right: 20px;
+    margin: 0 10px; /* Reduced margin for mobile view */
 }
 
 nav a {
@@ -97,20 +89,10 @@ nav a {
 
 /* Styles for the link containers */
 .link-container {
-    position: relative;
     display: flex;
+    justify-content: center; /* Center link container content */
     align-items: center;
     margin-bottom: 10px;
-}
-
-.link-text {
-    position: absolute;
-    left: -180px; /* Adjust as needed based on your layout */
-    white-space: nowrap;
-    opacity: 0.7; /* Semi-transparent */
-    font-size: 14px;
-    color: #ffffff; /* White text color */
-    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; /* Black stroke */
 }
 
 /* Styles for "Collect Lawb Lore" section */
