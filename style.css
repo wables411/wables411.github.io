@@ -35,24 +35,35 @@ img {
 
 /* Responsive design for smaller screens */
 @media (max-width: 600px) {
-    .container img {
-        max-height: 100px; /* Smaller maximum height for images */
+    .container, .image-container, .link-container {
+        align-items: center; /* Center content for mobile */
+        text-align: center; /* Center text for mobile */
     }
 
     .link-text {
-        left: 50%; /* Center the link text */
-        transform: translateX(-50%); /* Adjust for exact center alignment */
-        position: relative; /* Change position context */
-        margin: 10px 0; /* Add margin around the text */
+        position: relative; /* Adjust position for mobile */
+        left: 0; /* Reset left alignment for mobile */
+        transform: none; /* Remove transform for mobile */
     }
 }
 
 /* Page 2 image container styles */
 .image-container {
     display: flex;
-    flex-direction: column; /* Stack images vertically on small screens */
-    align-items: center; /* Center images */
+    flex-wrap: wrap;
     gap: 10px; /* Space between images */
+    justify-content: center; /* Center images in the container */
+}
+
+.image-container img {
+    width: calc(10% - 10px); /* Width for 10 images per row, accounting for gap */
+    height: auto; /* Auto-adjust the height */
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth transition for hover effect */
+}
+
+.image-container img:hover {
+    transform: scale(1.05); /* Enlarge image on hover */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow effect on hover */
 }
 
 nav {
@@ -95,6 +106,15 @@ nav a {
     margin-bottom: 10px;
 }
 
+.link-text {
+    display: block; /* Make the span take up the full width */
+    opacity: 0.7; /* Semi-transparent */
+    color: #ffffff; /* White text color */
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; /* Black stroke */
+    margin-bottom: 10px; /* Space between text and image */
+    font-size: 14px; /* Adjust the font size as needed */
+}
+
 /* Styles for "Collect Lawb Lore" section */
 .collect-lawb-lore {
     text-align: center; /* Center the text and image */
@@ -108,3 +128,4 @@ nav a {
     font-size: 18px; /* Adjust the font size as needed */
     margin-bottom: 10px; /* Space between text and image */
 }
+
