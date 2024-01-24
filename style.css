@@ -35,15 +35,20 @@ img {
 
 /* Responsive design for smaller screens */
 @media (max-width: 600px) {
-    .container, .image-container, .link-container {
-        align-items: center; /* Center content for mobile */
-        text-align: center; /* Center text for mobile */
+    .link-container {
+        flex-direction: column-reverse; /* Text above and images below */
+        align-items: center; /* Center align items */
     }
 
     .link-text {
-        position: relative; /* Adjust position for mobile */
-        left: 0; /* Reset left alignment for mobile */
-        transform: none; /* Remove transform for mobile */
+        position: static; /* Normal flow */
+        margin: 10px 0; /* Space above and below the text */
+        left: auto; /* Reset left alignment */
+        transform: none; /* Reset transform */
+    }
+
+    .container a img {
+        width: 50%; /* Adjust image width */
     }
 }
 
@@ -128,4 +133,5 @@ nav a {
     font-size: 18px; /* Adjust the font size as needed */
     margin-bottom: 10px; /* Space between text and image */
 }
+
 
