@@ -61,7 +61,7 @@ img {
 }
 
 .image-container img {
-    width: calc(10% - 10px); /* Width for 10 images per row, accounting for gap */
+    width: calc(50% - 10px); /* Adjust width for larger screens */
     height: auto; /* Auto-adjust the height */
     transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth transition for hover effect */
 }
@@ -133,5 +133,6 @@ nav a {
     font-size: 18px; /* Adjust the font size as needed */
     margin-bottom: 10px; /* Space between text and image */
 }
+
 
 
