@@ -23,9 +23,25 @@
             height: 100%; /* Full height */
         }
 
-        /* Existing styles for link images */
+        .link-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .link-text {
+            position: absolute;
+            left: -180px; /* Adjust as needed */
+            white-space: nowrap;
+            opacity: 0.7; /* Semi-transparent */
+            font-size: 14px;
+            color: white; /* Or any other color */
+            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; /* Black stroke */
+        }
+
         .container a img {
-            max-width: 100%;
+            max-width: 80%; /* Adjusted for better layout */
             height: auto;
         }
     </style>
@@ -33,12 +49,24 @@
 </head>
 <body>
     <div class="container">
-        <a href="headquarters.html"><img src="images/lawbstation_documents.JPEG" alt="Lawb Sightings"></a>
-        <a href="lawbstation.html"><img src="images/lawbstation.GIF" alt="Lawbstation"></a>
-        <a href="https://sudoswap.xyz/#/browse/buy/0xd7922cd333da5ab3758c95f774b092a7b13a5449"><img src="images/lawbstarz_tease 2.gif" alt="Lawbstarz"></a>
-        <a href="https://opensea.io/collection/lawbsters"><img src="images/lawbsters.gif" alt="Lawbsters"></a>
+        <div class="link-container">
+            <span class="link-text">Click for Lawb Sightings →</span>
+            <a href="headquarters.html"><img src="images/lawbstation_documents.JPEG" alt="Lawb Sightings"></a>
+        </div>
+        <div class="link-container">
+            <span class="link-text">Click for Lawbstation →</span>
+            <a href="lawbstation.html"><img src="images/lawbstation.GIF" alt="Lawbstation"></a>
+        </div>
+        <div class="link-container">
+            <span class="link-text">Click for Lawbstarz →</span>
+            <a href="https://sudoswap.xyz/#/browse/buy/0xd7922cd333da5ab3758c95f774b092a7b13a5449"><img src="images/lawbstarz_tease 2.gif" alt="Lawbstarz"></a>
+        </div>
+        <div class="link-container">
+            <span class="link-text">Click for Lawbsters →</span>
+            <a href="https://opensea.io/collection/lawbsters"><img src="images/lawbsters.gif" alt="Lawbsters"></a>
+        </div>
     </div>
 
-    <script src="loadimages.js"></script> <!-- Load your JavaScript file -->
+    <script src="loadimages.js"></script>
 </body>
 </html>

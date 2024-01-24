@@ -14,6 +14,7 @@ body {
     background-position: center; /* Center the image */
     background-repeat: no-repeat; /* Prevent tiling of the image */
     background-attachment: fixed; /* Keep the image fixed during scroll */
+    cursor: url('images/lawbpointer.png'), auto; /* Custom lobster cursor */
 }
 
 img {
@@ -91,4 +92,28 @@ nav a {
     text-decoration: none;
     color: white;
     text-shadow: none;
+}
+
+/* Styles for the link containers */
+.link-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.link-text {
+    position: absolute;
+    left: -180px; /* Adjust as needed based on your layout */
+    white-space: nowrap;
+    opacity: 0.7; /* Semi-transparent */
+    font-size: 14px;
+    color: #ffffff; /* White text color */
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; /* Black stroke */
+}
+
+/* Adjusting container image styles for better layout */
+.container a img {
+    max-width: 80%; /* Adjusted for better layout */
+    height: auto;
 }
