@@ -113,8 +113,16 @@ nav a {
     text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; /* Black stroke */
 }
 
-/* Adjusting container image styles for better layout */
-.container a img {
-    max-width: 80%; /* Adjusted for better layout */
-    height: auto;
+/* Styles for "Collect Lawb Lore" section */
+.collect-lawb-lore {
+    text-align: center; /* Center the text and image */
+    margin-top: 20px; /* Add some space above the section */
+}
+
+.collect-lawb-lore span {
+    display: block; /* Make the span take up the full width */
+    opacity: 0.8; /* Slightly transparent */
+    color: white; /* Adjust the color as needed */
+    font-size: 18px; /* Adjust the font size as needed */
+    margin-bottom: 10px; /* Space between text and image */
 }
