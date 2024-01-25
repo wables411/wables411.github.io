@@ -10,7 +10,7 @@ body, html {
     overflow-x: hidden;
     margin: 0;
     padding: 0 0 20px 0;
-    cursor: url('/images/lawbpointer.png'), auto; /* Custom cursor */
+    cursor: url('images/lawbpointer.png'), auto; /* Corrected path for custom cursor */
 }
 
 /* Navigation bar styles */
@@ -41,7 +41,7 @@ nav a {
     text-decoration: none;
     padding: 10px 15px;
     display: block;
-    cursor: url('/images/lawbpointer.png'), auto; /* Custom cursor for links */
+    cursor: url('images/lawbpointer.png'), pointer; /* Corrected path and pointer for links */
 }
 
 /* Main content styles - centered container */
