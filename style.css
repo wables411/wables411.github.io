@@ -1,24 +1,23 @@
 /* Global styles */
 body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
     text-align: center;
     background-image: url('images/oceanfloor.gif');
     background-attachment: fixed;
     background-size: cover;
     background-repeat: no-repeat;
     overflow-x: hidden; /* Prevent horizontal scrolling */
+    margin: 0; /* Remove default margin */
+    padding: 0; /* Remove default padding */
 }
 
-/* Container styles */
-.container {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
+/* Main content styles - centered container */
+.main-content {
     display: flex;
     flex-direction: column;
+    justify-content: center;
     align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .link-container {
@@ -48,7 +47,6 @@ body {
     object-fit: contain;
 }
 
-/* Collect Lawb Lore Section */
 .collect-lawb-lore {
     display: flex;
     flex-direction: column;
