@@ -4,31 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>lawbstation</title>
+    <link rel="stylesheet" href="style.css">
     <style>
-        /* Inline styles for specific adjustments */
-
-        body, html {
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden; /* Hide horizontal overflow */
-        }
-
-        /* Ensure navigation menu does not cause horizontal overflow */
-        nav ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-        }
-
-        nav li {
-            margin: 0 10px; /* Adjust as needed */
-        }
-
+        /* Inline styles to adjust specific elements on lawbstation.html */
         #imageDisplay img {
+            /* Slight drop shadow, ensure the image fits within the container */
             box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.5);
-            max-width: 100%; /* Ensure images do not overflow */
+            max-width: 100%;
             height: auto;
         }
 
@@ -43,15 +25,22 @@
             cursor: pointer;
         }
 
-        /* Adjust the image gallery container */
-        #imageGallery {
-            max-width: 100%;
-            overflow-x: hidden; /* Hide horizontal overflow inside the gallery */
+        /* Ensure navigation menu items are not causing overflow */
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        nav li {
+            display: inline-block;
+            margin: 0 10px;
         }
     </style>
-    <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="lawbstation-body">
     <!-- Navigation Menu -->
     <nav>
         <ul>
@@ -62,7 +51,7 @@
 
     <!-- Page Content -->
     <h1>LAWBSTATION</h1>
-    <!-- ...rest of your content... -->
+    <!-- ... rest of your content ... -->
 
     <script src="loadImages.js"></script>
 </body>
