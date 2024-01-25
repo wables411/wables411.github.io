@@ -45,6 +45,15 @@ body {
     object-fit: contain; /* Ensures the whole image is visible */
 }
 
+/* Collect Lawb Lore Section */
+.collect-lawb-lore {
+    display: flex;
+    flex-direction: column; /* Stack items vertically */
+    align-items: center; /* Center items */
+    text-align: center; /* Center text */
+    margin-bottom: 20px; /* Space below the section */
+}
+
 @media (max-width: 600px) {
     .link-container {
         flex-direction: column; /* Stack items vertically on mobile */
