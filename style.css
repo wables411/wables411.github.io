@@ -1,5 +1,7 @@
 /* Global styles */
-body {
+body, html {
+    font-family: 'Impact', sans-serif; /* Set font to Impact */
+    color: white; /* Set text color to white */
     text-align: center;
     background-image: url('images/oceanfloor.gif');
     background-attachment: fixed;
@@ -10,6 +12,36 @@ body {
     padding: 0; /* Remove default padding */
 }
 
+/* Navigation bar styles */
+nav {
+    background-color: black; /* Black background */
+    width: 100%; /* Full width */
+    position: fixed; /* Fix to the top of the page */
+    top: 0; /* Align to top */
+    left: 0; /* Align to left */
+    z-index: 1000; /* Ensure nav is above other content */
+}
+
+nav ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+}
+
+nav li {
+    display: inline;
+}
+
+nav a {
+    color: white; /* White text color */
+    font-weight: bold; /* Bold font weight */
+    text-decoration: none; /* No underline */
+    padding: 10px 15px; /* Padding around links */
+    display: block;
+}
+
 /* Main content styles - centered container */
 .main-content {
     display: flex;
@@ -18,6 +50,17 @@ body {
     align-items: center;
     max-width: 1200px;
     margin: 0 auto;
+    padding-top: 50px; /* Adjust based on the height of your nav bar */
+}
+
+/* Full Height Container */
+.full-height-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* Full viewport height */
+    padding-top: 50px; /* Adjust for fixed navbar */
 }
 
 .link-container {
