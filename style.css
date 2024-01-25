@@ -80,7 +80,8 @@ nav a {
 }
 
 /* Styles for images */
-.container a img {
+.container a img,
+.main-content img { /* Target images within main content for headquarters page */
     width: 200px;
     height: 200px;
     object-fit: cover;
@@ -111,9 +112,10 @@ nav a {
         margin-bottom: 10px;
     }
 
-    .container a img {
-        width: 50vw;
-        height: 50vw;
+    .container a img,
+    .main-content img { /* Ensure images are responsive on mobile */
+        width: 100%; /* Full width of the container */
+        height: auto; /* Maintain aspect ratio */
         margin: 0;
     }
 
