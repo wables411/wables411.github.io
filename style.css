@@ -50,7 +50,7 @@ nav a {
     align-items: center;
     max-width: 1200px;
     margin: 0 auto;
-    padding-top: 50px; /* Adjust based on the height of your nav bar */
+    padding-top: 80px; /* Adjust based on the height of your nav bar */
 }
 
 /* Full Height Container */
