@@ -1,89 +1,69 @@
 /* Global styles */
 body {
-    font-family: 'Impact', sans-serif;
-    font-weight: bold;
-    line-height: 1.6;
-    margin: 0;
-    padding: 0;
-    background-color: #ff0000; /* Red background */
-    background-image: url('images/oceanfloor.gif');
-    background-size: cover; /* Cover the entire surface */
-    background-position: center; /* Center the image */
-    background-repeat: no-repeat; /* Prevent tiling of the image */
-    background-attachment: fixed; /* Keep the image fixed during scroll */
-    color: #ffffff; /* White text color */
-    cursor: url('images/lawbpointer.png'), auto; /* Custom lobster cursor */
-    height: 100%; /* Full height */
-    text-align: left; /* Align text to the left to work with absolute positioning */
+    /* ... existing styles ... */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
 }
 
 /* Container styles */
 .container {
-    position: relative; /* Relative position for absolute child positioning */
-    min-height: 100vh; /* Full viewport height */
-    padding: 20px;
+    width: 100%;
+    max-width: 1200px; /* Set a max-width to contain the content within a central column */
+    margin: 0 auto; /* Center the container */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center items vertically */
 }
 
 .link-container {
-    position: relative; /* Set the positioning context for the absolute elements */
-    margin-bottom: 20px; /* Adjust as needed */
-    height: 300px; /* Set a fixed height for each link container */
+    display: flex;
+    flex-direction: row; /* Align items horizontally */
+    align-items: center; /* Align items vertically */
+    justify-content: center; /* Center the link container */
+    margin-bottom: 20px; /* Space between link containers */
+    width: 100%; /* Full width of the container */
 }
 
 .link-text {
-    position: absolute; /* Absolute positioning relative to the parent */
-    left: 50%; /* Centered on the page */
-    transform: translateX(-50%); /* Offset the element by half its width */
-    top: 50%; /* Align vertically */
-    transform: translateY(-50%); /* Center vertically */
-    z-index: 10;
     opacity: 0.7;
-    text-align: right; /* Align the text to the right */
+    margin-right: 20px; /* Space between text and images */
+    text-align: right;
+    white-space: nowrap; /* Ensure the text does not wrap */
 }
 
-/* Styles for GIF images to be square */
+/* Styles for images */
 .container a img {
-    width: 200px; /* Fixed width */
-    height: 200px; /* Fixed height */
+    width: 200px; /* Fixed width for the square GIFs */
+    height: 200px; /* Fixed height for the square GIFs */
     object-fit: cover; /* Crop the image to fill the area */
-    position: absolute;
-    right: 20px; /* Position from the right */
-    top: 50%; /* Align to the center vertically */
-    transform: translateY(-50%); /* Center vertically */
 }
 
 /* Specific styles for the JPEG to maintain its original portrait orientation */
 .container a[href="headquarters.html"] img {
-    width: auto; /* Auto width to maintain aspect ratio */
-    height: 300px; /* Fixed height to display full image */
     object-fit: contain; /* Ensures the whole image is visible */
 }
 
 @media (max-width: 600px) {
-    .container a img {
-        position: static; /* Stack images vertically on mobile */
-        width: 80vw; /* Responsive width based on viewport width */
-        height: 80vw; /* Responsive height to maintain square aspect ratio for GIFs */
-        object-fit: contain; /* Ensures the whole image is visible */
-        margin: 10px auto; /* Center the images with margin */
-    }
-
-    /* Adjust the width and height for the JPEG on mobile to maintain aspect ratio */
-    .container a[href="headquarters.html"] img {
-        height: auto; /* Auto height to maintain aspect ratio */
-        max-width: 80vw; /* Max width to fit mobile screen */
+    .link-container {
+        flex-direction: column; /* Stack items vertically on mobile */
+        align-items: center; /* Center items on mobile */
     }
 
     .link-text {
-        position: static; /* Back to the normal document flow */
-        transform: none; /* Remove the transform */
-        text-align: center; /* Center the text on mobile */
-        width: 100%; /* Allow the text to take full width */
-        margin-bottom: 10px; /* Space below the text */
+        text-align: center; /* Center text on mobile */
+        margin-right: 0; /* No margin on the right on mobile */
+        margin-bottom: 10px; /* Space between text and image */
     }
 
-    .link-container {
-        height: auto; /* Height adjusts to content */
-        margin-bottom: 10px; /* Space between items */
+    .container a img {
+        width: 50vw; /* 50% of the viewport width */
+        height: 50vw; /* 50% of the viewport height for square GIFs */
+        margin: 0; /* Reset margins */
+    }
+
+    .container a[href="headquarters.html"] img {
+        height: auto; /* Maintain the aspect ratio */
     }
 }
