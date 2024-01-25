@@ -82,9 +82,9 @@ nav a {
 /* Styles for images */
 .container a img,
 .main-content img { /* Target images within main content for headquarters page */
-    width: 200px;
-    height: 200px;
-    object-fit: cover;
+    max-width: 100%; /* Maximum width of 100% of the container */
+    height: auto; /* Height adjusts automatically to maintain aspect ratio */
+    object-fit: contain; /* Ensures the entire image is visible */
 }
 
 .container a[href="headquarters.html"] img {
