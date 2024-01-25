@@ -14,58 +14,76 @@ body {
     color: #ffffff; /* White text color */
     cursor: url('images/lawbpointer.png'), auto; /* Custom lobster cursor */
     height: 100%; /* Full height */
-    text-align: center; /* Center all text */
-    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; /* Black stroke */
+    text-align: left; /* Align text to the left to work with absolute positioning */
 }
 
 /* Container styles */
 .container {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 20px;
+    position: relative; /* Relative position for absolute child positioning */
+    min-height: 100vh; /* Full viewport height */
     padding: 20px;
-    min-height: 100vh;
-    position: relative;
 }
 
 .link-container {
-    display: flex;
-    align-items: center;
-    width: 100%;
+    position: relative; /* Set the positioning context for the absolute elements */
+    margin-bottom: 20px; /* Adjust as needed */
+    height: 300px; /* Set a fixed height for each link container */
 }
 
 .link-text {
-    flex-grow: 1;
-    text-align: right;
-    margin-right: 10px; /* Adjust as needed */
+    position: absolute; /* Absolute positioning relative to the parent */
+    left: 50%; /* Centered on the page */
+    transform: translateX(-50%); /* Offset the element by half its width */
+    top: 50%; /* Align vertically */
+    transform: translateY(-50%); /* Center vertically */
+    z-index: 10;
     opacity: 0.7;
+    text-align: right; /* Align the text to the right */
 }
 
+/* Styles for GIF images to be square */
 .container a img {
-    max-width: 15%; /* Adjust as needed */
-    height: auto;
+    width: 200px; /* Fixed width */
+    height: 200px; /* Fixed height */
+    object-fit: cover; /* Crop the image to fill the area */
+    position: absolute;
+    right: 20px; /* Position from the right */
+    top: 50%; /* Align to the center vertically */
+    transform: translateY(-50%); /* Center vertically */
+}
+
+/* Specific styles for the JPEG to maintain its original portrait orientation */
+.container a[href="headquarters.html"] img {
+    width: auto; /* Auto width to maintain aspect ratio */
+    height: 300px; /* Fixed height to display full image */
+    object-fit: contain; /* Ensures the whole image is visible */
 }
 
 @media (max-width: 600px) {
-    .container {
-        align-items: center;
+    .container a img {
+        position: static; /* Stack images vertically on mobile */
+        width: 80vw; /* Responsive width based on viewport width */
+        height: 80vw; /* Responsive height to maintain square aspect ratio for GIFs */
+        object-fit: contain; /* Ensures the whole image is visible */
+        margin: 10px auto; /* Center the images with margin */
     }
 
-    .link-container {
-        justify-content: center;
-        flex-direction: column;
+    /* Adjust the width and height for the JPEG on mobile to maintain aspect ratio */
+    .container a[href="headquarters.html"] img {
+        height: auto; /* Auto height to maintain aspect ratio */
+        max-width: 80vw; /* Max width to fit mobile screen */
     }
 
     .link-text {
-        order: -1; /* Text above image */
-        flex-grow: 0;
-        text-align: center;
-        margin-right: 0;
-        margin-bottom: 5px; /* Space between text and image */
+        position: static; /* Back to the normal document flow */
+        transform: none; /* Remove the transform */
+        text-align: center; /* Center the text on mobile */
+        width: 100%; /* Allow the text to take full width */
+        margin-bottom: 10px; /* Space below the text */
     }
 
-    .container a img {
-        max-width: 50%; /* Larger images for mobile */
+    .link-container {
+        height: auto; /* Height adjusts to content */
+        margin-bottom: 10px; /* Space between items */
     }
 }
