@@ -10,6 +10,7 @@ body, html {
     overflow-x: hidden;
     margin: 0;
     padding: 0 0 20px 0;
+    cursor: url('/images/lawbpointer.png'), auto; /* Custom cursor */
 }
 
 /* Navigation bar styles */
@@ -40,6 +41,7 @@ nav a {
     text-decoration: none;
     padding: 10px 15px;
     display: block;
+    cursor: url('/images/lawbpointer.png'), auto; /* Custom cursor for links */
 }
 
 /* Main content styles - centered container */
@@ -104,6 +106,14 @@ nav a {
         width: 100%;
         height: auto;
         margin: 0;
+    }
+}
+
+/* Desktop specific styles */
+@media (min-width: 1024px) {
+    .link-container a img {
+        max-width: 80%; /* Adjust as needed */
+        margin: auto;
     }
 }
 
