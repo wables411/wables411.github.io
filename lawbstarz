@@ -6,7 +6,7 @@
     <title>Lawbsters</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="lawbstation-body"> <!-- Using the same background style as lawbstation -->
+<body class="lawbstation-body">
     <!-- Navigation Menu -->
     <nav>
         <ul>
@@ -22,9 +22,16 @@
         <!-- Main Content Container -->
         <div class="main-content">
             <h1>Lawbstarz</h1>
-            <p>☆ LAWBSTARZ 666x LOBSTERS DRIPPED IN BUTTER ☆ 666x PREMIUM PFP COLLECTION ☆ LAWBSTARZ IS A MUSIC NFT ☆ THE 1ST ALLSTARZ DERIVATIVE ☆ LAWBSTARZ IS INSPIRED BY REMILIA CORP ☆ LED BY NETWORK SPIRITUALITY ☆ 666 CIGAWRETTEPACKS WERE CONSUMED BY PORTIONCLUB69 AND FRIENDS DURING THE CREATION OF LAWBSTARZ v1 ☆</p>
+            <p>
+                ☆ LAWBSTARZ 666x LOBSTERS DRIPPED IN BUTTER ☆ 666x PREMIUM PFP COLLECTION ☆ LAWBSTARZ IS A MUSIC NFT ☆ THE 1ST 
+                <a href="https://allstarz.world/" target="_blank">ALLSTARZ DERIVATIVE</a> ☆ LAWBSTARZ IS INSPIRED BY 
+                <a href="https://ilongfornetworkspirituality.net/" target="_blank">REMILIA CORP</a> ☆ LED BY NETWORK SPIRITUALITY ☆ 666 
+                <a href="https://www.cigawrettepacks.shop/" target="_blank">CIGAWRETTEPACKS</a> WERE CONSUMED BY 
+                <a href="https://nouns.build/dao/ethereum/0x0c12aba58fc88f1267fa772012495b47aaf31cab/" target="_blank">PORTIONCLUB69</a> 
+                AND FRIENDS DURING THE CREATION OF LAWBSTARZ v1 ☆
+            </p>
             
-            <!-- New Twitter Embed -->
+            <!-- Twitter Embed -->
             <blockquote class="twitter-tweet">
                 <p lang="en" dir="ltr">The following 🧵 has been transcripted from a live news broadcast:<br><br>Anchor: “Good evening, viewers. Tonight, we embark on an extraordinary journey that defies rational explanation. It all began with February’s Cigawrette Packs cargo ship hijacking, little did we know that the.. <a href="https://t.co/BWgLOk59N4">pic.twitter.com/BWgLOk59N4</a></p>
                 &mdash; wables 🚬✰🍨🦞🍞 (@wables411) <a href="https://twitter.com/wables411/status/1669009492007354369?ref_src=twsrc%5Etfw">June 14, 2023</a>
@@ -36,6 +43,13 @@
             <a href="https://www.scatter.art/lawbstarz?tab=mint">
                 <img src="images/lawbstarzhotelroom.png" alt="Lawbstarz Image">
             </a>
+
+            <!-- Sudoswap Image and Link -->
+            <div class="sudoswap-link">
+                <a href="https://sudoswap.xyz/#/browse/buy/0xd7922cd333da5ab3758c95f774b092a7b13a5449">
+                    <img src="images/sudoswap.png" alt="Sudoswap">
+                </a>
+            </div>
         </div>
     </div>
 </body>
