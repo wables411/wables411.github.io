@@ -132,3 +132,11 @@ nav a {
     background-size: cover;
     background-repeat: no-repeat;
 }
+
+/* New class for resizing images */
+.resize-image {
+    width: 50%; /* Adjust size as needed */
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
