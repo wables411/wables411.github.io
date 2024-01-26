@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lawbsters</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="lawbstation-body"> <!-- Using the same background style as lawbstation -->
+    <!-- Navigation Menu -->
+    <nav>
+        <ul>
+            <li><a href="index.html">home</a></li>
+            <li><a href="lawbstation.html">lawbstation</a></li>
+            <li><a href="lawbsters.html">lawbsters</a></li>
+            <li><a href="lawbstarz.html">lawbstarz</a></li>
+        </ul>
+    </nav>
+
+    <!-- Full Height Container -->
+    <div class="full-height-container">
+        <!-- Main Content Container -->
+        <div class="main-content">
+            <h1>Lawbstarz</h1>
+            <p>☆ LAWBSTARZ 666x LOBSTERS DRIPPED IN BUTTER ☆ 666x PREMIUM PFP COLLECTION ☆ LAWBSTARZ IS A MUSIC NFT ☆ THE 1ST ALLSTARZ DERIVATIVE ☆ LAWBSTARZ IS INSPIRED BY REMILIA CORP ☆ LED BY NETWORK SPIRITUALITY ☆ 666 CIGAWRETTEPACKS WERE CONSUMED BY PORTIONCLUB69 AND FRIENDS DURING THE CREATION OF LAWBSTARZ v1 ☆</p>
+            
+            <!-- New Twitter Embed -->
+            <blockquote class="twitter-tweet">
+                <p lang="en" dir="ltr">The following 🧵 has been transcripted from a live news broadcast:<br><br>Anchor: “Good evening, viewers. Tonight, we embark on an extraordinary journey that defies rational explanation. It all began with February’s Cigawrette Packs cargo ship hijacking, little did we know that the.. <a href="https://t.co/BWgLOk59N4">pic.twitter.com/BWgLOk59N4</a></p>
+                &mdash; wables 🚬✰🍨🦞🍞 (@wables411) <a href="https://twitter.com/wables411/status/1669009492007354369?ref_src=twsrc%5Etfw">June 14, 2023</a>
+            </blockquote>
+            <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+            <!-- Additional Image and Link -->
+            <p>minted out on scatter ↓</p>
+            <a href="https://www.scatter.art/lawbstarz?tab=mint">
+                <img src="images/lawbstarzhotelroom.png" alt="Lawbstarz Image">
+            </a>
+        </div>
+    </div>
+</body>
+</html>
