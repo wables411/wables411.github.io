@@ -10,7 +10,7 @@ body, html {
     overflow-x: hidden;
     margin: 0;
     padding: 0 0 20px 0;
-    cursor: url('images/lawbpointer.png'), auto; /* Corrected path for custom cursor */
+    cursor: url('images/lawbpointer.png'), auto; /* Global custom cursor */
 }
 
 /* Navigation bar styles */
@@ -41,7 +41,7 @@ nav a {
     text-decoration: none;
     padding: 10px 15px;
     display: block;
-    cursor: url('images/lawbpointer.png'), pointer; /* Corrected path and pointer for links */
+    cursor: inherit; /* Inherits cursor from parent */
 }
 
 /* Main content styles - centered container */
@@ -67,12 +67,12 @@ nav a {
 
 .link-container {
     display: flex;
-    flex-direction: column; /* Change to column layout */
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     margin-bottom: 20px;
     width: 100%;
-    padding-top: 20px; /* Add padding here */
+    padding-top: 20px;
 }
 
 .link-text {
@@ -113,7 +113,7 @@ nav a {
 /* Desktop specific styles */
 @media (min-width: 1024px) {
     .link-container a img {
-        max-width: 80%; /* Adjust as needed */
+        max-width: 80%;
         margin: auto;
     }
 }
@@ -136,8 +136,18 @@ nav a {
 
 /* New class for resizing images */
 .resize-image {
-    max-width: 70%; /* Adjust size as needed */
+    max-width: 70%;
     height: auto;
     display: block;
     margin: 0 auto;
+}
+
+/* Applying custom cursor to all clickable elements */
+a, button, input[type="submit"], input[type="button"], .your-custom-class {
+    cursor: url('images/lawbpointer.png'), pointer;
+}
+
+/* Ensure custom cursor is applied on hover states */
+a:hover, button:hover, .your-custom-class:hover {
+    cursor: url('images/lawbpointer.png'), pointer;
 }
