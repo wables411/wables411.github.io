@@ -26,27 +26,28 @@ nav {
     top: 0;
     left: 0;
     z-index: 1000;
+    overflow-x: auto; /* Enable horizontal scrolling */
+    white-space: nowrap; /* Keep nav items in one line */
 }
 
 nav ul {
     list-style-type: none;
-    margin: 0;
     padding: 0;
+    margin: 0;
     display: flex;
     justify-content: center;
-    text-align: center; /* Center the list items */
-    flex-wrap: wrap; /* Allow the navigation items to wrap */
+    text-align: center;
 }
 
 nav li {
-    display: inline-block; /* Change from inline to inline-block for better control */
+    display: inline-block;
 }
 
 nav a {
     color: white;
     font-weight: bold;
     text-decoration: none;
-    padding: 10px 15px;
+    padding: 10px 12px; /* Slightly reduced padding */
     display: block;
 }
 
@@ -58,7 +59,7 @@ nav a {
     align-items: center;
     max-width: 1200px;
     margin: 0 auto;
-    padding-top: 100px;
+    padding-top: 100px; /* Ensure enough top padding to avoid being hidden by nav */
 }
 
 /* Full Height Container */
@@ -97,14 +98,9 @@ nav a {
 
 /* Responsive styles for mobile */
 @media (max-width: 600px) {
-    nav ul {
-        flex-direction: column; /* Stack nav items vertically */
-        align-items: center; /* Center align the items */
-    }
-
     nav a {
-        padding: 8px 10px; /* Further reduce padding */
-        font-size: 14px; /* Adjust font size for better fit */
+        font-size: 14px; /* Slightly reduced font size */
+        padding: 8px 10px; /* Further reduce padding for small screens */
     }
 
     .link-container {
