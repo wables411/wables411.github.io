@@ -35,10 +35,11 @@ nav ul {
     display: flex;
     justify-content: center;
     text-align: center; /* Center the list items */
+    flex-wrap: wrap; /* Allow the navigation items to wrap */
 }
 
 nav li {
-    display: inline;
+    display: inline-block; /* Change from inline to inline-block for better control */
 }
 
 nav a {
@@ -102,8 +103,8 @@ nav a {
     }
 
     nav a {
-        padding: 8px 10px; /* Reduce padding */
-        font-size: 14px; /* Reduce font size for better fit */
+        padding: 8px 10px; /* Further reduce padding */
+        font-size: 14px; /* Adjust font size for better fit */
     }
 
     .link-container {
