@@ -34,6 +34,7 @@ nav ul {
     padding: 0;
     display: flex;
     justify-content: center;
+    text-align: center; /* Center the list items */
 }
 
 nav li {
@@ -95,6 +96,16 @@ nav a {
 
 /* Responsive styles for mobile */
 @media (max-width: 600px) {
+    nav ul {
+        flex-direction: column; /* Stack nav items vertically */
+        align-items: center; /* Center align the items */
+    }
+
+    nav a {
+        padding: 8px 10px; /* Reduce padding */
+        font-size: 14px; /* Reduce font size for better fit */
+    }
+
     .link-container {
         flex-direction: column;
         align-items: center;
