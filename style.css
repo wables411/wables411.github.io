@@ -43,8 +43,8 @@ nav li {
     display: inline-block;
 }
 
-nav a {
-    color: white;
+nav a, a:link, a:visited, a:hover, a:active {
+    color: #FF0000; /* Make all links bright red */
     font-weight: bold;
     text-decoration: none;
     padding: 10px 12px; /* Slightly reduced padding */
