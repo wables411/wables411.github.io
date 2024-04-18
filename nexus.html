@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="video-background-body">
+    <nav>
+        <ul>
+            <li><a href="index.html">home</a></li>
+            <li><a href="lawbstation.html">lawbstation</a></li>
+            <li><a href="lawbsters.html">lawbsters</a></li>
+            <li><a href="lawbstarz.html">lawbstarz</a></li>
+            <li><a href="ascii_lawbsters.html">ascii</a></li>
+            <li><a href="https://pc69.xyz/">shop</a></li>
+            <li><a href="$lawb.html">$lawb</a></li>
+            <li><a href="nexus.html">nexus</a></li>
+        </ul>
+    </nav>
+
+    <button onclick="togglePlay()">Toggle Play/Pause</button>
+    <video id="myVideo" loop>
+        <source src="images/nexuswl.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <p>Follow <a href="https://twitter.com/LawbNexus" target="_blank">Lawb Nexus</a> to stay updated.</p>
+
+    <script>
+        var video = document.getElementById('myVideo');
+        function togglePlay() {
+            if (video.paused) {
+                video.play();
+            } else {
+                video.pause();
+            }
+        }
+    </script>
+</body>
+</html>

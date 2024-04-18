@@ -151,3 +151,11 @@ nav a, a:link, a:visited, a:hover, a:active {
     display: block;
     margin: 0 auto;
 }
+
+.video-background-body {
+    background-color: black; /* Set background color to black */
+    background-image: none; /* Remove the background image */
+    background-attachment: fixed;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
