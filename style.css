@@ -15,7 +15,7 @@ body, html {
 
 /* Apply custom cursor to all elements */
 *, *::before, *::after {
-    cursor: inherit; /* Inherits cursor from body, html */
+    cursor: inherit; /* Inherits cursor from body */
 }
 
 /* Navigation bar styles */
@@ -36,7 +36,6 @@ nav ul {
     margin: 0;
     display: flex;
     justify-content: center;
-    text-align: center;
 }
 
 nav li {
@@ -44,11 +43,10 @@ nav li {
 }
 
 nav a, a:link, a:visited, a:hover, a:active {
-    color: #FF0000; /* Make all links bright red */
+    color: #FF0000; /* Bright red links */
     font-weight: bold;
     text-decoration: none;
-    padding: 10px 12px; /* Slightly reduced padding */
-    display: block;
+    padding: 10px 12px;
 }
 
 /* Main content styles - centered container */
@@ -59,17 +57,17 @@ nav a, a:link, a:visited, a:hover, a:active {
     align-items: center;
     max-width: 1200px;
     margin: 0 auto;
-    padding-top: 100px; /* Ensure enough top padding to avoid being hidden by nav */
+    padding-top: 100px; /* Top padding to avoid nav bar overlap */
 }
 
-/* Full Height Container */
+/* Full height container */
 .full-height-container {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding-top: 50px;
+    padding-top: 50px; /* Top padding for visual balance */
 }
 
 .link-container {
@@ -89,18 +87,18 @@ nav a, a:link, a:visited, a:hover, a:active {
     white-space: nowrap;
 }
 
-/* Styles for images on index.html within link-container */
+/* Styles for images within link-container on index.html */
 .link-container a img {
     max-width: 100%;
     height: auto;
     object-fit: contain;
 }
 
-/* Responsive styles for mobile */
+/* Responsive styles for mobile devices */
 @media (max-width: 600px) {
     nav a {
-        font-size: 14px; /* Slightly reduced font size */
-        padding: 8px 10px; /* Further reduce padding for small screens */
+        font-size: 14px;
+        padding: 8px 10px;
     }
 
     .link-container {
@@ -130,15 +128,8 @@ nav a, a:link, a:visited, a:hover, a:active {
     }
 }
 
-/* Styles specific to headquarters.html */
-.headquarters-body {
-    background-attachment: fixed;
-    background-size: cover;
-    background-repeat: no-repeat;
-}
-
-/* Styles specific to lawbstation.html */
-.lawbstation-body {
+/* Styles specific to headquarters.html and lawbstation.html */
+.headquarters-body, .lawbstation-body {
     background-attachment: fixed;
     background-size: cover;
     background-repeat: no-repeat;
@@ -153,9 +144,58 @@ nav a, a:link, a:visited, a:hover, a:active {
 }
 
 .video-background-body {
-    background-color: black; /* Set background color to black */
-    background-image: none; /* Remove the background image */
+    background-color: black; /* Black background */
+    background-image: none;
     background-attachment: fixed;
     background-size: cover;
     background-repeat: no-repeat;
+}
+
+/* Button styles */
+#toggleButton {
+    position: absolute; /* Position the button absolutely within the body context */
+    top: 60px; /* Set top position to push it under the nav bar; adjust as needed */
+    right: 10px; /* Set right position to align with the right side */
+    z-index: 1010; /* Higher z-index than nav to ensure it's on top */
+}
+
+/* Styles for the minting section */
+.mint-section {
+    text-align: center;
+    padding: 20px;
+    background-color: #000; /* Optional: Change to your preferred background color */
+    color: #fff; /* Optional: Change to your preferred text color */
+    margin-top: 50px; /* Add space above the section */
+}
+
+.mint-section h2 {
+    margin-bottom: 20px; /* Space between the heading and image buttons */
+}
+
+.image-button-row {
+    display: flex;
+    justify-content: center; /* Center the images horizontally */
+    align-items: center; /* Align images vertically */
+    gap: 10px; /* Space between images */
+}
+
+.image-button-row a img {
+    width: auto; /* Maintain the original image aspect ratio */
+    height: 100px; /* Example height, adjust as needed */
+    transition: transform 0.3s ease; /* Smooth transformation on hover */
+}
+
+.image-button-row a:hover img {
+    transform: scale(1.1); /* Slightly enlarge images on hover */
+}
+
+/* Add responsive behavior if necessary */
+@media (max-width: 600px) {
+    .image-button-row {
+        flex-direction: column; /* Stack images vertically on smaller screens */
+    }
+
+    .image-button-row a img {
+        margin-bottom: 10px; /* Space between stacked images */
+    }
 }
