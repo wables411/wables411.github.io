@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     enterButton.addEventListener('click', async () => {
         const imageNumber = searchInput.value;
-        if (imageNumber >= 0 && imageNumber <= 1999) {  // Adjusted the range to be inclusive of 199
+        if (imageNumber >= 0 && imageNumber <= 999) {  // Adjusted the range to be inclusive of 199
             imageDisplay.innerHTML = ''; // Clear current display
             try {
                 const ipfsGateway = 'https://bafybeidrkdn3f4j4o5c3yy6isokujnrurkvqbip53cvqekzpud44l4fdfi.ipfs.nftstorage.link/';
