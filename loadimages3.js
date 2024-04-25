@@ -6,30 +6,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     enterButton.addEventListener('click', async () => {
         const imageNumber = searchInput.value;
-        if (imageNumber >= 1 && imageNumber < 200) {
-            imageDisplay.innerHTML = ''; // Clear current display before showing new image
+        if (imageNumber >= 0 && imageNumber <= 1999) {  // Adjusted the range to be inclusive of 199
+            imageDisplay.innerHTML = ''; // Clear current display
             try {
                 const ipfsGateway = 'https://bafybeidrkdn3f4j4o5c3yy6isokujnrurkvqbip53cvqekzpud44l4fdfi.ipfs.nftstorage.link/';
                 const response = await fetch(`${ipfsGateway}${imageNumber}.json`);
                 const data = await response.json();
                 const img = document.createElement('img');
-                img.src = `${ipfsGateway}${imageNumber}.png`; // Use the number to refer to the image directly
+                img.src = `${ipfsGateway}${imageNumber}.png`; 
                 img.alt = data.name;
-                img.style.width = 'calc(50% - 10px)'; // Adjust size as needed
+                img.style.width = '50%'; // Simplified sizing
                 img.style.height = 'auto';
                 imageDisplay.appendChild(img);
             } catch (error) {
                 console.error('Error loading image:', error);
-                imageDisplay.innerText = 'Failed to load image.';
+                imageDisplay.innerText = 'Failed to load image. Please check the console for more details.';
             }
         } else {
-            imageDisplay.innerText = 'Invalid image number. Please enter a number between 0 and 100.';
+            imageDisplay.innerText = 'Invalid image number. Please enter a number between 1 and 199.';
         }
     });
 
     clearButton.addEventListener('click', () => {
-        imageDisplay.innerHTML = ''; // Clear the image display
-        searchInput.value = ''; // Clear the search input
+        imageDisplay.innerHTML = '';
+        searchInput.value = '';
     });
 });
-
