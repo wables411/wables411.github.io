@@ -6,10 +6,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     enterButton.addEventListener('click', async () => {
         const imageNumber = searchInput.value;
-        if (imageNumber >= 0 && imageNumber <= 999) {  // Adjusted the range to be inclusive of 199
+        if (imageNumber >= 0 && imageNumber <= 999) {  // Adjusted the range to be inclusive of 999
             imageDisplay.innerHTML = ''; // Clear current display
             try {
-                const ipfsGateway = 'https://bafybeidrkdn3f4j4o5c3yy6isokujnrurkvqbip53cvqekzpud44l4fdfi.ipfs.nftstorage.link/';
+                const ipfsGateway = 'https://ipfs.io/ipfs/QmcfneXtzRDSP7LhcbvazSMPSpsqRxSGiYAsXpSScP93Nf/';
                 const response = await fetch(`${ipfsGateway}${imageNumber}.json`);
                 const data = await response.json();
                 const img = document.createElement('img');
@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 imageDisplay.innerText = 'Failed to load image. Please check the console for more details.';
             }
         } else {
-            imageDisplay.innerText = 'Invalid image number. Please enter a number between 1 and 199.';
+            imageDisplay.innerText = 'Invalid image number. Please enter a number between 0 and 999.';
         }
     });
 
