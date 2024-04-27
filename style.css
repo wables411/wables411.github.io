@@ -89,7 +89,7 @@ nav a, a:link, a:visited, a:hover, a:active {
 
 /* Styles for images within link-container on index.html */
 .link-container a img {
-    max-width: 100%;
+    max-width: 50%;
     height: auto;
     object-fit: contain;
 }
@@ -119,6 +119,7 @@ nav a, a:link, a:visited, a:hover, a:active {
         margin: 0;
     }
 }
+
 
 /* Desktop specific styles */
 @media (min-width: 1024px) {
