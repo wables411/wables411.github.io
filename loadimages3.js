@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (imageNumber >= 0 && imageNumber <= 999) {  // Keeps the same range
             imageDisplay.innerHTML = ''; // Clear current display
             try {
-                const imageBasePath = 'desktop/gitsite/isolatednexus/';  // Adjust to match the server route to your folder
+                const imageBasePath = 'images/isolatednexus/';  // Adjust to match the server route to your folder
                 const response = await fetch(`${imageBasePath}${imageNumber}.json`);
                 const data = await response.json();
                 const img = document.createElement('img');
