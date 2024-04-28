@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #614",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "614.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 614,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "PSO"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "Mishima_Zaibatsu"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "DDR"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "Dreamcast_Visual_Memory_Unit"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_1_Green"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "Lawb_and_Order"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Mature"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Moss_Lawb_3"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "SFO_SwooshTank"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "Frank_Miura_watch"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "Red_Claw_Soul_Edge"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "Quest_3"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "614.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

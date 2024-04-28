@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #886",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "886.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 886,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "NUCLEARWARFARE"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "PSO"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "PORTION_CLUB"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "Shadow"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_1_Green"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "Lawb_and_Order"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Everyone"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Green_Pink_Eyes"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Shirtlesscopy"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "Oakley_Timebomb_Watch"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "Sea_Salt_Ice_Cream"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "Moss_Pit_Viper"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "886.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

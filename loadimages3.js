@@ -6,16 +6,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     enterButton.addEventListener('click', async () => {
         const imageNumber = searchInput.value;
-        if (imageNumber >= 0 && imageNumber <= 999) {  // Adjusted the range to be inclusive of 999
+        if (imageNumber >= 0 && imageNumber <= 999) {  // Keeps the same range
             imageDisplay.innerHTML = ''; // Clear current display
             try {
-                const ipfsGateway = 'https://ipfs.io/ipfs/QmcfneXtzRDSP7LhcbvazSMPSpsqRxSGiYAsXpSScP93Nf/';
-                const response = await fetch(`${ipfsGateway}${imageNumber}.json`);
+                const imageBasePath = 'desktop/gitsite/isolatednexus/';  // Adjust to match the server route to your folder
+                const response = await fetch(`${imageBasePath}${imageNumber}.json`);
                 const data = await response.json();
                 const img = document.createElement('img');
-                img.src = `${ipfsGateway}${imageNumber}.png`; 
+                img.src = `${imageBasePath}${imageNumber}.png`;
                 img.alt = data.name;
-                img.style.width = '50%'; // Simplified sizing
+                img.style.width = '50%'; // Keeps the same image styling
                 img.style.height = 'auto';
                 imageDisplay.appendChild(img);
             } catch (error) {

@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #560",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "560.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 560,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "BROZIL"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "PSO"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "Lawb_Of_War"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "!splat"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_1_Green"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "Don't_Stop"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Adults_Only_18+"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Snake_skin"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Tank_Top_White"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "Pantless"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "Red_Claw_Burrito"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "Moss_Pit_Viper"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "560.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

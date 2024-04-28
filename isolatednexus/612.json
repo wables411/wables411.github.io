@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #612",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "612.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 612,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "BATTLEROYALE"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "PSO"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "!splat_Bubbles"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "Xbox_Mad_Catz"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_2_Blue"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "Lawb_and_Order"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Teen"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Red_Brown_Eyes"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "C4_Vest2"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "Shirtless"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "Cyborg_Claw"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "None"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "612.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

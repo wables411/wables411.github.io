@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #153",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "153.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 153,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "LOBSTERMANIA"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "FFX"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "PC_Motto"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "PS2_Clear"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_3_Red"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "Lawb_and_Order"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Teen"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Red_Green_Eyes"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Tank_Top_Red"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "Ceremonial_Watch"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "Energy_Sword"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "Eye_patch"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "153.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

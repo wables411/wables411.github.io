@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #885",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "885.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 885,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "Heaven_and_Hell"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "D2R"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "Tengwar_Atmar"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "Gameshark_Game_Enhancer"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_1_Blue"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "Lawb_Language"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Everyone"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Lawborg2"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Tank_Top_PC_Lime"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "Big_Band_Hublot_Pink_Saffire"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "Cyborg_Claw(Moss)"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "Loewe_sunglasses"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "885.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #649",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "649.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 649,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "FOREST"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "FFX"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "!splat_Bubbles"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "Dreamcast_Visual_Memory_Unit"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_2_Red"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "One_of_Us"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Everyone"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Red_Green_Eyes"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "SFO_SwooshTank"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "Nike_Tech_Blue"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "TerraForm_Claw"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "None"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "649.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

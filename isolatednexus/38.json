@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #38",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "38.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 38,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "FOREST"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "Tree_of_Qliphoth(Blue)"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "!splat_Bubbles_Metal"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "PS2_Lime"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_Holographic"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "One_of_Us"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Everyone"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Metal_Pink_Eyes"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Shirtless"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "Pantless"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "Hylian_Shield"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "Hypno_Goggles"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "38.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

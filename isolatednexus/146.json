@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #146",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "146.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 146,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "NAVALSHIP"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "FFX"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "Al_Bhed"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "PS2_Green"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_3_Pink"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "Lawb_Language"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Teen"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Pink_Green_Eyes"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Tank_Top_Miyamaker"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "Pantless"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "OmniWrench"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "Pit_Viper"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "146.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

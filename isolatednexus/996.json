@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #996",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "996.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 996,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "KITCHENFIRE"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "Kingdom_Hearts(Red)"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "!splat_Bubbles"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "Gameshark_Game_Enhancer"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_3_Pink"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "Lawb_Language"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Everyone"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Spotted_BlueEyes"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Tank_Top_Miyamaker"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "Alabaster_Industries_Watch"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "OmniWrench"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "Loewe_sunglasses"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "996.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #787",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "787.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 787,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "PSBEANS"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "Tree_of_Qliphoth"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "Tengwar_Atmar"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "PS2_Lime"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_1_Blue"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "Lawb_Language"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Everyone"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Red_Green_Eyes"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Tank_Top_White"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "Treads"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "Red_Claw_Burrito"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "Loewe_sunglasses"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "787.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

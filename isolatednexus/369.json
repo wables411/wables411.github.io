@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #369",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "369.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 369,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "KITCHENFIRE"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "Tree_of_Qliphoth(Blue)"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "Lawb_Of_War"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "Xbox_Mad_Catz"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_2_Blue"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "One_of_Us"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Teen"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Metal_Brown_Eyes"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Tank_Top_Red"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "Naval_Combat"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "White_Claw__U2B_plush"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "None"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "369.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

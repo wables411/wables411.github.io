@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #209",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "209.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 209,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "KITCHENFIRE"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "D2R"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "Lawb_Of_War"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "Xbox_Mad_Catz"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_1_Orange"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "One_of_Us"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Mature"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Green_Pink_Eyes"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Tank_Top_Miyamaker"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "New_Balance_Grey"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "DreamCast_Contoller"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "None"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "209.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

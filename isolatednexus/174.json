@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #174",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "174.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 174,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "NAVALSHIP"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "Tree_of_Qliphoth(Blue)"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "RareWare"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "Shadow"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_3_Teal"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "One_of_Us"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Teen"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Pink_Brown_Eyes"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Shirtlesscopy"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "Pantless"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "Cyborg_Claw(Moss)"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "Night_Vision"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "174.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

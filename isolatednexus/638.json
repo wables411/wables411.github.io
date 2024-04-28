@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #638",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "638.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 638,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "KITCHENFIRE"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "FFXRemix"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "PORTION_CLUB"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "Felyne"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_3_Red"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "Don't_Stop"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Everyone"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Yellow_KnitKnit"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Shirtless"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "Naval_Combat"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "Cyborg_Claw(Moss)"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "None"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "638.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

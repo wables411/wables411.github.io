@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #686",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "686.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 686,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "PARAPA"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "D2R"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "Lawb_Of_War"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "Time_Crisis_Pistol"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_2_Blue"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "Lawb_Language"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Everyone"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Spotted_GreenEyes"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Tank_Top_Miyamaker"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "New_Balance_Grey"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "TerraForm_Claw"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "$SWAG_Vision_Pro"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "686.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

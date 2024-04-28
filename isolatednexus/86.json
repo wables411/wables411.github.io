@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #86",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "86.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 86,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "HEREWEGOAGAIN"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "Tree_of_Qliphoth(Blue)"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "MILAWBSTER_Metal"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "Xbox_Mad_Catz"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_2_Blue"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "Roadmap_Lime"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Teen"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Red_Green_Eyes"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Shirtlesscopy"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "Pantless"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "Blue_Claw_Uzi"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "None"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "86.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #788",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "788.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 788,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "NUCLEARWARFARE"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "PSO"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "MILAWBSTER_Metal"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "PS2_White"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_3_Pink"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "Lawb_and_Order"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Everyone"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Pink_Green_Eyes"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Tank_Top_Miyamaker"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "Nike_Tech_Blue"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "Blue_Claw_Black_PS_controller"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "None"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "788.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

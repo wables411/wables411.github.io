@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #731",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "731.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 731,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "Moss"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "FFXRemix"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "MILAWBSTER"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "Eyetoy"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_1_Orange"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "Don't_Stop"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Everyone"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Blue_Pink_Eyes"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Shirtless"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "New_Balance_Grey"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "Sea_Salt_Ice_Cream"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "None"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "731.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

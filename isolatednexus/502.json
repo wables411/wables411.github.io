@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #502",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "502.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 502,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "LOBSTERMANIA"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "Fox_Hound"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "Lawb_Of_War"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "Navi"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_1_Green"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "Don't_Stop"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Everyone"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Red_Green_Eyes"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Tank_Top_Lime"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "Ceremonial_Watch"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "Red_Claw_Burrito"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "None"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "502.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}

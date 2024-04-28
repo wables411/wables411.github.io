@@ -1,0 +1,80 @@
+{
+  "name": "LAWBNEXUS #643",
+  "symbol": "lawbx",
+  "description": "1000 Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.",
+  "seller_fee_basis_points": 1000,
+  "image": "643.png",
+  "external_url": "https://lawb.xyz/nexus",
+  "edition": 643,
+  "attributes": [
+    {
+      "trait_type": "1Background",
+      "value": "INITIALD"
+    },
+    {
+      "trait_type": "2Crest",
+      "value": "FFXRemix"
+    },
+    {
+      "trait_type": "3Type 2",
+      "value": "!splat_Bubbles"
+    },
+    {
+      "trait_type": "4Peripheral+Companion",
+      "value": "Game_CubeMemory_Card"
+    },
+    {
+      "trait_type": "5Blister Pack",
+      "value": "Blister_Pack_3_Teal"
+    },
+    {
+      "trait_type": "6Type",
+      "value": "Lawb_and_Order"
+    },
+    {
+      "trait_type": "7Rating",
+      "value": "Mature"
+    },
+    {
+      "trait_type": "8Body+Eyes",
+      "value": "Lawborg2"
+    },
+    {
+      "trait_type": "9Top",
+      "value": "Tank_Top_PC_Red"
+    },
+    {
+      "trait_type": "10Bottom",
+      "value": "New_Balance_Yellow"
+    },
+    {
+      "trait_type": "11Right Claw",
+      "value": "Energy_Sword"
+    },
+    {
+      "trait_type": "12Face",
+      "value": "None"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "643.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+        "share": 100
+      }
+    ]
+  },
+  "creators": [
+    {
+      "address": "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo",
+      "share": 100
+    }
+  ]
+}
