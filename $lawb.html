@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>we $lawb you</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="path/to/favicon.ico" type="image/x-icon"> <!-- Optional: Add a favicon if you have one -->
     <style>
         #dexscreener-embed {position: relative; width: 100%; padding-bottom: 125%;}
         @media (min-width: 1400px) {
@@ -65,13 +66,14 @@
         // Load VRM
         const loader = new VRMLoader();
         loader.load(
-            'images/Lawbsters.vrm', // Update the path to your VRM file
+            'images/Lawbsters.vrm', // Make sure the path is correct
             (vrm) => {
                 scene.add(vrm.scene);
                 camera.position.set(0, 1, 3);
+                console.log('VRM loaded successfully!');
             },
-            (progress) => console.log('Loading VRM: ' + (progress.loaded / progress.total * 100) + '%'),
-            (error) => console.error('An error happened', error)
+            undefined, // onProgress can be left undefined or used to show loading progress
+            (error) => console.error('An error happened while loading VRM:', error)
         );
     
         camera.position.z = 5;
@@ -82,6 +84,5 @@
         }
         animate();
     </script>
-    
 </body>
 </html>
