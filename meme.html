@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meme Generator</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="/gitsite/images/lawblogo32.png" type="image/png">
+</head>
+<body>
+    <div id="meme-generator">
+        <select id="collection-selector">
+            <!-- Options will be added dynamically in memegen.js -->
+        </select>
+        <input type="number" id="image-number" placeholder="Image Number">
+        <button onclick="fetchRandomImage()">Random Image</button>
+        <input type="text" id="top-text" placeholder="Top Text">
+        <input type="text" id="bottom-text" placeholder="Bottom Text">
+        <button onclick="generateMeme()">Generate Lawb</button>
+        <img id="generated-meme" src="" alt="Generated Meme" style="display:none;">
+    </div>
+    <script src="memegen.js"></script>
+</body>
+</html>
