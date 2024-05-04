@@ -3,14 +3,14 @@ body, html {
     font-family: 'Impact', sans-serif;
     color: white;
     text-align: center;
-    background-image: url('images/oceanfloor.gif');
+    background-image: url('/gitsite/images/oceanfloor.gif');
     background-attachment: fixed;
     background-size: cover;
     background-repeat: no-repeat;
     overflow-x: hidden;
     margin: 0;
     padding: 0 0 20px 0;
-    cursor: url('images/lawbpointer.png'), default; /* Custom cursor with 'default' fallback */
+    cursor: url('/gitsite/images/lawbpointer.png'), default; /* Custom cursor with 'default' fallback */
 }
 
 /* Apply custom cursor to all elements */
@@ -60,38 +60,47 @@ nav a, a:link, a:visited, a:hover, a:active {
     padding-top: 100px; /* Top padding to avoid nav bar overlap */
 }
 
-/* Full height container */
-.full-height-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding-top: 50px; /* Top padding for visual balance */
+/* Meme generator specific styles */
+#meme-generator {
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black background */
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    margin: auto;
+    max-width: 600px;
 }
 
-.link-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 20px;
-    width: 100%;
-    padding-top: 20px;
+#meme-generator label {
+    margin-top: 10px;
 }
 
-.link-text {
-    opacity: 0.7;
-    margin-right: 20px;
-    text-align: right;
-    white-space: nowrap;
+#meme-generator input[type="text"], #meme-generator input[type="number"] {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-top: 5px;
+    width: calc(100% - 20px);
 }
 
-/* Styles for images within link-container on index.html */
-.link-container a img {
-    max-width: 50%;
-    height: auto;
-    object-fit: contain;
+#meme-generator button {
+    background-color: #FF0000; /* Bright red, matching nav links */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    margin-top: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#meme-generator button:hover {
+    background-color: #cc0000;
+}
+
+#meme-generator img {
+    max-width: 100%; /* Ensure images are not bigger than their container */
+    margin-top: 20px;
+    border-radius: 5px;
 }
 
 /* Responsive styles for mobile devices */
@@ -101,102 +110,17 @@ nav a, a:link, a:visited, a:hover, a:active {
         padding: 8px 10px;
     }
 
-    .link-container {
+    .link-container, .main-content, #meme-generator {
         flex-direction: column;
         align-items: center;
     }
 
-    .link-text {
+    .link-text, .resize-image, .video-background-body {
         text-align: center;
         margin-right: 0;
-        margin-bottom: 10px;
     }
 
-    .container a img,
-    .main-content img { 
+    .main-content img, .link-container img {
         width: 100%;
-        height: auto;
-        margin: 0;
-    }
-}
-
-
-/* Desktop specific styles */
-@media (min-width: 1024px) {
-    .link-container a img {
-        max-width: 80%;
-        margin: auto;
-    }
-}
-
-/* Styles specific to headquarters.html and lawbstation.html */
-.headquarters-body, .lawbstation-body {
-    background-attachment: fixed;
-    background-size: cover;
-    background-repeat: no-repeat;
-}
-
-/* New class for resizing images */
-.resize-image {
-    max-width: 70%;
-    height: auto;
-    display: block;
-    margin: 0 auto;
-}
-
-.video-background-body {
-    background-color: black; /* Black background */
-    background-image: none;
-    background-attachment: fixed;
-    background-size: cover;
-    background-repeat: no-repeat;
-}
-
-/* Button styles */
-#toggleButton {
-    position: absolute; /* Position the button absolutely within the body context */
-    top: 60px; /* Set top position to push it under the nav bar; adjust as needed */
-    right: 10px; /* Set right position to align with the right side */
-    z-index: 1010; /* Higher z-index than nav to ensure it's on top */
-}
-
-/* Styles for the minting section */
-.mint-section {
-    text-align: center;
-    padding: 20px;
-    background-color: #000; /* Optional: Change to your preferred background color */
-    color: #fff; /* Optional: Change to your preferred text color */
-    margin-top: 50px; /* Add space above the section */
-}
-
-.mint-section h2 {
-    margin-bottom: 20px; /* Space between the heading and image buttons */
-}
-
-.image-button-row {
-    display: flex;
-    justify-content: center; /* Center the images horizontally */
-    align-items: center; /* Align images vertically */
-    gap: 10px; /* Space between images */
-}
-
-.image-button-row a img {
-    width: auto; /* Maintain the original image aspect ratio */
-    height: 100px; /* Example height, adjust as needed */
-    transition: transform 0.3s ease; /* Smooth transformation on hover */
-}
-
-.image-button-row a:hover img {
-    transform: scale(1.1); /* Slightly enlarge images on hover */
-}
-
-/* Add responsive behavior if necessary */
-@media (max-width: 600px) {
-    .image-button-row {
-        flex-direction: column; /* Stack images vertically on smaller screens */
-    }
-
-    .image-button-row a img {
-        margin-bottom: 10px; /* Space between stacked images */
     }
 }

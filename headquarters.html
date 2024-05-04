@@ -5,6 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lawb Headquarters</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Custom style for specific background */
+        body {
+            font-family: 'Impact', sans-serif;
+            color: white;
+            text-align: center;
+            background-image: url('images/oceanfloor.gif'); /* Ensure the path is correct */
+            background-attachment: fixed;
+            background-size: cover;
+            background-repeat: no-repeat;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0 0 20px 0;
+            cursor: url('images/lawbpointer.png'), default; /* Custom cursor with 'default' fallback */
+        }
+
+        .fixed-player {
+            position: fixed;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            width: 90%;     /* Full width of the iframe */
+            height: 24px;    /* Height of the iframe */
+            z-index: 1000;   /* Ensures the player stays on top of other content */
+            border: none;    /* Removes the border */
+        }
+    
+        /* Adjustments for screens smaller than 600px wide */
+        @media (max-width: 600px) {
+            .fixed-player {
+                width: 90%;      /* Make the player full-width on smaller screens */
+                left: 0;          /* Align it to the left edge */
+                right: 0;         /* Align it to the right edge */
+                bottom: 0;        /* Stick it to the bottom */
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation Menu -->
@@ -27,6 +64,9 @@
         <h1>Lawb Headquarters</h1>
         <p>Home of Lawbsters, LawbStarz, LawbStations and Nexus</p>
         <h2>Welcome traveler! You've made it to Lawb Headquarters, updating you with any and all reported Lawb sightings. Stay tuned for further details on the degenerate lobster hijinks.</h2>
+        <a href="images/Lawbsters.vrm" download="Lawbsters.vrm">
+            <button>Streamers: click to download 3D VRM Lawbster</button>
+        </a>
         <img src="images/f.png" alt="LawbNexus">
         <p>LawbNexus distributed<a href="https://lawb.xyz/nexus" target="_blank">April 2024</a></p>
         <img src="images/lawbstation_rare.gif" alt="lawbstation">
@@ -48,29 +88,6 @@
             </a>
         </div>
     </div>
-
-    <style>
-        .fixed-player {
-            position: fixed;
-            left: 10px;
-            right: 10px;
-            bottom: 10px;
-            width: 90%;     /* Full width of the iframe */
-            height: 24px;    /* Height of the iframe */
-            z-index: 1000;   /* Ensures the player stays on top of other content */
-            border: none;    /* Removes the border */
-        }
-    
-        /* Adjustments for screens smaller than 600px wide */
-        @media (max-width: 600px) {
-            .fixed-player {
-                width: 90%;      /* Make the player full-width on smaller screens */
-                left: 0;          /* Align it to the left edge */
-                right: 0;         /* Align it to the right edge */
-                bottom: 0;        /* Stick it to the bottom */
-            }
-        }
-    </style>
     
     <!-- Audius player iframe -->
     <iframe class="fixed-player"
@@ -81,8 +98,5 @@
     </iframe>
     
     <script src="loadImages.js"></script>
-    </body>
-    </html>
-    
 </body>
 </html>
