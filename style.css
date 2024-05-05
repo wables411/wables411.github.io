@@ -55,7 +55,7 @@ nav a, a:link, a:visited, a:hover, a:active {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    max-width: 1200px;
+    max-width: 720px;
     margin: 0 auto;
     padding-top: 100px; /* Top padding to avoid nav bar overlap */
 }
