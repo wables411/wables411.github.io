@@ -3,14 +3,14 @@ body, html {
     font-family: 'Impact', sans-serif;
     color: white;
     text-align: center;
-    background-image: url('/gitsite/images/oceanfloor.gif'); /* Check that this path is correct */
+    background-image: url('/GITSITE/images/oceanfloor.gif'); /* Check that this path is correct */
     background-attachment: fixed;
     background-size: cover;
     background-repeat: no-repeat;
     overflow-x: hidden;
     margin: 0;
     padding: 0 0 20px 0;
-    cursor: url('/gitsite/images/lawbpointer.png'), default; /* Custom cursor with 'default' fallback */
+    cursor: url('/GITSITE/images/lawbpointer.png'), default; /* Custom cursor with 'default' fallback */
 }
 
 /* Apply custom cursor to all elements */
@@ -123,4 +123,10 @@ nav a, a:link, a:visited, a:hover, a:active {
     .main-content img, .link-container img {
         width: 100%;
     }
+}
+
+/* Additional Styles to Limit Image Size to 50% of Page Size */
+.link-container img {
+    max-width: 50vw; /* Limit images to 50% of the viewport width */
+    height: auto; /* Maintain the aspect ratio */
 }
