@@ -129,3 +129,24 @@ nav a, a:link, a:visited, a:hover, a:active {
     max-width: 50vw; /* Limit images to 50% of the viewport width */
     height: auto; /* Maintain the aspect ratio */
 }
+.claim-section {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.claim-section h2 {
+    margin-bottom: 10px;
+}
+
+.image-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.image-container img {
+    max-width: 150px; /* Adjust the size as needed */
+    border: 1px solid #fff;
+    border-radius: 5px;
+}
