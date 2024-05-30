@@ -13,9 +13,50 @@
         }
         #dexscreener-embed iframe {position: absolute; width: 100%; height: 100%; top: 0; left: 0; border: 0;}
         #vrm-container { width: 100%; height: 500px; }
+
+        .soundcloud-player {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent background */
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .soundcloud-player iframe {
+            width: 150px; /* Slightly bigger */
+            height: 80px; /* Increased height */
+        }
+        .soundcloud-player .info {
+            font-size: 10px;
+            color: #cccccc;
+            line-break: anywhere;
+            word-break: normal;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            font-family: Interstate, Lucida Grande, Lucida Sans Unicode, Lucida Sans, Garuda, Verdana, Tahoma, sans-serif;
+            font-weight: 100;
+            margin-left: 10px;
+        }
+        .soundcloud-player .info a {
+            color: #cccccc;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body class="lawbstation-body">
+    <div class="soundcloud-player">
+        <iframe scrolling="no" frameborder="no" allow="autoplay"
+            src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/1817599152&color=%23ff0000&auto_play=false&hide_related=false&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false">
+        </iframe>
+        <div class="info">
+            <a href="https://soundcloud.com/peggygou" title="PEGGY GOU" target="_blank">PEGGY GOU</a> · 
+            <a href="https://soundcloud.com/peggygou/peggy-gou-lobster-telephone-1" title="Peggy Gou - Lobster Telephone (Edit)" target="_blank">Peggy Gou - Lobster Telephone (Edit)</a>
+        </div>
+    </div>
+
     <nav>
         <ul>
             <li><a href="index.html">home</a></li>
