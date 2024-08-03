@@ -45,14 +45,22 @@ function generateMeme() {
     const canvas = document.getElementById('meme-canvas');
     const ctx = canvas.getContext('2d');
     
-    if (img.complete) {
+    if (img.complete && img.naturalWidth > 0) {
+        console.log('Image already loaded, drawing meme');
         drawMeme(img, topText, bottomText, canvas, ctx);
     } else {
-        img.onload = () => drawMeme(img, topText, bottomText, canvas, ctx);
+        img.onload = () => {
+            console.log('Image loaded, drawing meme');
+            drawMeme(img, topText, bottomText, canvas, ctx);
+        };
+        img.onerror = (err) => {
+            console.error('Failed to load image:', err);
+        };
     }
 }
 
 function drawMeme(img, topText, bottomText, canvas, ctx) {
+    console.log('Drawing meme');
     canvas.width = img.width;
     canvas.height = img.height;
     ctx.drawImage(img, 0, 0);
@@ -65,6 +73,7 @@ function drawMeme(img, topText, bottomText, canvas, ctx) {
     ctx.strokeText(topText, canvas.width / 2, 40);
     ctx.fillText(bottomText, canvas.width / 2, canvas.height - 20);
     ctx.strokeText(bottomText, canvas.width / 2, canvas.height - 20);
+    console.log('Meme drawn with top text:', topText, 'and bottom text:', bottomText);
     img.src = canvas.toDataURL();
 }
 
