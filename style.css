@@ -1,4 +1,3 @@
-/* Global styles */
 body, html {
     font-family: 'Impact', sans-serif;
     color: white;
@@ -13,12 +12,10 @@ body, html {
     cursor: url('/images/lawbpointer.png'), default; /* Updated cursor path */
 }
 
-/* Apply custom cursor to all elements */
 *, *::before, *::after {
     cursor: inherit; /* Inherits cursor from body */
 }
 
-/* Navigation bar styles */
 nav {
     background-color: black;
     width: 100%;
@@ -26,8 +23,8 @@ nav {
     top: 0;
     left: 0;
     z-index: 1000;
-    overflow-x: auto; /* Enable horizontal scrolling */
-    white-space: nowrap; /* Keep nav items in one line */
+    overflow-x: auto;
+    white-space: nowrap;
 }
 
 nav ul {
@@ -43,13 +40,12 @@ nav li {
 }
 
 nav a, a:link, a:visited, a:hover, a:active {
-    color: #FF0000; /* Bright red links */
+    color: #FF0000;
     font-weight: bold;
     text-decoration: none;
     padding: 10px 12px;
 }
 
-/* Main content styles - centered container */
 .main-content {
     display: flex;
     flex-direction: column;
@@ -59,7 +55,6 @@ nav a, a:link, a:visited, a:hover, a:active {
     padding-top: 100px; /* Top padding to avoid nav bar overlap */
 }
 
-/* Meme generator specific styles */
 #meme-generator {
     padding: 20px;
     background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black background */
@@ -102,7 +97,6 @@ nav a, a:link, a:visited, a:hover, a:active {
     border-radius: 5px;
 }
 
-/* Responsive styles for mobile devices */
 @media (max-width: 600px) {
     nav a {
         font-size: 14px;
@@ -124,11 +118,11 @@ nav a, a:link, a:visited, a:hover, a:active {
     }
 }
 
-/* Additional Styles to Limit Image Size to 50% of Page Size */
 .link-container img {
     max-width: 50vw; /* Limit images to 50% of the viewport width */
     height: auto; /* Maintain the aspect ratio */
 }
+
 .claim-section {
     text-align: center;
     margin-top: 20px;
