@@ -9,12 +9,16 @@ const collections = {
 function loadCollections() {
     const selector = document.getElementById('collection-selector');
     if (selector) {
+        console.log('Selector found:', selector);
         Object.keys(collections).forEach(key => {
+            console.log('Adding option:', key);
             const option = document.createElement('option');
             option.value = collections[key];
             option.textContent = key;
             selector.appendChild(option);
         });
+    } else {
+        console.error('Collection selector not found.');
     }
 }
 
@@ -28,6 +32,9 @@ function fetchRandomImage() {
     if (img) {
         img.src = imagePath;
         img.style.display = 'block';
+        console.log('Image path:', imagePath);
+    } else {
+        console.error('Generated meme image element not found.');
     }
 }
 
@@ -62,6 +69,7 @@ function drawMeme(img, topText, bottomText, canvas, ctx) {
 }
 
 window.onload = () => {
+    console.log('Window loaded');
     loadCollections();
     document.getElementById('fetch-image').addEventListener('click', fetchRandomImage);
     document.getElementById('generate-meme').addEventListener('click', generateMeme);
