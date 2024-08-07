@@ -1,9 +1,7 @@
 const collections = {
-    "Lawbsters": "ipfs://bafybeibvgwjwuosoov6cfgwoyyrt7vocalqoprjayni6rfepda7bi2jdse/",
-    "Lawbstarz": "ipfs://QmPLgnmY2poaPtoEbnB9m7cv5FdiMXwEpxDjjQ23n5tQDs/",
-    "Lawb Halloween": "ipfs://bafybeiak4wu7ta6gwqlsrdkz23y2pesfara5tarkyxeqq7ilelaf2epauu/",
-    "LawbStation": "ipfs://bafkreifzpik5pvnoo6phgf4uaohufo227lxacnzdfnnivk67bxd2tupidu/",
-    "LawbNexus": "ipfs://QmNsxQaZuEA8pLpp3u5ansz3TwobwTLHxv8LSdxm2jiBz7/"
+    "Lawbsters": "http://127.0.0.1:8080/ipfs/QmRFZ9GtqT6A8cF8ZF1x4fsysRHMhFSk1g8QGEBVn249pQ/",
+    "Lawbstarz": "https://d1kgk9u8ytew77.cloudfront.net/ipfs/QmXx3YeZiupwcQCrtTPdUbrGJA232x9JsQoxmf8iRq2jN6/",
+    "LawbStation": "https://gateway.pinit.io/ipfs/QmR7Sbgf6RCP1mVM6SAnK1Ghbq4iraBjpC3nrvTXFHtmyg/",
 };
 
 function loadCollections() {
