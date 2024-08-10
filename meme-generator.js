@@ -1,7 +1,7 @@
 const collections = {
-    "Lawbsters": "http://127.0.0.1:8080/ipfs/QmRFZ9GtqT6A8cF8ZF1x4fsysRHMhFSk1g8QGEBVn249pQ/",
-    "Lawbstarz": "https://d1kgk9u8ytew77.cloudfront.net/ipfs/QmXx3YeZiupwcQCrtTPdUbrGJA232x9JsQoxmf8iRq2jN6/",
-    "LawbStation": "https://gateway.pinit.io/ipfs/QmR7Sbgf6RCP1mVM6SAnK1Ghbq4iraBjpC3nrvTXFHtmyg/",
+    "Lawbsters": "images/collections/lawb",
+    "LawbStation": "images/collections/station",
+    "Halloween": "images/collections/halloween",
 };
 
 function loadCollections() {
@@ -11,7 +11,7 @@ function loadCollections() {
         Object.keys(collections).forEach(key => {
             console.log('Adding option:', key);
             const option = document.createElement('option');
-            option.value = collections[key];
+            option.value = key; // Store the key to identify the collection
             option.textContent = key;
             selector.appendChild(option);
         });
@@ -21,16 +21,22 @@ function loadCollections() {
 }
 
 function fetchRandomImage() {
-    const collectionKeys = Object.keys(collections);
-    const randomKey = collectionKeys[Math.floor(Math.random() * collectionKeys.length)];
-    const randomCollection = collections[randomKey].replace('ipfs://', 'https://ipfs.io/ipfs/');
-    const filename = 'example.jpg'; // Replace with actual logic to fetch a random file
-    const imagePath = `${randomCollection}${filename}`;
+    const collectionSelector = document.getElementById('collection-selector');
+    const selectedCollectionKey = collectionSelector.value;
+    const selectedCollection = collections[selectedCollectionKey];
+    
+    const imageNumber = document.getElementById('image-number').value || '1'; // Default to '1' if no input
+    const imagePath = `${selectedCollection}${imageNumber}.jpg`; // Build the image path
     const img = document.getElementById('generated-meme');
+    
     if (img) {
         img.src = imagePath;
         img.style.display = 'block';
         console.log('Image path:', imagePath);
+        img.onerror = () => {
+            console.error('Failed to load image:', imagePath);
+            img.style.display = 'none';
+        };
     } else {
         console.error('Generated meme image element not found.');
     }
@@ -40,7 +46,7 @@ function generateMeme() {
     const topText = document.getElementById('top-text').value;
     const bottomText = document.getElementById('bottom-text').value;
     const img = document.getElementById('generated-meme');
-    const canvas = document.getElementById('meme-canvas');
+    const canvas = document.createElement('canvas'); // Create the canvas element
     const ctx = canvas.getContext('2d');
     
     if (img.complete && img.naturalWidth > 0) {
