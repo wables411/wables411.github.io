@@ -5,15 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meme Generator</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Ensure the path to the favicon is correct; replace 'path/to' with the actual path if needed -->
-    <!-- If the full path doesn't work, try relative paths or verify the server's file directory access -->
     <link rel="icon" href="/gitsite/images/lawblogo32.png" type="image/png">
 </head>
 <body>
     <div id="meme-generator">
         <label for="collection-selector">Select Collection:</label>
         <select id="collection-selector">
-            <!-- Options will be added dynamically in memegen.js -->
+            <!-- Options will be added dynamically in meme-generator.js -->
         </select>
 
         <label for="image-number">Image Number:</label>
@@ -31,6 +29,6 @@
         
         <img id="generated-meme" src="" alt="Generated Meme" style="display:none;">
     </div>
-    <script src="memegen.js"></script>
+    <script src="meme-generator.js"></script>
 </body>
 </html>

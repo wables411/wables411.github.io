@@ -1,7 +1,7 @@
 const collections = {
-    "Lawbsters": "images/collections/lawb",
-    "LawbStation": "images/collections/station",
-    "Halloween": "images/collections/halloween",
+    "Lawbsters": "images/collections/Lawbsters",
+    "LawbStation": "images/collections/LawbStation",
+    "Halloween": "images/collections/Halloween",
 };
 
 function loadCollections() {
@@ -22,6 +22,11 @@ function loadCollections() {
 
 function fetchRandomImage() {
     const collectionSelector = document.getElementById('collection-selector');
+    if (!collectionSelector) {
+        console.error('Collection selector not found.');
+        return;
+    }
+    
     const selectedCollectionKey = collectionSelector.value;
     const selectedCollection = collections[selectedCollectionKey];
     
@@ -39,27 +44,6 @@ function fetchRandomImage() {
         };
     } else {
         console.error('Generated meme image element not found.');
-    }
-}
-
-function generateMeme() {
-    const topText = document.getElementById('top-text').value;
-    const bottomText = document.getElementById('bottom-text').value;
-    const img = document.getElementById('generated-meme');
-    const canvas = document.createElement('canvas'); // Create the canvas element
-    const ctx = canvas.getContext('2d');
-    
-    if (img.complete && img.naturalWidth > 0) {
-        console.log('Image already loaded, drawing meme');
-        drawMeme(img, topText, bottomText, canvas, ctx);
-    } else {
-        img.onload = () => {
-            console.log('Image loaded, drawing meme');
-            drawMeme(img, topText, bottomText, canvas, ctx);
-        };
-        img.onerror = (err) => {
-            console.error('Failed to load image:', err);
-        };
     }
 }
 
