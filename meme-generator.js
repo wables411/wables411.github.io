@@ -47,6 +47,27 @@ function fetchRandomImage() {
     }
 }
 
+function generateMeme() {
+    const topText = document.getElementById('top-text').value;
+    const bottomText = document.getElementById('bottom-text').value;
+    const img = document.getElementById('generated-meme');
+    const canvas = document.createElement('canvas'); // Create the canvas element
+    const ctx = canvas.getContext('2d');
+    
+    if (img.complete && img.naturalWidth > 0) {
+        console.log('Image already loaded, drawing meme');
+        drawMeme(img, topText, bottomText, canvas, ctx);
+    } else {
+        img.onload = () => {
+            console.log('Image loaded, drawing meme');
+            drawMeme(img, topText, bottomText, canvas, ctx);
+        };
+        img.onerror = (err) => {
+            console.error('Failed to load image:', err);
+        };
+    }
+}
+
 function drawMeme(img, topText, bottomText, canvas, ctx) {
     console.log('Drawing meme');
     canvas.width = img.width;
