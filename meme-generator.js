@@ -4,6 +4,22 @@ const collections = {
     "Halloween": "https://raw.githubusercontent.com/wables411/wables411.github.io/main/images/collections/Halloween/"
 };
 
+function loadCollections() {
+    const selector = document.getElementById('collection-selector');
+    if (selector) {
+        console.log('Selector found:', selector);
+        Object.keys(collections).forEach(key => {
+            console.log('Adding option:', key);
+            const option = document.createElement('option');
+            option.value = key; // Store the key to identify the collection
+            option.textContent = key;
+            selector.appendChild(option);
+        });
+    } else {
+        console.error('Collection selector not found.');
+    }
+}
+
 function fetchRandomImage() {
     const collectionSelector = document.getElementById('collection-selector');
     if (!collectionSelector) {
@@ -82,7 +98,7 @@ function drawMeme(img, topText, bottomText, canvas, ctx) {
 
 window.onload = () => {
     console.log('Window loaded');
-    loadCollections();
+    loadCollections(); // Load the collections into the selector
     document.getElementById('fetch-image').addEventListener('click', fetchRandomImage);
     document.getElementById('generate-meme').addEventListener('click', generateMeme);
 };
