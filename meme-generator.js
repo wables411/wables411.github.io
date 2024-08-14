@@ -1,24 +1,8 @@
 const collections = {
-    "Lawbsters": "images/collections/Lawbsters",
-    "LawbStation": "images/collections/LawbStation",
-    "Halloween": "images/collections/Halloween",
+    "Lawbsters": "https://raw.githubusercontent.com/wables411/wables411.github.io/main/images/collections/Lawbsters/",
+    "LawbStation": "https://raw.githubusercontent.com/wables411/wables411.github.io/main/images/collections/LawbStation/",
+    "Halloween": "https://raw.githubusercontent.com/wables411/wables411.github.io/main/images/collections/Halloween/"
 };
-
-function loadCollections() {
-    const selector = document.getElementById('collection-selector');
-    if (selector) {
-        console.log('Selector found:', selector);
-        Object.keys(collections).forEach(key => {
-            console.log('Adding option:', key);
-            const option = document.createElement('option');
-            option.value = key; // Store the key to identify the collection
-            option.textContent = key;
-            selector.appendChild(option);
-        });
-    } else {
-        console.error('Collection selector not found.');
-    }
-}
 
 function fetchRandomImage() {
     const collectionSelector = document.getElementById('collection-selector');
@@ -26,14 +10,24 @@ function fetchRandomImage() {
         console.error('Collection selector not found.');
         return;
     }
-    
+
     const selectedCollectionKey = collectionSelector.value;
     const selectedCollection = collections[selectedCollectionKey];
+
+    // Adjust maxImages according to your actual counts
+    const maxImages = {
+        "Lawbsters": 33, // or the actual number of images in Lawbsters
+        "LawbStation": 25,
+        "Halloween": 20
+    };
+
+    // Get a random image number based on the selected collection
+    const randomImageNumber = Math.floor(Math.random() * maxImages[selectedCollectionKey]) + 1;
     
-    const imageNumber = document.getElementById('image-number').value || '1'; // Default to '1' if no input
-    const imagePath = `${selectedCollection}${imageNumber}.jpg`; // Build the image path
+    // Construct the image path dynamically based on the selected collection
+    const imagePath = `${selectedCollection}${selectedCollectionKey}${randomImageNumber}.jpg`;
+
     const img = document.getElementById('generated-meme');
-    
     if (img) {
         img.src = imagePath;
         img.style.display = 'block';
@@ -53,7 +47,7 @@ function generateMeme() {
     const img = document.getElementById('generated-meme');
     const canvas = document.createElement('canvas'); // Create the canvas element
     const ctx = canvas.getContext('2d');
-    
+
     if (img.complete && img.naturalWidth > 0) {
         console.log('Image already loaded, drawing meme');
         drawMeme(img, topText, bottomText, canvas, ctx);
