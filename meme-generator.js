@@ -22,8 +22,8 @@ function loadCollections() {
 
 function fetchRandomImage() {
     const collectionSelector = document.getElementById('collection-selector');
-    if (!collectionSelector || !collectionSelector.value) {
-        console.error('No collection selected or selector not found.');
+    if (!collectionSelector) {
+        console.error('Collection selector not found.');
         return;
     }
 
@@ -59,7 +59,7 @@ function generateMeme() {
     const topText = document.getElementById('top-text').value;
     const bottomText = document.getElementById('bottom-text').value;
     const img = document.getElementById('generated-meme');
-    const canvas = document.getElementById('meme-canvas');
+    const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
     if (img.complete && img.naturalWidth > 0) {
@@ -91,21 +91,13 @@ function drawMeme(img, topText, bottomText, canvas, ctx) {
     ctx.fillText(bottomText, canvas.width / 2, canvas.height - 20);
     ctx.strokeText(bottomText, canvas.width / 2, canvas.height - 20);
     console.log('Meme drawn with top text:', topText, 'and bottom text:', bottomText);
+    // Removing the attempt to use toDataURL due to tainted canvas error
+    // img.src = canvas.toDataURL();
 }
 
 window.onload = () => {
     console.log('Window loaded');
     loadCollections();
-    const fetchButton = document.getElementById('fetch-image');
-    if (fetchButton) {
-        fetchButton.addEventListener('click', fetchRandomImage);
-    } else {
-        console.error('Fetch image button not found.');
-    }
-    const generateButton = document.getElementById('generate-meme');
-    if (generateButton) {
-        generateButton.addEventListener('click', generateMeme);
-    } else {
-        console.error('Generate meme button not found.');
-    }
+    document.getElementById('fetch-image').addEventListener('click', fetchRandomImage);
+    document.getElementById('generate-meme').addEventListener('click', generateMeme);
 };
