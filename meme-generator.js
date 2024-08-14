@@ -37,11 +37,10 @@ function fetchRandomImage() {
         "Halloween": 100
     };
 
-    // Get a random image number based on the selected collection
-    const randomImageNumber = Math.floor(Math.random() * maxImages[selectedCollectionKey]) + 1;
+    const imageNumberInput = document.getElementById('image-number').value;
+    const imageNumber = imageNumberInput ? imageNumberInput : Math.floor(Math.random() * maxImages[selectedCollectionKey]) + 1;
     
-    // Construct the image path dynamically based on the selected collection
-    const imagePath = `${selectedCollection}${selectedCollectionKey}${randomImageNumber}.jpg`;
+    const imagePath = `${selectedCollection}${selectedCollectionKey}${imageNumber}.jpg`;
 
     const img = document.getElementById('generated-meme');
     if (img) {
@@ -93,12 +92,14 @@ function drawMeme(img, topText, bottomText, canvas, ctx) {
     ctx.fillText(bottomText, canvas.width / 2, canvas.height - 20);
     ctx.strokeText(bottomText, canvas.width / 2, canvas.height - 20);
     console.log('Meme drawn with top text:', topText, 'and bottom text:', bottomText);
-    img.src = canvas.toDataURL();
+    // Removing the attempt to use toDataURL due to tainted canvas error
+    // img.src = canvas.toDataURL();
 }
 
 window.onload = () => {
     console.log('Window loaded');
-    loadCollections(); // Load the collections into the selector
+    loadCollections();
     document.getElementById('fetch-image').addEventListener('click', fetchRandomImage);
     document.getElementById('generate-meme').addEventListener('click', generateMeme);
 };
+
