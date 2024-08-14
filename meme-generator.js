@@ -11,7 +11,7 @@ function loadCollections() {
         Object.keys(collections).forEach(key => {
             console.log('Adding option:', key);
             const option = document.createElement('option');
-            option.value = key; // Store the key to identify the collection
+            option.value = key;
             option.textContent = key;
             selector.appendChild(option);
         });
@@ -30,9 +30,8 @@ function fetchRandomImage() {
     const selectedCollectionKey = collectionSelector.value;
     const selectedCollection = collections[selectedCollectionKey];
 
-    // Adjust maxImages according to your actual counts
     const maxImages = {
-        "Lawbsters": 100, // or the actual number of images in Lawbsters
+        "Lawbsters": 100,
         "LawbStation": 100,
         "Halloween": 100
     };
@@ -60,7 +59,7 @@ function generateMeme() {
     const topText = document.getElementById('top-text').value;
     const bottomText = document.getElementById('bottom-text').value;
     const img = document.getElementById('generated-meme');
-    const canvas = document.createElement('canvas'); // Create the canvas element
+    const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
     if (img.complete && img.naturalWidth > 0) {
@@ -102,4 +101,3 @@ window.onload = () => {
     document.getElementById('fetch-image').addEventListener('click', fetchRandomImage);
     document.getElementById('generate-meme').addEventListener('click', generateMeme);
 };
-
