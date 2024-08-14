@@ -59,7 +59,7 @@ function generateMeme() {
     const topText = document.getElementById('top-text').value;
     const bottomText = document.getElementById('bottom-text').value;
     const img = document.getElementById('generated-meme');
-    const canvas = document.createElement('canvas');
+    const canvas = document.getElementById('meme-canvas');
     const ctx = canvas.getContext('2d');
 
     if (img.complete && img.naturalWidth > 0) {
@@ -91,8 +91,6 @@ function drawMeme(img, topText, bottomText, canvas, ctx) {
     ctx.fillText(bottomText, canvas.width / 2, canvas.height - 20);
     ctx.strokeText(bottomText, canvas.width / 2, canvas.height - 20);
     console.log('Meme drawn with top text:', topText, 'and bottom text:', bottomText);
-    // Removing the attempt to use toDataURL due to tainted canvas error
-    // img.src = canvas.toDataURL();
 }
 
 window.onload = () => {
