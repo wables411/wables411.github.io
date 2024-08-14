@@ -22,8 +22,8 @@ function loadCollections() {
 
 function fetchRandomImage() {
     const collectionSelector = document.getElementById('collection-selector');
-    if (!collectionSelector) {
-        console.error('Collection selector not found.');
+    if (!collectionSelector || !collectionSelector.value) {
+        console.error('No collection selected or selector not found.');
         return;
     }
 
@@ -96,6 +96,16 @@ function drawMeme(img, topText, bottomText, canvas, ctx) {
 window.onload = () => {
     console.log('Window loaded');
     loadCollections();
-    document.getElementById('fetch-image').addEventListener('click', fetchRandomImage);
-    document.getElementById('generate-meme').addEventListener('click', generateMeme);
+    const fetchButton = document.getElementById('fetch-image');
+    if (fetchButton) {
+        fetchButton.addEventListener('click', fetchRandomImage);
+    } else {
+        console.error('Fetch image button not found.');
+    }
+    const generateButton = document.getElementById('generate-meme');
+    if (generateButton) {
+        generateButton.addEventListener('click', generateMeme);
+    } else {
+        console.error('Generate meme button not found.');
+    }
 };
