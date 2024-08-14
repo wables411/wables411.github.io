@@ -16,9 +16,9 @@ function fetchRandomImage() {
 
     // Adjust maxImages according to your actual counts
     const maxImages = {
-        "Lawbsters": 33, // or the actual number of images in Lawbsters
-        "LawbStation": 25,
-        "Halloween": 20
+        "Lawbsters": 100, // or the actual number of images in Lawbsters
+        "LawbStation": 100,
+        "Halloween": 100
     };
 
     // Get a random image number based on the selected collection
