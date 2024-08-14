@@ -2,18 +2,18 @@ body, html {
     font-family: 'Impact', sans-serif;
     color: white;
     text-align: center;
-    background-image: url('/images/oceanfloor.gif'); /* Updated path */
+    background-image: url('/images/oceanfloor.gif');
     background-attachment: fixed;
     background-size: cover;
     background-repeat: no-repeat;
     overflow-x: hidden;
     margin: 0;
     padding: 0 0 20px 0;
-    cursor: url('/images/lawbpointer.png'), default; /* Updated cursor path */
+    cursor: url('/images/lawbpointer.png'), default;
 }
 
 *, *::before, *::after {
-    cursor: inherit; /* Inherits cursor from body */
+    cursor: inherit;
 }
 
 nav {
@@ -52,12 +52,12 @@ nav a, a:link, a:visited, a:hover, a:active {
     justify-content: center;
     align-items: center;
     width: 100%;
-    padding-top: 100px; /* Top padding to avoid nav bar overlap */
+    padding-top: 100px;
 }
 
 #meme-generator {
     padding: 20px;
-    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black background */
+    background-color: rgba(0, 0, 0, 0.7);
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     margin: auto;
@@ -65,19 +65,22 @@ nav a, a:link, a:visited, a:hover, a:active {
 }
 
 #meme-generator label {
+    display: block;
     margin-top: 10px;
+    margin-bottom: 5px;
 }
 
 #meme-generator input[type="text"], #meme-generator input[type="number"] {
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 4px;
-    margin-top: 5px;
-    width: calc(100% - 20px);
+    margin-bottom: 10px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 #meme-generator button {
-    background-color: #FF0000; /* Bright red, matching nav links */
+    background-color: #FF0000;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -92,7 +95,7 @@ nav a, a:link, a:visited, a:hover, a:active {
 }
 
 #meme-generator img {
-    max-width: 100%; /* Ensure images are not bigger than their container */
+    max-width: 100%;
     margin-top: 20px;
     border-radius: 5px;
 }
@@ -103,44 +106,12 @@ nav a, a:link, a:visited, a:hover, a:active {
         padding: 8px 10px;
     }
 
-    .link-container, .main-content, #meme-generator {
+    .main-content, #meme-generator {
         flex-direction: column;
         align-items: center;
-    }
-
-    .link-text, .resize-image, .video-background-body {
-        text-align: center;
-        margin-right: 0;
     }
 
     .main-content img, .link-container img {
         width: 100%;
     }
-}
-
-.link-container img {
-    max-width: 50vw; /* Limit images to 50% of the viewport width */
-    height: auto; /* Maintain the aspect ratio */
-}
-
-.claim-section {
-    text-align: center;
-    margin-top: 20px;
-}
-
-.claim-section h2 {
-    margin-bottom: 10px;
-}
-
-.image-container {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.image-container img {
-    max-width: 150px; /* Adjust the size as needed */
-    border: 1px solid #fff;
-    border-radius: 5px;
 }
