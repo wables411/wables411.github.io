@@ -16,12 +16,12 @@
             justify-content: center;
             align-items: center;
             gap: 20px; /* Add some space between images */
-            flex-wrap: wrap;
+            flex-wrap: nowrap; /* Prevent wrapping of images */
         }
         .image-container img {
-            max-width: 25%; /* Set image size to 25% of the container's width */
-            height: auto;
-            object-fit: contain; /* Maintain aspect ratio */
+            width: 150px; /* Set a fixed width for all images */
+            height: 150px; /* Set a fixed height for all images */
+            object-fit: cover; /* Ensure images fill the space while maintaining aspect ratio */
         }
     </style>
 </head>
