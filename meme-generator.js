@@ -32,11 +32,19 @@ async function fetchImage() {
     }
 
     const selectedCollectionKey = collectionSelector.value;
+    if (!selectedCollectionKey) {
+        throw new Error('No collection selected. Please select a collection.');
+    }
+
     const selectedCollection = collections[selectedCollectionKey];
+    if (!selectedCollection) {
+        throw new Error(`Invalid collection: ${selectedCollectionKey}`);
+    }
+
     const maxImages = 100; // Assuming all collections have 100 images
 
     let imageNumber;
-    if (imageNumberInput.value) {
+    if (imageNumberInput && imageNumberInput.value) {
         imageNumber = parseInt(imageNumberInput.value);
         if (isNaN(imageNumber) || imageNumber < 1 || imageNumber > maxImages) {
             throw new Error(`Invalid image number. Please enter a number between 1 and ${maxImages}.`);
@@ -102,34 +110,49 @@ window.onload = () => {
     console.log('Window loaded');
     loadCollections();
     
-    document.getElementById('fetch-image').addEventListener('click', async () => {
-        try {
-            const imageUrl = await fetchImage();
+    const fetchImageButton = document.getElementById('fetch-image');
+    const generateMemeButton = document.getElementById('generate-meme');
+
+    if (fetchImageButton) {
+        fetchImageButton.addEventListener('click', async () => {
+            try {
+                const imageUrl = await fetchImage();
+                const img = document.getElementById('generated-meme');
+                if (img) {
+                    img.src = imageUrl;
+                    img.style.display = 'block';
+                } else {
+                    console.error('Generated meme image element not found.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message);
+            }
+        });
+    } else {
+        console.error('Fetch image button not found.');
+    }
+
+    if (generateMemeButton) {
+        generateMemeButton.addEventListener('click', async () => {
+            const topText = document.getElementById('top-text')?.value || '';
+            const bottomText = document.getElementById('bottom-text')?.value || '';
             const img = document.getElementById('generated-meme');
-            img.src = imageUrl;
-            img.style.display = 'block';
-        } catch (error) {
-            console.error('Error:', error);
-            alert(error.message);
-        }
-    });
 
-    document.getElementById('generate-meme').addEventListener('click', async () => {
-        const topText = document.getElementById('top-text').value;
-        const bottomText = document.getElementById('bottom-text').value;
-        const img = document.getElementById('generated-meme');
+            if (!img || !img.src) {
+                alert('Please fetch an image first.');
+                return;
+            }
 
-        if (!img.src) {
-            alert('Please fetch an image first.');
-            return;
-        }
-
-        try {
-            const memeUrl = await generateMeme(img.src, topText, bottomText);
-            img.src = memeUrl;
-        } catch (error) {
-            console.error('Error generating meme:', error);
-            alert('Error generating meme. Please try again.');
-        }
-    });
+            try {
+                const memeUrl = await generateMeme(img.src, topText, bottomText);
+                img.src = memeUrl;
+            } catch (error) {
+                console.error('Error generating meme:', error);
+                alert('Error generating meme. Please try again.');
+            }
+        });
+    } else {
+        console.error('Generate meme button not found.');
+    }
 };
