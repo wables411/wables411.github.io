@@ -80,16 +80,17 @@ function generateMeme(imageUrl, topText, bottomText) {
             canvas.width = img.width;
             canvas.height = img.height;
             
-            // Draw image
+            // Clear the canvas and draw the image
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
             
             // Configure text
-            const fontSize = 75; // Increased from 30 to 45 (50% larger)
+            const fontSize = 75;
             ctx.font = `${fontSize}px Impact`;
             ctx.textAlign = 'center';
             ctx.fillStyle = 'white';
             ctx.strokeStyle = 'black';
-            ctx.lineWidth = 3; // Increased from 2 to 3 for better visibility with larger font
+            ctx.lineWidth = 3;
 
             // Function to wrap text
             function wrapText(text, maxWidth) {
@@ -141,14 +142,15 @@ window.onload = () => {
     
     const fetchImageButton = document.getElementById('fetch-image');
     const generateMemeButton = document.getElementById('generate-meme');
+    let originalImageUrl = null;
 
     if (fetchImageButton) {
         fetchImageButton.addEventListener('click', async () => {
             try {
-                const imageUrl = await fetchImage();
+                originalImageUrl = await fetchImage();
                 const img = document.getElementById('generated-meme');
                 if (img) {
-                    img.src = imageUrl;
+                    img.src = originalImageUrl;
                     img.style.display = 'block';
                 } else {
                     console.error('Generated meme image element not found.');
@@ -168,13 +170,13 @@ window.onload = () => {
             const bottomText = document.getElementById('bottom-text')?.value || '';
             const img = document.getElementById('generated-meme');
 
-            if (!img || !img.src) {
+            if (!originalImageUrl) {
                 alert('Please fetch an image first.');
                 return;
             }
 
             try {
-                const memeUrl = await generateMeme(img.src, topText, bottomText);
+                const memeUrl = await generateMeme(originalImageUrl, topText, bottomText);
                 img.src = memeUrl;
             } catch (error) {
                 console.error('Error generating meme:', error);
