@@ -84,7 +84,7 @@ function generateMeme(imageUrl, topText, bottomText) {
             ctx.drawImage(img, 0, 0);
             
             // Configure text
-            const fontSize = 150; // Increased from 30 to 45 (50% larger)
+            const fontSize = 75; // Increased from 30 to 45 (50% larger)
             ctx.font = `${fontSize}px Impact`;
             ctx.textAlign = 'center';
             ctx.fillStyle = 'white';
