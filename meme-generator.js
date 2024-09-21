@@ -84,19 +84,48 @@ function generateMeme(imageUrl, topText, bottomText) {
             ctx.drawImage(img, 0, 0);
             
             // Configure text
-            ctx.font = '30px Impact';
+            const fontSize = 45; // Increased from 30 to 45 (50% larger)
+            ctx.font = `${fontSize}px Impact`;
             ctx.textAlign = 'center';
             ctx.fillStyle = 'white';
             ctx.strokeStyle = 'black';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3; // Increased from 2 to 3 for better visibility with larger font
+
+            // Function to wrap text
+            function wrapText(text, maxWidth) {
+                let words = text.split(' ');
+                let lines = [];
+                let currentLine = words[0];
+
+                for (let i = 1; i < words.length; i++) {
+                    let testLine = currentLine + ' ' + words[i];
+                    let metrics = ctx.measureText(testLine);
+                    let testWidth = metrics.width;
+
+                    if (testWidth > maxWidth) {
+                        lines.push(currentLine);
+                        currentLine = words[i];
+                    } else {
+                        currentLine = testLine;
+                    }
+                }
+                lines.push(currentLine);
+                return lines;
+            }
 
             // Draw top text
-            ctx.fillText(topText, canvas.width / 2, 40);
-            ctx.strokeText(topText, canvas.width / 2, 40);
+            let topLines = wrapText(topText, canvas.width - 20);
+            topLines.forEach((line, index) => {
+                ctx.fillText(line, canvas.width / 2, fontSize + (index * fontSize));
+                ctx.strokeText(line, canvas.width / 2, fontSize + (index * fontSize));
+            });
 
             // Draw bottom text
-            ctx.fillText(bottomText, canvas.width / 2, canvas.height - 20);
-            ctx.strokeText(bottomText, canvas.width / 2, canvas.height - 20);
+            let bottomLines = wrapText(bottomText, canvas.width - 20);
+            bottomLines.reverse().forEach((line, index) => {
+                ctx.fillText(line, canvas.width / 2, canvas.height - 10 - (index * fontSize));
+                ctx.strokeText(line, canvas.width / 2, canvas.height - 10 - (index * fontSize));
+            });
 
             resolve(canvas.toDataURL());
         };
