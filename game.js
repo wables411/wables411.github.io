@@ -1,3 +1,12 @@
+document.createElement = (function(create) {
+  return function() {
+    var element = create.apply(this, arguments);
+    if (element.tagName.toLowerCase() === 'canvas') {
+      element.setAttribute('willreadfrequently', '');
+    }
+    return element;
+  };
+})(document.createElement);
 const config = {
     type: Phaser.AUTO,
     width: 800,
