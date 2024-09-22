@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>we $lawb you</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="path/to/favicon.ico" type="image/x-icon">
     <style>
         #dexscreener-embed {position: relative; width: 100%; padding-bottom: 125%;}
         @media (min-width: 1400px) {
@@ -45,7 +44,6 @@
             text-decoration: none;
         }
 
-        /* New styles for the game section */
         .game-section {
             padding: 20px;
             background-color: rgba(0, 0, 0, 0.7);
@@ -114,15 +112,12 @@
             <p>THERE IS NO MEME WE $LAWB YOU</p>
             <p>ca: 65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6</p>
             
-            <!-- Replaced TypeForm Embed -->
             <div data-tf-live="01J47TV9D4K8X30KBPPJKG41EX"></div>
-            <script src="//embed.typeform.com/next/embed.js"></script>
             
             <div id="dexscreener-embed">
                 <iframe src="https://dexscreener.com/solana/DTxVuYphEobWo66afEfP9MfGt2E14C6UfeXnvXWnvep?embed=1&theme=dark&info=0"></iframe>
             </div>
 
-            <!-- New Game Section -->
             <div class="game-section">
                 <h2>Play Lawb Emoji Catcher</h2>
                 <p>Catch falling emojis with your Lawb! How many can you catch in 2 minutes?</p>
@@ -133,14 +128,12 @@
         </div>
     </div>
 
-    <!-- Load Phaser library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.55.2/phaser.min.js"></script>
-    
-    <!-- Load game script -->
     <script src="main/game.js"></script>
+    <script src="//embed.typeform.com/next/embed.js"></script>
 
     <script type="module">
-        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
+        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
         import { VRMLoader } from 'https://cdn.jsdelivr.net/npm/@pixiv/three-vrm/lib/three-vrm.module.js';
     
         const scene = new THREE.Scene();
@@ -149,17 +142,15 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.getElementById('vrm-container').appendChild(renderer.domElement);
     
-        // Add lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
         const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
         directionalLight.position.set(0, 1, 0);
         scene.add(directionalLight);
     
-        // Load VRM
         const loader = new VRMLoader();
         loader.load(
-            'images/Lawbsters.vrm', // Make sure the path is correct
+            'images/Lawbsters.vrm',
             (vrm) => {
                 scene.add(vrm.scene);
                 camera.position.set(0, 1, 3);
@@ -172,7 +163,7 @@
         camera.position.z = 5;
     
         function animate() {
-            requestAnimationRequest(animate);
+            requestAnimationFrame(animate);
             renderer.render(scene, camera);
         }
         animate();
