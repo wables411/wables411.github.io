@@ -36,6 +36,8 @@ let score = 0;
 let scoreText;
 let timeLeft = 120; // 2 minutes
 let timeText;
+let background;
+let isGameOver = false;
 
 document.getElementById('game-container').addEventListener('click', startGame);
 
@@ -46,13 +48,27 @@ function startGame() {
 }
 
 function preload() {
-    this.load.image('background', 'images/oceanfloor.gif');
     this.load.image('lawb', 'images/69lawbster.png');
     this.load.image('emoji', 'images/clownemoji.png');
+    this.load.spritesheet('background', 'images/oceanfloor.gif', { 
+        frameWidth: 800, 
+        frameHeight: 600 
+    });
 }
 
 function create() {
-    this.add.image(400, 300, 'background');
+    // Create animated background
+    background = this.add.sprite(400, 300, 'background');
+    background.setScale(config.width / background.width, config.height / background.height);
+    
+    this.anims.create({
+        key: 'backgroundAnim',
+        frames: this.anims.generateFrameNumbers('background'),
+        frameRate: 10,
+        repeat: -1
+    });
+    background.play('backgroundAnim');
+
     player = this.physics.add.sprite(400, 550, 'lawb');
     player.setCollideWorldBounds(true);
     emojis = this.physics.add.group();
@@ -64,30 +80,38 @@ function create() {
     this.time.addEvent({ delay: 1500, callback: spawnEmoji, callbackScope: this, loop: true });
 
     this.input.on('pointermove', function (pointer) {
-        player.x = Phaser.Math.Clamp(pointer.x, player.width / 2, config.width - player.width / 2);
+        if (!isGameOver) {
+            player.x = Phaser.Math.Clamp(pointer.x, player.width / 2, config.width - player.width / 2);
+        }
     }, this);
+
+    isGameOver = false;
 }
 
 function update() {
-    this.physics.overlap(player, emojis, collectEmoji, null, this);
+    if (!isGameOver) {
+        this.physics.overlap(player, emojis, collectEmoji, null, this);
+    }
 }
 
 function spawnEmoji() {
-    const x = Phaser.Math.Between(0, 800);
-    const emoji = emojis.create(x, 0, 'emoji');
-    emoji.setBounce(0.7);
-    emoji.setCollideWorldBounds(true);
-    emoji.setVelocity(Phaser.Math.Between(-100, 100), 20);
-    
-    this.time.addEvent({
-        delay: 10000, // 10 seconds
-        callback: () => {
-            if (emoji.active) {
-                emoji.destroy();
-            }
-        },
-        loop: false
-    });
+    if (!isGameOver) {
+        const x = Phaser.Math.Between(0, 800);
+        const emoji = emojis.create(x, 0, 'emoji');
+        emoji.setBounce(0.7);
+        emoji.setCollideWorldBounds(true);
+        emoji.setVelocity(Phaser.Math.Between(-100, 100), 20);
+        
+        this.time.addEvent({
+            delay: 10000, // 10 seconds
+            callback: () => {
+                if (emoji.active) {
+                    emoji.destroy();
+                }
+            },
+            loop: false
+        });
+    }
 }
 
 function collectEmoji(player, emoji) {
@@ -97,28 +121,36 @@ function collectEmoji(player, emoji) {
 }
 
 function updateTimer() {
-    timeLeft--;
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    timeText.setText(`Time: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
-    
-    if (timeLeft <= 0) {
-        gameOver.call(this);
+    if (!isGameOver) {
+        timeLeft--;
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timeText.setText(`Time: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+        
+        if (timeLeft <= 0) {
+            gameOver.call(this);
+        }
     }
 }
 
 function gameOver() {
+    isGameOver = true;
     this.physics.pause();
+    
+    emojis.children.entries.forEach(emoji => {
+        emoji.setVelocity(0, 0);
+    });
     
     const gameOverText = this.add.text(400, 250, 'Game Over', { fontSize: '64px', fill: '#FF0000' }).setOrigin(0.5);
     const scoreDisplay = this.add.text(400, 320, `Final Score: ${score}`, { fontSize: '32px', fill: '#FFFFFF' }).setOrigin(0.5);
     
-    const restartButton = this.add.text(400, 400, 'Restart', { fontSize: '32px', fill: '#00FF00' })
+    const restartButton = this.add.text(400, 400, 'Restart Game', { fontSize: '32px', fill: '#00FF00' })
         .setOrigin(0.5)
         .setInteractive()
         .on('pointerdown', () => {
             this.scene.restart();
             score = 0;
             timeLeft = 120;
+            isGameOver = false;
         });
 }
