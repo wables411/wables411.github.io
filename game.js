@@ -7,6 +7,7 @@ document.createElement = (function(create) {
     return element;
   };
 })(document.createElement);
+
 const config = {
     type: Phaser.AUTO,
     width: 800,
