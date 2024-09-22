@@ -9,7 +9,7 @@ document.createElement = (function(create) {
 })(document.createElement);
 
 const config = {
-    type: Phaser.AUTO,
+    type: Phaser.CANVAS, // Explicitly set render type
     width: 800,
     height: 600,
     parent: 'game-container',
@@ -29,8 +29,7 @@ const config = {
     }
 };
 
-const game = new Phaser.Game(config);
-
+let game;
 let player;
 let emojis;
 let cursors;
@@ -38,6 +37,15 @@ let score = 0;
 let scoreText;
 let timeLeft = 120; // 2 minutes
 let timeText;
+
+// Initialize game after user interaction
+document.getElementById('game-container').addEventListener('click', startGame);
+
+function startGame() {
+    if (!game) {
+        game = new Phaser.Game(config);
+    }
+}
 
 function preload() {
     this.load.image('background', 'images/lawbocean1.gif');
