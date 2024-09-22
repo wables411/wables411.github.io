@@ -11,9 +11,11 @@ body, html {
     padding: 0 0 20px 0;
     cursor: url('/images/lawbpointer.png'), default;
 }
+
 *, *::before, *::after {
     cursor: inherit;
 }
+
 nav {
     background-color: black;
     width: 100%;
@@ -24,6 +26,7 @@ nav {
     overflow-x: auto;
     white-space: nowrap;
 }
+
 nav ul {
     list-style-type: none;
     padding: 0;
@@ -31,15 +34,44 @@ nav ul {
     display: flex;
     justify-content: center;
 }
+
 nav li {
     display: inline-block;
 }
+
 nav a, a:link, a:visited, a:hover, a:active {
     color: #FF0000;
     font-weight: bold;
     text-decoration: none;
     padding: 10px 12px;
 }
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 20px;
+}
+
+.link-container {
+    margin-bottom: 20px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.link-text {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+.index-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
 .main-content {
     display: flex;
     flex-direction: column;
@@ -48,6 +80,7 @@ nav a, a:link, a:visited, a:hover, a:active {
     width: 100%;
     padding-top: 100px;
 }
+
 #meme-generator {
     padding: 20px;
     background-color: rgba(0, 0, 0, 0.7);
@@ -56,11 +89,13 @@ nav a, a:link, a:visited, a:hover, a:active {
     margin: auto;
     max-width: 600px;
 }
+
 #meme-generator label {
     display: block;
     margin-top: 10px;
     margin-bottom: 5px;
 }
+
 #meme-generator input[type="text"], #meme-generator input[type="number"] {
     padding: 8px;
     border: 1px solid #ccc;
@@ -69,6 +104,7 @@ nav a, a:link, a:visited, a:hover, a:active {
     width: 100%;
     box-sizing: border-box;
 }
+
 #meme-generator button {
     background-color: #FF0000;
     color: white;
@@ -79,16 +115,17 @@ nav a, a:link, a:visited, a:hover, a:active {
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
+
 #meme-generator button:hover {
     background-color: #cc0000;
 }
+
 #meme-generator img {
     max-width: 100%;
     margin-top: 20px;
     border-radius: 5px;
 }
 
-/* New styles for the game section */
 .game-section {
     padding: 20px;
     background-color: rgba(0, 0, 0, 0.7);
@@ -97,13 +134,16 @@ nav a, a:link, a:visited, a:hover, a:active {
     margin: 20px auto;
     max-width: 800px;
 }
+
 .game-section h2 {
     color: #FF0000;
     margin-bottom: 10px;
 }
+
 .game-section p {
     margin-bottom: 20px;
 }
+
 #game-container { 
     width: 100%;
     max-width: 800px;
@@ -131,5 +171,8 @@ nav a, a:link, a:visited, a:hover, a:active {
     }
     #game-container {
         height: 450px;
+    }
+    .link-container {
+        max-width: 90%;
     }
 }
