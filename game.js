@@ -37,9 +37,8 @@ let scoreText;
 let timeLeft = 120; // 2 minutes
 let timeText;
 let background;
-let isGameOver = false;
-
-document.getElementById('game-container').addEventListener('click', startGame);
+let isGameOver = true;
+let startButton;
 
 function startGame() {
     if (!game) {
@@ -50,42 +49,52 @@ function startGame() {
 function preload() {
     this.load.image('lawb', 'images/69lawbster.png');
     this.load.image('emoji', 'images/clownemoji.png');
-    this.load.spritesheet('background', 'images/oceanfloor.gif', { 
-        frameWidth: 800, 
-        frameHeight: 600 
-    });
+    this.load.image('background', 'images/oceanfloor.gif');
 }
 
 function create() {
-    // Create animated background
-    background = this.add.sprite(400, 300, 'background');
-    background.setScale(config.width / background.width, config.height / background.height);
-    
-    this.anims.create({
-        key: 'backgroundAnim',
-        frames: this.anims.generateFrameNumbers('background'),
-        frameRate: 10,
-        repeat: -1
-    });
-    background.play('backgroundAnim');
+    background = this.add.image(400, 300, 'background');
+    background.setDisplaySize(config.width, config.height);
 
     player = this.physics.add.sprite(400, 550, 'lawb');
     player.setCollideWorldBounds(true);
+    player.setVisible(false);
+    
     emojis = this.physics.add.group();
     
     scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#FFF' });
     timeText = this.add.text(16, 56, 'Time: 2:00', { fontSize: '32px', fill: '#FFF' });
     
-    this.time.addEvent({ delay: 1000, callback: updateTimer, callbackScope: this, loop: true });
-    this.time.addEvent({ delay: 1500, callback: spawnEmoji, callbackScope: this, loop: true });
+    scoreText.setVisible(false);
+    timeText.setVisible(false);
+
+    startButton = this.add.text(400, 300, 'Start Game', { fontSize: '48px', fill: '#00FF00' })
+        .setOrigin(0.5)
+        .setInteractive()
+        .on('pointerdown', () => {
+            startButton.setVisible(false);
+            startGameplay.call(this);
+        });
 
     this.input.on('pointermove', function (pointer) {
         if (!isGameOver) {
             player.x = Phaser.Math.Clamp(pointer.x, player.width / 2, config.width - player.width / 2);
         }
     }, this);
+}
 
+function startGameplay() {
     isGameOver = false;
+    player.setVisible(true);
+    scoreText.setVisible(true);
+    timeText.setVisible(true);
+    score = 0;
+    timeLeft = 120;
+    scoreText.setText('Score: 0');
+    timeText.setText('Time: 2:00');
+
+    this.time.addEvent({ delay: 1000, callback: updateTimer, callbackScope: this, loop: true });
+    this.time.addEvent({ delay: 1500, callback: spawnEmoji, callbackScope: this, loop: true });
 }
 
 function update() {
@@ -149,8 +158,7 @@ function gameOver() {
         .setInteractive()
         .on('pointerdown', () => {
             this.scene.restart();
-            score = 0;
-            timeLeft = 120;
-            isGameOver = false;
         });
 }
+
+startGame();
