@@ -48,7 +48,7 @@ function startGame() {
 }
 
 function preload() {
-    this.load.image('background', 'images/lawbocean1.gif');
+    this.load.image('background', 'images/oceanfloor.gif');
     this.load.image('lawb', 'images/69lawbster.png');
     this.load.image('emoji', 'images/clownemoji.png');
 }
