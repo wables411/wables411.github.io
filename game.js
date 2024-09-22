@@ -9,7 +9,7 @@ document.createElement = (function(create) {
 })(document.createElement);
 
 const config = {
-    type: Phaser.CANVAS, // Explicitly set render type
+    type: Phaser.CANVAS,
     width: 800,
     height: 600,
     parent: 'game-container',
@@ -32,13 +32,11 @@ const config = {
 let game;
 let player;
 let emojis;
-let cursors;
 let score = 0;
 let scoreText;
 let timeLeft = 120; // 2 minutes
 let timeText;
 
-// Initialize game after user interaction
 document.getElementById('game-container').addEventListener('click', startGame);
 
 function startGame() {
@@ -58,21 +56,19 @@ function create() {
     player = this.physics.add.sprite(400, 550, 'lawb');
     player.setCollideWorldBounds(true);
     emojis = this.physics.add.group();
-    cursors = this.input.keyboard.createCursorKeys();
+    
     scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#FFF' });
     timeText = this.add.text(16, 56, 'Time: 2:00', { fontSize: '32px', fill: '#FFF' });
+    
     this.time.addEvent({ delay: 1000, callback: updateTimer, callbackScope: this, loop: true });
     this.time.addEvent({ delay: 1500, callback: spawnEmoji, callbackScope: this, loop: true });
+
+    this.input.on('pointermove', function (pointer) {
+        player.x = Phaser.Math.Clamp(pointer.x, player.width / 2, config.width - player.width / 2);
+    }, this);
 }
 
 function update() {
-    if (cursors.left.isDown) {
-        player.setVelocityX(-160);
-    } else if (cursors.right.isDown) {
-        player.setVelocityX(160);
-    } else {
-        player.setVelocityX(0);
-    }
     this.physics.overlap(player, emojis, collectEmoji, null, this);
 }
 
