@@ -51,12 +51,13 @@ nav a, a:link, a:visited, a:hover, a:active {
     flex-direction: column;
     align-items: center;
     padding-top: 20px;
+    max-width: 400px;
+    margin: 0 auto;
 }
 
 .link-container {
-    margin-bottom: 20px;
+    margin-bottom: 30px;
     width: 100%;
-    max-width: 300px;
 }
 
 .link-text {
@@ -68,7 +69,8 @@ nav a, a:link, a:visited, a:hover, a:active {
 .index-image {
     width: 100%;
     height: 200px;
-    object-fit: cover;
+    object-fit: contain;
+    background-color: rgba(0, 0, 0, 0.3);
     border-radius: 10px;
 }
 
@@ -159,6 +161,9 @@ nav a, a:link, a:visited, a:hover, a:active {
         font-size: 14px;
         padding: 8px 10px;
     }
+    .container {
+        max-width: 90%;
+    }
     .main-content, #meme-generator {
         flex-direction: column;
         align-items: center;
@@ -166,13 +171,13 @@ nav a, a:link, a:visited, a:hover, a:active {
     .main-content img, .link-container img {
         width: 100%;
     }
+    .index-image {
+        height: 150px;
+    }
     .game-section {
         padding: 10px;
     }
     #game-container {
         height: 450px;
-    }
-    .link-container {
-        max-width: 90%;
     }
 }
