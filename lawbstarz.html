@@ -4,18 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lawbstarz</title>
-<link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
     <style>
         .sudoswap-embed {
             width: 100%;
             height: 800px;
         }
-
         .sudoswap-embed iframe {
             width: 100%;
             height: 100%;
             border: none;
+        }
+        .audio-player {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #f1f1f1;
+            padding: 10px;
+            text-align: center;
         }
     </style>
 </head>
@@ -69,5 +77,13 @@
             </div>
         </div>
     </div>
+    <div class="audio-player">
+        <audio controls>
+            <source src="https://audius.co/wables411/666-lawbstarz-dripped-in-butter" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+</body>
+</html>
 </body>
 </html>
