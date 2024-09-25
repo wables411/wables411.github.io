@@ -69,8 +69,33 @@ async function fetchImage() {
     }
 }
 
+// Apply deep fry effect
+function applyDeepFryEffect(imageData) {
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+        // Increase saturation
+        const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        data[i] = data[i] + (data[i] - avg) * 2;     // Red
+        data[i + 1] = data[i + 1] + (data[i + 1] - avg) * 2; // Green
+        data[i + 2] = data[i + 2] + (data[i + 2] - avg) * 2; // Blue
+
+        // Increase contrast
+        data[i] = Math.min(255, Math.max(0, (data[i] - 128) * 1.5 + 128));
+        data[i + 1] = Math.min(255, Math.max(0, (data[i + 1] - 128) * 1.5 + 128));
+        data[i + 2] = Math.min(255, Math.max(0, (data[i + 2] - 128) * 1.5 + 128));
+
+        // Sharpen (simple implementation)
+        if (i > 0 && i < data.length - 4) {
+            data[i] = Math.min(255, Math.max(0, data[i] * 2 - (data[i - 4] + data[i + 4]) / 2));
+            data[i + 1] = Math.min(255, Math.max(0, data[i + 1] * 2 - (data[i - 3] + data[i + 5]) / 2));
+            data[i + 2] = Math.min(255, Math.max(0, data[i + 2] * 2 - (data[i - 2] + data[i + 6]) / 2));
+        }
+    }
+    return imageData;
+}
+
 // Generate the meme
-function generateMeme(imageUrl, topText, bottomText) {
+function generateMeme(imageUrl, topText, bottomText, applyDeepFry = false) {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = "anonymous";  // This is important for CORS
@@ -84,6 +109,12 @@ function generateMeme(imageUrl, topText, bottomText) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
             
+            if (applyDeepFry) {
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const deepFriedImageData = applyDeepFryEffect(imageData);
+                ctx.putImageData(deepFriedImageData, 0, 0);
+            }
+
             // Configure text
             const fontSize = 75;
             ctx.font = `${fontSize}px Impact`;
@@ -142,7 +173,9 @@ window.onload = () => {
     
     const fetchImageButton = document.getElementById('fetch-image');
     const generateMemeButton = document.getElementById('generate-meme');
+    const deepFryButton = document.getElementById('deep-fry');
     let originalImageUrl = null;
+    let isDeepFried = false;
 
     if (fetchImageButton) {
         fetchImageButton.addEventListener('click', async () => {
@@ -176,7 +209,7 @@ window.onload = () => {
             }
 
             try {
-                const memeUrl = await generateMeme(originalImageUrl, topText, bottomText);
+                const memeUrl = await generateMeme(originalImageUrl, topText, bottomText, isDeepFried);
                 img.src = memeUrl;
             } catch (error) {
                 console.error('Error generating meme:', error);
@@ -185,5 +218,31 @@ window.onload = () => {
         });
     } else {
         console.error('Generate meme button not found.');
+    }
+
+    if (deepFryButton) {
+        deepFryButton.addEventListener('click', async () => {
+            if (!originalImageUrl) {
+                alert('Please fetch an image first.');
+                return;
+            }
+
+            const topText = document.getElementById('top-text')?.value || '';
+            const bottomText = document.getElementById('bottom-text')?.value || '';
+            const img = document.getElementById('generated-meme');
+
+            isDeepFried = !isDeepFried;
+            deepFryButton.textContent = isDeepFried ? 'Remove Deep Fry' : 'Deep Fry';
+
+            try {
+                const memeUrl = await generateMeme(originalImageUrl, topText, bottomText, isDeepFried);
+                img.src = memeUrl;
+            } catch (error) {
+                console.error('Error applying deep fry effect:', error);
+                alert('Error applying deep fry effect. Please try again.');
+            }
+        });
+    } else {
+        console.error('Deep fry button not found.');
     }
 };
