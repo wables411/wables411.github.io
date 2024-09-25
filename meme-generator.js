@@ -116,7 +116,7 @@ function generateMeme(imageUrl, topText, bottomText, applyDeepFry = false) {
             }
 
             // Configure text
-            const fontSize = 75;
+            const fontSize = 80;
             ctx.font = `${fontSize}px Impact`;
             ctx.textAlign = 'center';
             ctx.fillStyle = 'white';
