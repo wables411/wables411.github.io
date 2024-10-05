@@ -3,6 +3,7 @@ const collections = {
     "Lawbsters": "https://raw.githubusercontent.com/wables411/wables411.github.io/main/images/collections/Lawbsters/",
     "LawbStation": "https://raw.githubusercontent.com/wables411/wables411.github.io/main/images/collections/LawbStation/",
     "Halloween": "https://raw.githubusercontent.com/wables411/wables411.github.io/main/images/collections/Halloween/"
+    "Lawbstarz": "https://raw.githubusercontent.com/wables411/wables411.github.io/main/images/collections/Lawbstarz/"
 };
 
 // Load collections into the selector
