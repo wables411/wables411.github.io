@@ -173,17 +173,14 @@ nav a, a:link, a:visited, a:hover, a:active {
     align-items: center;
     margin-bottom: 20px;
 }
-
 .scatter-section img {
     max-width: 100%;
     height: auto;
     margin-bottom: 10px;
 }
-
 .scatter-text {
     text-align: center;
 }
-
 .unicorn-gods-section {
     background-image: url('/images/unicornsacrifice.gif');
     background-size: cover;
@@ -200,7 +197,6 @@ nav a, a:link, a:visited, a:hover, a:active {
     max-width: 800px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
-
 .unicorn-gods-section::before {
     content: "";
     position: absolute;
@@ -212,30 +208,34 @@ nav a, a:link, a:visited, a:hover, a:active {
     z-index: 1;
     border-radius: 8px;
 }
-
 .unicorn-gods-section > * {
     position: relative;
     z-index: 2;
 }
-
 .unicorn-gods-section h2 {
     color: #FF00FF;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
 }
-
 .unicorn-gods-section p {
     margin-bottom: 15px;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
 }
-
 .unicorn-gods-section a {
     color: #FF00FF;
     text-decoration: underline;
 }
-
 .unicorn-gods-section img {
     max-width: 100%;
     height: auto;
     border-radius: 5px;
     margin-top: 15px;
+}
+.sacrifice-image-container {
+    text-align: center;
+    margin: 20px 0;
+}
+.sacrifice-image {
+    max-width: 100%;
+    height: auto;
+    cursor: pointer;
 }
