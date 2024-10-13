@@ -26,6 +26,9 @@ const config = {
         preload: preload,
         create: create,
         update: update
+    },
+    audio: {
+        disableWebAudio: true
     }
 };
 
@@ -40,7 +43,7 @@ let background;
 let isGameOver = true;
 let startButton;
 
-function startGame() {
+function initGame() {
     if (!game) {
         game = new Phaser.Game(config);
     }
@@ -161,4 +164,8 @@ function gameOver() {
         });
 }
 
-startGame();
+// Initialize the game when the start button is clicked
+document.getElementById('start-game-button').addEventListener('click', function() {
+    this.style.display = 'none';  // Hide the button after clicking
+    initGame();
+});
