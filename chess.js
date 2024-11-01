@@ -50,10 +50,18 @@ let hoveredSquare = null;
 
 // Constants
 const pieceImages = {
-    'R': 'redRook.png', 'N': 'redKnight.png', 'B': 'redBishop.png',
-    'Q': 'redQueen.png', 'K': 'redKing.png', 'P': 'redPawn.png',
-    'r': 'blueRook.png', 'n': 'blueKnight.png', 'b': 'blueBishop.png',
-    'q': 'blueQueen.png', 'k': 'blueKing.png', 'p': 'bluePawn.png'
+    'R': 'images/redRook.png', 
+    'N': 'images/redKnight.png', 
+    'B': 'images/redBishop.png',
+    'Q': 'images/redQueen.png', 
+    'K': 'images/redKing.png', 
+    'P': 'images/redPawn.png',
+    'r': 'images/blueRook.png', 
+    'n': 'images/blueKnight.png', 
+    'b': 'images/blueBishop.png',
+    'q': 'images/blueQueen.png', 
+    'k': 'images/blueKing.png', 
+    'p': 'images/bluePawn.png'
 };
 
 function updateStatusDisplay(message) {
@@ -1189,7 +1197,7 @@ function createBoard() {
 function selectRandomChessboard() {
     const boardCount = 6;
     const boardNumber = Math.floor(Math.random() * boardCount) + 1;
-    return `chessboard${boardNumber}.png`;
+    return `images/chessboard${boardNumber}.png`;
 }
 
 // Add visual effects function if not already present
