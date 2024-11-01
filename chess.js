@@ -50,18 +50,18 @@ let hoveredSquare = null;
 
 // Constants
 const pieceImages = {
-    'R': 'images/redRook.png', 
-    'N': 'images/redKnight.png', 
-    'B': 'images/redBishop.png',
-    'Q': 'images/redQueen.png', 
-    'K': 'images/redKing.png', 
-    'P': 'images/redPawn.png',
-    'r': 'images/blueRook.png', 
-    'n': 'images/blueKnight.png', 
-    'b': 'images/blueBishop.png',
-    'q': 'images/blueQueen.png', 
-    'k': 'images/blueKing.png', 
-    'p': 'images/bluePawn.png'
+    'R': 'images/redrook.png', 
+    'N': 'images/redknight.png', 
+    'B': 'images/redbishop.png',
+    'Q': 'images/redqueen.png', 
+    'K': 'images/redking.png', 
+    'P': 'images/redpawn.png',
+    'r': 'images/bluerook.png', 
+    'n': 'images/blueknight.png', 
+    'b': 'images/bluebishop.png',
+    'q': 'images/bluequeen.png', 
+    'k': 'images/blueking.png', 
+    'p': 'images/bluepawn.png'
 };
 
 function updateStatusDisplay(message) {
