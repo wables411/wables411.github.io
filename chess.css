@@ -1,0 +1,325 @@
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    background: #1a1a1a;
+    overflow-x: hidden;
+}
+
+/* Add lime green glow to all text */
+#status, button, #move-history, #game-info {
+    color: #fff;
+    text-shadow: 0 0 5px #32CD32,
+                 0 0 10px #32CD32,
+                 0 0 15px #32CD32;
+}
+
+/* Container styles */
+.game-container {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    color: white;
+}
+
+/* Background GIF */
+.game-container::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('ocean.gif');
+    background-size: cover;
+    background-position: center;
+    background-repeat: repeat;
+    opacity: 0.5;
+    z-index: -1;
+}
+
+/* Container to ensure consistent width */
+.chess-container, #debug {
+    width: 100%;
+    max-width: min(80vh, 800px);
+    margin: 0 auto;
+}
+
+/* Hover effect on container */
+.chess-container:hover {
+    box-shadow: 
+        0 0 25px rgba(0, 0, 0, 0.6),
+        inset 0 0 40px rgba(255, 255, 255, 0.07);
+    transform: translateY(-2px);
+}
+
+/* Glow animation */
+@keyframes containerGlow {
+    from {
+        box-shadow: 
+            0 0 20px rgba(0, 0, 0, 0.5),
+            inset 0 0 30px rgba(255, 255, 255, 0.05),
+            0 0 10px rgba(0, 150, 255, 0.1);
+    }
+    to {
+        box-shadow: 
+            0 0 25px rgba(0, 0, 0, 0.5),
+            inset 0 0 35px rgba(255, 255, 255, 0.1),
+            0 0 20px rgba(0, 150, 255, 0.2);
+    }
+}
+
+/* Neon border effect */
+.chess-container::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, 
+        rgba(0, 183, 255, 0.1),
+        rgba(0, 255, 209, 0.1),
+        rgba(0, 183, 255, 0.1)
+    );
+    border-radius: 14px;
+    z-index: -1;
+    animation: borderGlow 6s linear infinite;
+}
+
+@keyframes borderGlow {
+    0% {
+        filter: blur(5px);
+        opacity: 0.5;
+    }
+    50% {
+        filter: blur(7px);
+        opacity: 0.7;
+    }
+    100% {
+        filter: blur(5px);
+        opacity: 0.5;
+    }
+}
+
+/* Chessboard */
+#chessboard {
+    width: 100%;
+    aspect-ratio: 1;
+    position: relative;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    touch-action: none;
+    margin: 20px auto;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Chess pieces */
+.piece {
+    position: absolute;
+    width: 12.5%;
+    height: 12.5%;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 2;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.piece:hover {
+    transform: scale(1.1);
+    filter: brightness(1.2);
+}
+
+/* Move highlights */
+.highlight {
+    position: absolute;
+    background-color: rgba(0, 255, 0, 0.3);
+    border-radius: 50%;
+    pointer-events: auto;
+    cursor: pointer;
+    z-index: 1;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+    100% { opacity: 0.3; }
+}
+
+/* Game info section */
+#game-info {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    backdrop-filter: blur(5px);
+}
+
+#status {
+    font-size: 1.8rem;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Move history with lime glow */
+#move-history {
+    height: 150px;
+    overflow-y: auto;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    border: 1px solid rgba(50, 205, 50, 0.3);
+}
+
+#debug {
+    width: 100%;
+    max-width: min(80vh, 800px);
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 12px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    margin: 20px auto;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    
+    /* Remove the positioning that was causing misalignment */
+    position: static;
+    transform: none;
+    left: auto;
+    
+    /* Add lime green text glow */
+    color: #fff;
+    text-shadow: 0 0 5px #32CD32,
+                 0 0 10px #32CD32,
+                 0 0 15px #32CD32;
+}
+
+/* Button styles with lime glow */
+button {
+    padding: 12px 24px;
+    font-size: 1.2rem;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
+    border: 1px solid rgba(50, 205, 50, 0.3);
+    box-shadow: 0 0 10px rgba(50, 205, 50, 0.3);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+/* Enhanced hover effect with lime glow */
+button:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 15px rgba(50, 205, 50, 0.5),
+                0 0 30px rgba(50, 205, 50, 0.3);
+}
+
+/* Active state */
+button:active {
+    transform: translateY(1px);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 5px rgba(50, 205, 50, 0.3);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .game-container {
+        padding: 20px;
+    }
+
+    .chess-container {
+        max-width: min(90vh, 90vw);
+        padding: 15px;
+    }
+
+    .piece {
+        min-width: 30px;
+        min-height: 30px;
+    }
+
+    #game-status {
+        font-size: 1.2rem;
+    }
+
+    #move-history {
+        height: 120px;
+    }
+
+    button {
+        padding: 15px 30px;
+    }
+}
+
+/* For very small screens */
+@media (max-width: 480px) {
+    .game-container {
+        padding: 10px;
+    }
+
+    .chess-container {
+        padding: 10px;
+    }
+
+    #game-info {
+        padding: 10px;
+    }
+}
+
+.highlight.capture {
+    background-color: rgba(255, 0, 0, 0.3) !important;
+    border: 2px solid rgba(255, 0, 0, 0.5);
+}
