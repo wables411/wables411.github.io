@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>lawbstation</title>
-<link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="chess.css">
 </head>
 <body class="lawbstation-body">
     <!-- Navigation Menu -->
@@ -13,7 +14,7 @@
         <ul>
             <li><a href="index.html">home</a></li>
             <li><a href="lawbstation.html">lawbstation</a></li>
-            <li><a href="lawbsters.html">lawbsters</a></li> <!-- New link added -->
+            <li><a href="lawbsters.html">lawbsters</a></li>
             <li><a href="lawbstarz.html">lawbstarz</a></li>
             <li><a href="ascii_lawbsters.html">ascii</a></li>
             <li><a href="https://pc69.xyz/">shop</a></li>
@@ -22,7 +23,6 @@
             <li><a href="halloween.html">halloween</a></li>
         </ul>
     </nav>
-
     <!-- Full Height Container -->
     <div class="full-height-container">
         <!-- Main Content Container -->
@@ -33,9 +33,9 @@
             <p>Brought to you in part by <a href="https://nouns.build/dao/ethereum/0x0c12aba58fc88f1267fa772012495b47aaf31cab/99" target="_blank">PortionClub</a> and MonyCorpGroup</p>
             <p>Living on the Solana Blockchain. To do your part by helping in the preservation of Lawbstations today, click <a href="https://www.tensor.trade/trade/lawbstation" target="_blank">Here.</a></p>
             <p>Token Holders join <a href="https://discord.gg/p6uazQchjk" target="_blank">MiladyStation Discord</a> to access and utilize the low poly tech</p>
+
             <img src="images/lawbstationgame.png" alt="LawbStation Player Select">
             <p>CHOOSE YOUR FIGHTER. search lawbstation by number. right click save. create a meme. start a fight. THIS IS MEMETIC WARFARE.</p>
-
             <!-- Search Bar, Enter and Clear Buttons, and Image Display -->
             <div class="search-container">
                 <input type="number" id="imageSearch" placeholder="Enter image number" min="0" max="419">
@@ -43,37 +43,25 @@
                 <button id="clearButton" class="search-button">Clear</button>
             </div>
             <div id="imageDisplay"></div>
-
             <div id="imageGallery" class="image-container">
                 <!-- Images will be loaded here -->
+            </div>
+
+            <!-- Chess Game Section -->
+            <div class="game-container">
+                <div class="chess-container">
+                    <div id="chessboard"></div>
+                    <div id="game-info">
+                        <div id="status">Blue's turn</div>
+                        <div id="move-history"></div>
+                        <button>Restart Game</button>
+                    </div>
+                </div>
+                <div id="debug"></div>
             </div>
         </div>
     </div>
 
-    <script src="loadImages.js"></script>
-    <style>
-        .fixed-player {
-            position: fixed;
-            left: 10px;
-            right: 10px;
-            bottom: 10px;
-            width: 90%;     /* Full width of the iframe */
-            height: 24px;    /* Height of the iframe */
-            z-index: 1000;   /* Ensures the player stays on top of other content */
-            border: none;    /* Removes the border */
-        }
-    
-        /* Adjustments for screens smaller than 600px wide */
-        @media (max-width: 600px) {
-            .fixed-player {
-                width: 90%;      /* Make the player full-width on smaller screens */
-                left: 0;          /* Align it to the left edge */
-                right: 0;         /* Align it to the right edge */
-                bottom: 0;        /* Stick it to the bottom */
-            }
-        }
-    </style>
-    
     <!-- Audius player iframe -->
     <iframe class="fixed-player"
             src="https://audius.co/embed/track/2VAzEM0?flavor=tiny"
@@ -81,9 +69,9 @@
             allow="encrypted-media"
             frameborder="0">
     </iframe>
-    
+
+    <!-- Scripts -->
     <script src="loadImages.js"></script>
-    </body>
-    </html>
+    <script src="chess.js"></script>
 </body>
 </html>
