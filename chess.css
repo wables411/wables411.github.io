@@ -34,17 +34,9 @@ body {
     color: white;
 }
 
-/* Background GIF */
+/* Remove the conflicting background */
 .game-container::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
-    opacity: 0.5;
-    z-index: -1;
+    display: none; /* Remove the conflicting background */
 }
 
 /* Container to ensure consistent width */
