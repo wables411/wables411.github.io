@@ -239,3 +239,18 @@ nav a, a:link, a:visited, a:hover, a:active {
     height: auto;
     cursor: pointer;
 }
+.lawbstation-body {
+    /* Inherit all the body styles */
+    font-family: 'Impact', sans-serif;
+    color: white;
+    text-align: center;
+    background-image: url('/images/oceanfloor.gif');
+    background-attachment: fixed;
+    background-size: cover;
+    background-repeat: no-repeat;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0 0 24px 0;
+    cursor: url('/images/lawbpointer.png'), default;
+    min-height: 100vh; /* Ensure full height */
+}
