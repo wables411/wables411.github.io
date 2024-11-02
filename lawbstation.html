@@ -47,20 +47,31 @@
                 <!-- Images will be loaded here -->
             </div>
 
-            <!-- Chess Game Section -->
-            <div class="game-container">
-                <div class="chess-container">
-                    <div id="chessboard"></div>
-                    <div id="game-info">
-                        <div id="status">Blue's turn</div>
-                        <div id="move-history"></div>
-                        <button>Restart Game</button>
-                    </div>
-                </div>
-                <div id="debug"></div>
+<!-- Chess Game Section -->
+<div class="game-container">
+    <div class="chess-container">
+        <!-- Difficulty Selection Screen -->
+        <div id="difficulty-screen">
+            <h2>Select Difficulty</h2>
+            <div class="difficulty-buttons">
+                <button id="easy-mode" class="difficulty-btn">Easy Mode</button>
+                <button id="hard-mode" class="difficulty-btn">Harder Mode</button>
+            </div>
+            <button id="start-game" class="start-btn" disabled>Start Game</button>
+        </div>
+        
+        <!-- Chess Game (Initially Hidden) -->
+        <div id="chess-game" style="display: none;">
+            <div id="chessboard"></div>
+            <div id="game-info">
+                <div id="status">Blue's turn</div>
+                <div id="move-history"></div>
+                <button id="restart-game">Restart Game</button>
             </div>
         </div>
     </div>
+    <div id="debug"></div>
+</div>
 
     <!-- Audius player iframe -->
     <iframe class="fixed-player"
