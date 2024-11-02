@@ -5,7 +5,7 @@
     box-sizing: border-box;
 }
 
-/* Game container - now transparent */
+/* Game container and layout */
 .game-container {
     min-height: auto;
     width: 100%;
@@ -19,7 +19,6 @@
     background: transparent;
 }
 
-/* Container to ensure consistent width */
 .chess-container, #debug {
     width: 100%;
     max-width: min(80vh, 800px);
@@ -29,7 +28,6 @@
     padding: 15px;
 }
 
-/* Hover effect on container */
 .chess-container:hover {
     box-shadow: 
         0 0 25px rgba(0, 0, 0, 0.6),
@@ -37,7 +35,7 @@
     transform: translateY(-2px);
 }
 
-/* Add lime green glow to all text */
+/* Text and button styling */
 #status, button, #move-history, #game-info {
     color: #fff;
     text-shadow: 0 0 5px #32CD32,
@@ -63,36 +61,6 @@
     animation: borderGlow 6s linear infinite;
 }
 
-/* Glow animations */
-@keyframes containerGlow {
-    from {
-        box-shadow: 
-            0 0 20px rgba(0, 0, 0, 0.5),
-            inset 0 0 30px rgba(255, 255, 255, 0.05),
-            0 0 10px rgba(0, 150, 255, 0.1);
-    }
-    to {
-        box-shadow: 
-            0 0 25px rgba(0, 0, 0, 0.5),
-            inset 0 0 35px rgba(255, 255, 255, 0.1),
-            0 0 20px rgba(0, 150, 255, 0.2);
-    }
-}
-
-@keyframes borderGlow {
-    0% {
-        filter: blur(5px);
-        opacity: 0.5;
-    }
-    50% {
-        filter: blur(7px);
-        opacity: 0.7;
-    }
-    100% {
-        filter: blur(5px);
-        opacity: 0.5;
-    }
-}
 /* Chessboard */
 #chessboard {
     width: 100%;
@@ -148,47 +116,6 @@
     border: 2px solid rgba(255, 0, 0, 0.5);
 }
 
-@keyframes pulse {
-    0% { 
-        opacity: 0.3;
-        transform: scale(0.95);
-    }
-    50% { 
-        opacity: 0.6;
-        transform: scale(1);
-    }
-    100% { 
-        opacity: 0.3;
-        transform: scale(0.95);
-    }
-}
-
-/* Promotion dialog */
-.promotion-dialog {
-    display: flex;
-    flex-direction: column;
-    background: rgba(0, 0, 0, 0.9);
-    border-radius: 8px;
-    padding: 4px;
-    border: 1px solid rgba(50, 205, 50, 0.3);
-    box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
-}
-
-.promotion-piece {
-    width: 50px;
-    height: 50px;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    cursor: pointer;
-    transition: transform 0.2s;
-    filter: drop-shadow(0 0 5px rgba(50, 205, 50, 0.5));
-}
-
-.promotion-piece:hover {
-    transform: scale(1.1);
-    filter: brightness(1.2) drop-shadow(0 0 8px rgba(50, 205, 50, 0.7));
-}
 /* Game info section */
 #game-info {
     width: 100%;
@@ -211,7 +138,6 @@
     letter-spacing: 1px;
 }
 
-/* Move history */
 #move-history {
     height: 150px;
     overflow-y: auto;
@@ -240,54 +166,6 @@
     position: static;
     transform: none;
     left: auto;
-}
-
-/* Button styles */
-button {
-    padding: 12px 24px;
-    font-size: 1.2rem;
-    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    background: rgba(0, 0, 0, 0.4);
-    border-radius: 24px;
-    border: 1px solid rgba(50, 205, 50, 0.3);
-    box-shadow: 0 0 10px rgba(50, 205, 50, 0.3);
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-button:hover {
-    transform: translateY(-2px);
-    background: rgba(0, 0, 0, 0.6);
-    box-shadow: 0 0 15px rgba(50, 205, 50, 0.5),
-                0 0 30px rgba(50, 205, 50, 0.3);
-}
-
-button:active {
-    transform: translateY(1px);
-    background: rgba(0, 0, 0, 0.3);
-    box-shadow: 0 0 5px rgba(50, 205, 50, 0.3);
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: rgba(50, 205, 50, 0.3);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: rgba(50, 205, 50, 0.5);
 }
 
 /* Difficulty Selection Screen */
@@ -349,6 +227,36 @@ button:active {
     box-shadow: 0 0 25px rgba(50, 205, 50, 0.5);
 }
 
+/* Generic button styles */
+button {
+    padding: 12px 24px;
+    font-size: 1.2rem;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 24px;
+    border: 1px solid rgba(50, 205, 50, 0.3);
+    box-shadow: 0 0 10px rgba(50, 205, 50, 0.3);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    background: rgba(0, 0, 0, 0.6);
+    box-shadow: 0 0 15px rgba(50, 205, 50, 0.5),
+                0 0 30px rgba(50, 205, 50, 0.3);
+}
+
+button:active {
+    transform: translateY(1px);
+    background: rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 5px rgba(50, 205, 50, 0.3);
+}
+
+/* Start button specific styles */
 .start-btn {
     padding: 20px 40px;
     font-size: 1.5rem;
@@ -364,6 +272,98 @@ button:active {
     animation: glowPulse 2s infinite;
 }
 
+/* Promotion dialog */
+.promotion-dialog {
+    display: flex;
+    flex-direction: column;
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 8px;
+    padding: 4px;
+    border: 1px solid rgba(50, 205, 50, 0.3);
+    box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
+}
+
+.promotion-piece {
+    width: 50px;
+    height: 50px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+    filter: drop-shadow(0 0 5px rgba(50, 205, 50, 0.5));
+}
+
+.promotion-piece:hover {
+    transform: scale(1.1);
+    filter: brightness(1.2) drop-shadow(0 0 8px rgba(50, 205, 50, 0.7));
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(50, 205, 50, 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(50, 205, 50, 0.5);
+}
+
+/* Animations */
+@keyframes containerGlow {
+    from {
+        box-shadow: 
+            0 0 20px rgba(0, 0, 0, 0.5),
+            inset 0 0 30px rgba(255, 255, 255, 0.05),
+            0 0 10px rgba(0, 150, 255, 0.1);
+    }
+    to {
+        box-shadow: 
+            0 0 25px rgba(0, 0, 0, 0.5),
+            inset 0 0 35px rgba(255, 255, 255, 0.1),
+            0 0 20px rgba(0, 150, 255, 0.2);
+    }
+}
+
+@keyframes borderGlow {
+    0% {
+        filter: blur(5px);
+        opacity: 0.5;
+    }
+    50% {
+        filter: blur(7px);
+        opacity: 0.7;
+    }
+    100% {
+        filter: blur(5px);
+        opacity: 0.5;
+    }
+}
+
+@keyframes pulse {
+    0% { 
+        opacity: 0.3;
+        transform: scale(0.95);
+    }
+    50% { 
+        opacity: 0.6;
+        transform: scale(1);
+    }
+    100% { 
+        opacity: 0.3;
+        transform: scale(0.95);
+    }
+}
+
 @keyframes glowPulse {
     0% {
         box-shadow: 0 0 10px rgba(50, 205, 50, 0.3);
@@ -374,28 +374,6 @@ button:active {
     }
     100% {
         box-shadow: 0 0 10px rgba(50, 205, 50, 0.3);
-    }
-}
-
-/* Mobile adjustments for difficulty screen */
-@media (max-width: 768px) {
-    #difficulty-screen h2 {
-        font-size: 2rem;
-    }
-    
-    .difficulty-buttons {
-        flex-direction: column;
-        gap: 15px;
-    }
-    
-    .difficulty-btn {
-        padding: 12px 24px;
-        font-size: 1.1rem;
-    }
-    
-    .start-btn {
-        padding: 15px 30px;
-        font-size: 1.3rem;
     }
 }
 
@@ -425,6 +403,25 @@ button:active {
 
     button {
         padding: 15px 30px;
+    }
+
+    #difficulty-screen h2 {
+        font-size: 2rem;
+    }
+    
+    .difficulty-buttons {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .difficulty-btn {
+        padding: 12px 24px;
+        font-size: 1.1rem;
+    }
+    
+    .start-btn {
+        padding: 15px 30px;
+        font-size: 1.3rem;
     }
 }
 
