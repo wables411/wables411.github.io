@@ -10,7 +10,7 @@
     min-height: auto;
     width: 100%;
     display: flex;
-    flex-direction: column;  /* Default to column for mobile */
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 20px;
@@ -39,18 +39,21 @@
 @media (min-width: 1024px) {
     .game-container {
         flex-direction: row;
-        align-items: flex-start;
+        align-items: center;  /* Changed from flex-start to center */
+        justify-content: center;  /* Added center justification */
         gap: 20px;
     }
 
     .chess-container {
-        width: min(70vh, 700px);  /* Larger size for desktop */
+        width: min(70vh, 700px);
         margin-right: 20px;
+        background: transparent;  /* Added transparent background */
     }
 
     .game-info-container {
         flex: 0 1 300px;
         min-width: 250px;
+        align-self: center;  /* Added to align with chess board */
     }
 }
 
@@ -149,7 +152,7 @@
     flex-direction: column;
     gap: 15px;
     padding: 20px;
-    background: rgba(0, 0, 0, 0.4);
+    background: transparent;  /* Changed from rgba(0, 0, 0, 0.4) to transparent */
     border-radius: 8px;
     backdrop-filter: blur(5px);
     border: 1px solid rgba(50, 205, 50, 0.3);
@@ -233,7 +236,7 @@
     justify-content: center;
     gap: 30px;
     padding: 40px;
-    background: rgba(0, 0, 0, 0.4);
+    background: transparent;  /* Changed from rgba(0, 0, 0, 0.4) to transparent */
     border-radius: 10px;
     border: 1px solid rgba(50, 205, 50, 0.3);
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
