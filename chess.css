@@ -15,7 +15,15 @@
 .difficulty-btn,
 button,
 .start-btn,
-.promotion-dialog {
+.promotion-dialog,
+#chess-game,
+.section-container.game-section,
+.chess-container::after,
+.chess-container::before,
+#chess-game::after,
+#chess-game::before,
+#difficulty-screen::after,
+#difficulty-screen::before {
     background: transparent !important;
 }
 
@@ -158,8 +166,8 @@ button,
     gap: 15px;
     padding: 20px;
     border-radius: 8px;
-    backdrop-filter: blur(5px);
     border: 1px solid rgba(50, 205, 50, 0.3);
+    /* Remove backdrop-filter */
 }
 
 #status {
@@ -179,7 +187,7 @@ button,
     font-family: monospace;
     white-space: pre-wrap;
     border: 1px solid rgba(50, 205, 50, 0.3);
-    backdrop-filter: blur(5px);
+    /* Remove backdrop-filter */
 }
 
 /* Debug section */
@@ -195,7 +203,7 @@ button,
     margin: 10px auto;
     border: 1px solid rgba(50, 205, 50, 0.3);
     text-align: center;
-    backdrop-filter: blur(5px);
+    /* Remove backdrop-filter */
 }
 /* Difficulty Selection Screen */
 #difficulty-screen {
@@ -210,8 +218,7 @@ button,
     padding: 40px;
     border-radius: 10px;
     border: 1px solid rgba(50, 205, 50, 0.3);
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(5px);
+    /* Remove box-shadow and backdrop-filter */
 }
 
 #difficulty-screen h2 {
@@ -242,13 +249,13 @@ button,
     color: #fff;
     text-shadow: 0 0 5px #32CD32;
     transition: all 0.3s ease;
-    backdrop-filter: blur(5px);
     font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
     text-transform: uppercase;
     letter-spacing: 1px;
     cursor: pointer;
     border-radius: 24px;
     box-shadow: 0 0 10px rgba(50, 205, 50, 0.3);
+    /* Remove backdrop-filter */
 }
 
 .difficulty-btn:hover,
@@ -292,7 +299,7 @@ button:active {
     padding: 4px;
     border: 1px solid rgba(50, 205, 50, 0.3);
     box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
-    backdrop-filter: blur(5px);
+    /* Remove backdrop-filter */
 }
 
 .promotion-piece {
