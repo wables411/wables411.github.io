@@ -240,7 +240,6 @@ nav a, a:link, a:visited, a:hover, a:active {
     cursor: pointer;
 }
 .lawbstation-body {
-    /* Inherit all the body styles */
     font-family: 'Impact', sans-serif;
     color: white;
     text-align: center;
@@ -250,7 +249,21 @@ nav a, a:link, a:visited, a:hover, a:active {
     background-repeat: no-repeat;
     overflow-x: hidden;
     margin: 0;
-    padding: 0 0 24px 0;
+    padding: 0 0 100px 0;  /* Increased bottom padding to accommodate new sections */
     cursor: url('/images/lawbpointer.png'), default;
-    min-height: 100vh; /* Ensure full height */
+    min-height: 100vh;
+}
+
+/* Additional styles to ensure section titles and text maintain contrast */
+.section-title {
+    color: white;  /* Changed from #333 to white to match theme */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);  /* Added for better readability */
+}
+
+/* Ensure container spacing works with the background */
+.section-container {
+    position: relative;
+    z-index: 1;  /* Ensure content stays above background */
+    margin: 4rem auto;  /* Changed to auto for horizontal centering */
+    max-width: 1200px;  /* Optional: adds a max-width for very wide screens */
 }
