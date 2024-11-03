@@ -26,21 +26,23 @@
 @media (min-width: 1024px) {
     .game-container {
         flex-direction: row;
-        align-items: flex-start;
-        gap: 5px; /* Reduce gap between containers */
-        padding: 5px; /* Reduce padding */
+        align-items: center; /* Changed to center */
+        justify-content: center;
+        gap: 0; /* Remove gap completely */
+        padding: 0; /* Remove padding */
+        max-width: 850px; /* Reduce max-width to keep things tighter */
     }
 
     .chess-container {
         flex: 0 0 auto;
         width: min(60vh, 600px);
-        margin-right: 5px; /* Add small margin */
+        margin-right: 0; /* Remove margin */
     }
 
     .game-info-container {
-        flex: 0 1 250px; /* Reduce width */
-        min-width: 200px;
-        margin-left: 5px; /* Add small margin */
+        flex: 0 1 200px; /* Make even narrower */
+        min-width: 180px;
+        margin-left: 0; /* Remove margin */
     }
 }
 
@@ -50,7 +52,7 @@
     max-width: min(80vh, 600px);
     display: flex;
     flex-direction: column;
-    gap: 5px; /* Reduce gap */
+    gap: 5px;
 }
 
 /* Text and button styling */
