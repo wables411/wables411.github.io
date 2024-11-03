@@ -56,40 +56,74 @@
         </ul>
     </nav>
 
-    <!-- Full Height Container -->
-    <div class="full-height-container">
-        <!-- Main Content Container -->
-        <div class="main-content">
-            <!-- Header Section -->
-            <div class="section-container">
-                <h1>LAWBSTATION</h1>
-                <p>low poly Lawbsters viewed through various cathode-ray tubes</p>
-                <p>built on <a href="https://miladystation.net/" target="_blank">MiladyStation</a> technology</p>
-                <p>Brought to you in part by <a href="https://nouns.build/dao/ethereum/0x0c12aba58fc88f1267fa772012495b47aaf31cab/99" target="_blank">PortionClub</a> and MonyCorpGroup</p>
-                <p>Living on the Solana Blockchain. To do your part by helping in the preservation of Lawbstations today, click <a href="https://www.tensor.trade/trade/lawbstation" target="_blank">Here.</a></p>
-                <p>Token Holders join <a href="https://discord.gg/p6uazQchjk" target="_blank">MiladyStation Discord</a> to access and utilize the low poly tech</p>
-            </div>
+   <!-- Full Height Container -->
+<div class="full-height-container">
+    <!-- Main Content Container -->
+    <div class="main-content">
+        <!-- Header Section -->
+        <div class="section-container header-section">
+            <h1>LAWBSTATION</h1>
+            <p>low poly Lawbsters viewed through various cathode-ray tubes</p>
+            <p>built on <a href="https://miladystation.net/" target="_blank">MiladyStation</a> technology</p>
+            <p>Brought to you in part by <a href="https://nouns.build/dao/ethereum/0x0c12aba58fc88f1267fa772012495b47aaf31cab/99" target="_blank">PortionClub</a> and MonyCorpGroup</p>
+            <p>Living on the Solana Blockchain. To do your part by helping in the preservation of Lawbstations today, click <a href="https://www.tensor.trade/trade/lawbstation" target="_blank">Here.</a></p>
+            <p>Token Holders join <a href="https://discord.gg/p6uazQchjk" target="_blank">MiladyStation Discord</a> to access and utilize the low poly tech</p>
+        </div>
 
-            <!-- Image Section -->
-            <div class="section-container">
-                <img src="images/lawbstationgame.png" alt="LawbStation Player Select">
-                <p>choose your fighter. search lawbstation by number. right click save. create a meme. start a fight. this is memetic warfare.</p>
+        <!-- Image Section -->
+        <div class="section-container image-section">
+            <img src="images/lawbstationgame.png" alt="LawbStation Player Select">
+            <p>choose your fighter. search lawbstation by number. right click save. create a meme. start a fight. this is memetic warfare.</p>
+        </div>
+
+        <!-- Search Section -->
+        <div class="section-container search-section">
+            <h2 class="section-title">Search Lawbstation</h2>
+            <div class="search-container">
+                <input type="number" id="imageSearch" placeholder="Enter image number" min="0" max="419">
+                <button id="enterButton" class="search-button">Enter</button>
+                <button id="clearButton" class="search-button">Clear</button>
             </div>
-<!-- Search Section -->
-            <div class="section-container search-section">
-                <h2 class="section-title">Search Lawbstation</h2>
-                <div class="search-container">
-                    <input type="number" id="imageSearch" placeholder="Enter image number" min="0" max="419">
-                    <button id="enterButton" class="search-button">Enter</button>
-                    <button id="clearButton" class="search-button">Clear</button>
-                </div>
-                <div class="image-display-section">
-                    <div id="imageDisplay"></div>
-                    <div id="imageGallery" class="image-container">
-                        <!-- Images will be loaded here -->
-                    </div>
-                </div>
+            <div class="image-display-section">
+                <div id="imageDisplay"></div>
+                <div id="imageGallery" class="image-container"></div>
             </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.section-container {
+    margin: 1rem 0;  /* Reduced from 2rem */
+    padding: 1rem 0;  /* Reduced from 2rem */
+}
+
+.header-section p {
+    margin: 0.5rem 0;  /* Reduced paragraph spacing */
+}
+
+.image-section {
+    margin-top: 0.5rem;  /* Reduced top margin */
+    margin-bottom: 0.5rem;  /* Reduced bottom margin */
+}
+
+.search-section {
+    margin-top: 0.5rem;  /* Reduced top margin */
+}
+
+.section-title {
+    margin-bottom: 0.5rem;  /* Reduced from 1rem */
+}
+
+.search-container {
+    margin: 0.5rem 0;  /* Reduced from 2rem */
+    padding: 0.5rem 0;  /* Reduced from 1rem */
+}
+
+.image-display-section {
+    margin: 1rem 0;  /* Reduced from 3rem */
+}
+</style>
 
             <!-- Chess Game Section -->
             <div class="section-container game-section">
