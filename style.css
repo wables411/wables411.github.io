@@ -249,7 +249,7 @@ nav a, a:link, a:visited, a:hover, a:active {
     background-repeat: no-repeat;
     overflow-x: hidden;
     margin: 0;
-    padding: 0 0 30px 0;  /* Reduced bottom padding */
+    padding: 0 0 20px 0;  /* Slightly reduced bottom padding */
     cursor: url('/images/lawbpointer.png'), default;
     min-height: 100vh;
 }
@@ -257,12 +257,12 @@ nav a, a:link, a:visited, a:hover, a:active {
 .section-container {
     position: relative;
     z-index: 1;
-    margin: 2rem auto;  /* Reduced margin */
+    margin: 1rem auto;  /* Reduced from 2rem to match other spacing */
     max-width: 1200px;
 }
 
 .section-title {
     color: white;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-    margin-bottom: 1rem;  /* Reduced margin */
+    margin-bottom: 0.5rem;  /* Reduced from 1rem to match other spacing */
 }
