@@ -10,49 +10,55 @@
     min-height: auto;
     width: 100%;
     display: flex;
-    flex-direction: column;
+    flex-direction: column;  /* Default to column for mobile */
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 20px;
     padding: 10px;
     position: relative;
     color: white;
     background: transparent;
-    max-width: 1000px; /* Add max-width to keep containers closer */
-    margin: 0 auto; /* Center the container */
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-/* Desktop layout */
-@media (min-width: 1024px) {
-    .game-container {
-        flex-direction: row;
-        align-items: center; /* Changed to center */
-        justify-content: center;
-        gap: 0; /* Remove gap completely */
-        padding: 0; /* Remove padding */
-        max-width: 850px; /* Reduce max-width to keep things tighter */
-    }
-
-    .chess-container {
-        flex: 0 0 auto;
-        width: min(60vh, 600px);
-        margin-right: 0; /* Remove margin */
-    }
-
-    .game-info-container {
-        flex: 0 1 200px; /* Make even narrower */
-        min-width: 180px;
-        margin-left: 0; /* Remove margin */
-    }
+/* Chess container */
+.chess-container {
+    flex: 0 0 auto;
+    width: min(80vh, 600px);  /* Default size for mobile */
+    margin: 0;
 }
 
 /* Game info container */
 .game-info-container {
     width: 100%;
     max-width: min(80vh, 600px);
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
+}
+
+/* Desktop layout */
+@media (min-width: 1024px) {
+    .game-container {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .chess-container {
+        width: min(70vh, 700px);  /* Larger size for desktop */
+        margin-right: 20px;
+    }
+
+    .game-info-container {
+        flex: 0 1 300px;
+        min-width: 250px;
+    }
+}
+
+/* Small screen adjustments */
+@media (max-width: 768px) {
+    .chess-container {
+        width: min(90vw, 500px);  /* Adjust for very small screens */
+    }
 }
 
 /* Text and button styling */
