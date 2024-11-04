@@ -1,3 +1,4 @@
+import { updateGameResult } from './leaderboard.js';
 // Console initialization
 console.log("Enhanced Chess game script is running");
 
@@ -1060,6 +1061,9 @@ function endGame(winner) {
     
     updateStatusDisplay(message);
     debug(`Game ended: ${message}`);
+    
+    // Add this line to update the leaderboard
+    updateGameResult(winner);
     
     const chessboard = document.getElementById('chessboard');
     if (chessboard) {
