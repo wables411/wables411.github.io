@@ -20,6 +20,8 @@ class LeaderboardManager {
 
     // Add or update player score
     updateScore(username, gameResult) {
+        console.log(`Updating score for ${username} with result: ${gameResult}`);
+        
         if (!this.data[username]) {
             this.data[username] = {
                 wins: 0,
@@ -49,6 +51,7 @@ class LeaderboardManager {
         }
 
         this.saveLeaderboard();
+        this.displayLeaderboard();
     }
 
     // Get top 10 players sorted by points
@@ -60,6 +63,23 @@ class LeaderboardManager {
             }))
             .sort((a, b) => b.points - a.points)
             .slice(0, limit);
+    }
+
+    // Display leaderboard
+    displayLeaderboard() {
+        const tbody = document.getElementById('leaderboard-body');
+        if (!tbody) return;
+
+        const topPlayers = this.getTopPlayers();
+        tbody.innerHTML = topPlayers.map((player, index) => `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${player.username}</td>
+                <td>${player.points}</td>
+                <td>${player.wins}/${player.losses}/${player.draws}</td>
+                <td>${player.totalGames}</td>
+            </tr>
+        `).join('');
     }
 }
 
@@ -74,9 +94,9 @@ function initializeLeaderboard() {
     leaderboardSection.innerHTML = `
         <div class="leaderboard-container">
             <h2 class="leaderboard-title">Top Players</h2>
-            <div class="username-input" style="display: none;">
+            <div class="username-input">
                 <input type="text" id="username-input" placeholder="Enter your username" maxlength="20">
-                <button id="username-submit">Start Playing</button>
+                <button id="username-submit" class="difficulty-btn">Set Username</button>
             </div>
             <div class="leaderboard-table">
                 <table>
@@ -98,7 +118,9 @@ function initializeLeaderboard() {
 
     // Add leaderboard to the game section
     const gameSection = document.querySelector('.game-section');
-    gameSection.appendChild(leaderboardSection);
+    if (gameSection) {
+        gameSection.insertBefore(leaderboardSection, gameSection.firstChild);
+    }
 
     // Add styles
     const styleSheet = document.createElement('style');
@@ -137,15 +159,6 @@ function initializeLeaderboard() {
             margin-right: 10px;
         }
 
-        .username-input button {
-            padding: 8px 16px;
-            background: rgba(50, 205, 50, 0.2);
-            border: 1px solid rgba(50, 205, 50, 0.5);
-            color: white;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
         .leaderboard-table {
             overflow-x: auto;
         }
@@ -172,54 +185,52 @@ function initializeLeaderboard() {
         }
     `;
     document.head.appendChild(styleSheet);
-}
 
-// Update leaderboard display
-function updateLeaderboardDisplay() {
-    const tbody = document.getElementById('leaderboard-body');
-    const topPlayers = leaderboardManager.getTopPlayers();
+    // Initialize username handling
+    initializeUsernameHandling();
     
-    tbody.innerHTML = topPlayers.map((player, index) => `
-        <tr>
-            <td>${index + 1}</td>
-            <td>${player.username}</td>
-            <td>${player.points}</td>
-            <td>${player.wins}/${player.losses}/${player.draws}</td>
-            <td>${player.totalGames}</td>
-        </tr>
-    `).join('');
+    // Display existing leaderboard
+    leaderboardManager.displayLeaderboard();
 }
 
-// Initialize username prompt
-function initializeUsernamePrompt() {
-    const usernameInput = document.querySelector('.username-input');
+// Initialize username handling
+function initializeUsernameHandling() {
+    const usernameInput = document.getElementById('username-input');
+    const usernameSubmit = document.getElementById('username-submit');
     const difficultyScreen = document.getElementById('difficulty-screen');
-    const inputField = document.getElementById('username-input');
-    const submitButton = document.getElementById('username-submit');
-
-    // Show username input when difficulty is selected
-    const difficultyButtons = document.querySelectorAll('.difficulty-btn');
-    difficultyButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            usernameInput.style.display = 'block';
-        });
-    });
+    
+    // Hide difficulty screen initially
+    if (difficultyScreen) {
+        difficultyScreen.style.display = 'none';
+    }
 
     // Handle username submission
-    submitButton.addEventListener('click', () => {
-        const username = inputField.value.trim();
-        if (username) {
-            localStorage.setItem('currentPlayer', username);
-            usernameInput.style.display = 'none';
-            document.getElementById('start-game').disabled = false;
-        }
-    });
+    if (usernameSubmit) {
+        usernameSubmit.addEventListener('click', () => {
+            const username = usernameInput.value.trim();
+            if (username) {
+                localStorage.setItem('currentPlayer', username);
+                usernameInput.disabled = true;
+                usernameSubmit.disabled = true;
+                
+                // Show difficulty screen after username is set
+                if (difficultyScreen) {
+                    difficultyScreen.style.display = 'flex';
+                }
+            }
+        });
+    }
 }
 
-// Modify the endGame function to update leaderboard
+// Update game result and leaderboard
 function updateGameResult(winner) {
     const currentPlayer = localStorage.getItem('currentPlayer');
-    if (!currentPlayer) return;
+    if (!currentPlayer) {
+        console.warn('No player username found');
+        return;
+    }
+
+    console.log(`Game ended with winner: ${winner}, current player: ${currentPlayer}`);
 
     if (winner === 'draw') {
         leaderboardManager.updateScore(currentPlayer, 'draw');
@@ -228,18 +239,13 @@ function updateGameResult(winner) {
     } else {
         leaderboardManager.updateScore(currentPlayer, 'loss');
     }
-
-    updateLeaderboardDisplay();
 }
 
-// Initialize everything
+// Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     initializeLeaderboard();
-    initializeUsernamePrompt();
-    updateLeaderboardDisplay();
 });
 
-// Export functions to be used in the main chess.js file
 export {
     updateGameResult,
     leaderboardManager
