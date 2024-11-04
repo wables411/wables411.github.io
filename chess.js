@@ -269,25 +269,40 @@ function evaluateEasyMove(piece, startRow, startCol, endRow, endCol) {
     board[endRow][endCol] = piece;
     board[startRow][startCol] = null;
     
-    // Basic piece values
+    // Enhanced piece values
     const pieceValues = {
-        'p': 100,  // pawn
-        'n': 300,  // knight
-        'b': 300,  // bishop
-        'r': 500,  // rook
-        'q': 900,  // queen
-        'k': 400   // king - lower value to avoid unnecessary movement
+        'p': 150,  // Increased pawn value to encourage captures
+        'n': 350,  // Slightly higher knight value
+        'b': 350,  // Slightly higher bishop value
+        'r': 525,  // Slightly higher rook value
+        'q': 1000, // Higher queen value
+        'k': 400   // Same king value
     };
     
-    // Capturing pieces
+    // Strongly encourage capturing moves in easy mode
     if (originalPiece) {
-        score += pieceValues[originalPiece.toLowerCase()];
+        score += pieceValues[originalPiece.toLowerCase()] * 1.5; // 50% bonus for captures
+        
+        // Extra bonus for pawn captures
+        if (piece.toLowerCase() === 'p') {
+            score += 200; // Strong bonus for pawn captures
+        }
     }
     
-    // Simple positional bonuses
-    if (piece.toLowerCase() !== 'k') {
+    // Positional bonuses
+    if (piece.toLowerCase() === 'p') {
+        // Encourage pawn advancement
+        const advancement = endRow - startRow;
+        score += advancement * 30;
+        
+        // Encourage pawns to control center
+        if (endCol >= 3 && endCol <= 4) {
+            score += 50;
+        }
+    } else if (piece.toLowerCase() !== 'k') {
+        // Center control bonus for other pieces
         if (endRow >= 3 && endRow <= 4 && endCol >= 3 && endCol <= 4) {
-            score += 10;
+            score += 40;
         }
     }
     
@@ -295,8 +310,8 @@ function evaluateEasyMove(piece, startRow, startCol, endRow, endCol) {
     board[startRow][startCol] = piece;
     board[endRow][endCol] = originalPiece;
     
-    // Add significant randomness for easy mode
-    score += Math.random() * 200;
+    // Add randomness for easy mode, but less than before
+    score += Math.random() * 150;
     
     return score;
 }
@@ -309,63 +324,66 @@ function evaluateHardMove(piece, startRow, startCol, endRow, endCol) {
     board[endRow][endCol] = piece;
     board[startRow][startCol] = null;
     
-    // Advanced piece values
+    // Enhanced piece values
     const pieceValues = {
-        'p': 100,
-        'n': 320,
-        'b': 330,
-        'r': 500,
-        'q': 900,
+        'p': 150,
+        'n': 375,
+        'b': 385,
+        'r': 600,
+        'q': 1200,
         'k': 2000
     };
     
-    // Capturing bonus with 20% additional value
+    // Capturing bonus with 30% additional value
     if (originalPiece) {
-        score += pieceValues[originalPiece.toLowerCase()] * 1.2;
+        score += pieceValues[originalPiece.toLowerCase()] * 1.3;
     }
     
-    // Piece-specific evaluation
+    // Piece-specific evaluation with enhanced values
     switch (piece.toLowerCase()) {
         case 'p':
-            score += evaluatePawnPosition(endRow, endCol, 'red');
+            score += evaluatePawnPosition(endRow, endCol, 'red') * 1.5;
             break;
         case 'n':
-            score += evaluateKnightPosition(endRow, endCol);
+            score += evaluateKnightPosition(endRow, endCol) * 1.2;
             break;
         case 'b':
-            score += evaluateBishopPosition(endRow, endCol);
+            score += evaluateBishopPosition(endRow, endCol) * 1.2;
             break;
         case 'r':
-            score += evaluateRookPosition(endRow, endCol, 'red');
+            score += evaluateRookPosition(endRow, endCol, 'red') * 1.3;
             break;
         case 'q':
-            score += evaluateQueenPosition(endRow, endCol);
+            score += evaluateQueenPosition(endRow, endCol) * 1.2;
             break;
         case 'k':
-            score += evaluateKingPosition(endRow, endCol, 'red');
+            score += evaluateKingPosition(endRow, endCol, 'red') * 1.1;
             break;
     }
     
-    // Bonus for checking opponent
+    // Enhanced bonus for checking opponent
     if (isKingInCheck('blue')) {
-        score += 150;
+        score += 200;
     }
     
-    // Board control and mobility
-    score += evaluateMobility('red') * 10;
+    // Improved board control and mobility evaluation
+    score += evaluateMobility('red') * 15;
     if (endRow >= 2 && endRow <= 5 && endCol >= 2 && endCol <= 5) {
-        score += 30; // Bonus for controlling extended center
+        score += 40;
         if (endRow >= 3 && endRow <= 4 && endCol >= 3 && endCol <= 4) {
-            score += 20; // Additional bonus for controlling central squares
+            score += 30;
         }
     }
+    
+    // Piece protection bonus
+    score += evaluatePieceProtection(endRow, endCol, 'red') * 25;
     
     // Restore board
     board[startRow][startCol] = piece;
     board[endRow][endCol] = originalPiece;
     
-    // Small random factor to avoid predictability
-    score += Math.random() * 20;
+    // Smaller random factor
+    score += Math.random() * 15;
     
     return score;
 }
@@ -376,16 +394,16 @@ function evaluatePawnPosition(row, col, color) {
     
     // Advancement bonus
     const advancement = color === 'red' ? row : (7 - row);
-    score += advancement * 10;
+    score += advancement * 15;
     
     // Central control bonus
     if (col >= 2 && col <= 5) {
-        score += 10;
+        score += 15;
     }
     
     // Passed pawn bonus
     if (isPawnPassed(row, col, color)) {
-        score += 50;
+        score += 60;
     }
     
     return score;
@@ -393,11 +411,11 @@ function evaluatePawnPosition(row, col, color) {
 
 function evaluateKnightPosition(row, col) {
     const centerDistance = Math.abs(3.5 - row) + Math.abs(3.5 - col);
-    let score = (7 - centerDistance) * 10;
+    let score = (7 - centerDistance) * 15;
     
     // Outpost bonus
     if (row >= 3 && row <= 4 && (col === 2 || col === 5)) {
-        score += 20;
+        score += 30;
     }
     
     return score;
@@ -407,11 +425,11 @@ function evaluateBishopPosition(row, col) {
     let score = 0;
     
     // Mobility bonus
-    score += countDiagonalMoves(row, col) * 5;
+    score += countDiagonalMoves(row, col) * 8;
     
     // Long diagonal bonus
     if (Math.abs(row - col) === 0 || Math.abs(row - col) === 7) {
-        score += 15;
+        score += 25;
     }
     
     return score;
@@ -422,12 +440,12 @@ function evaluateRookPosition(row, col, color) {
     
     // Open file bonus
     if (isFileOpen(col)) {
-        score += 30;
+        score += 40;
     }
     
     // Seventh rank bonus
     if ((color === 'red' && row === 6) || (color === 'blue' && row === 1)) {
-        score += 40;
+        score += 50;
     }
     
     return score;
@@ -436,10 +454,10 @@ function evaluateRookPosition(row, col, color) {
 function evaluateQueenPosition(row, col) {
     // Center distance penalty
     const centerDistance = Math.abs(3.5 - row) + Math.abs(3.5 - col);
-    let score = (7 - centerDistance) * 5;
+    let score = (7 - centerDistance) * 8;
     
     // Mobility bonus
-    score += (countDiagonalMoves(row, col) + countOrthogonalMoves(row, col)) * 2;
+    score += (countDiagonalMoves(row, col) + countOrthogonalMoves(row, col)) * 3;
     
     return score;
 }
@@ -450,13 +468,13 @@ function evaluateKingPosition(row, col, color) {
     if (isEndgame()) {
         // In endgame, king should be more active
         const centerDistance = Math.abs(3.5 - row) + Math.abs(3.5 - col);
-        score -= centerDistance * 10; // Encourage central position
+        score -= centerDistance * 15;
     } else {
         // In middlegame, king should stay safe
         if (color === 'red') {
-            score += (7 - row) * 10; // Prefer back rank
+            score += (7 - row) * 15;
         } else {
-            score += row * 10;
+            score += row * 15;
         }
     }
     
@@ -541,6 +559,25 @@ function evaluateMobility(color) {
     return mobility;
 }
 
+function evaluatePieceProtection(row, col, color) {
+    let protectionCount = 0;
+    const attackingColor = color === 'red' ? 'blue' : 'red';
+    
+    // Check how many friendly pieces protect this square
+    for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+            const piece = board[r][c];
+            if (piece && getPieceColor(piece) === color) {
+                if (canPieceMove(piece, r, c, row, col)) {
+                    protectionCount++;
+                }
+            }
+        }
+    }
+    
+    return protectionCount;
+}
+
 function isEndgame() {
     let totalPieceValue = 0;
     const values = { 'q': 9, 'r': 5, 'b': 3, 'n': 3, 'p': 1 };
@@ -554,7 +591,7 @@ function isEndgame() {
         }
     }
     
-    return totalPieceValue <= 12; // Endgame if total piece value is 12 or less
+    return totalPieceValue <= 12;
 }
 
 // Game state check functions
@@ -845,8 +882,8 @@ function makeAIMove() {
     const inCheck = isKingInCheck('red');
     debug(`AI thinking... (in check: ${inCheck}, difficulty: ${gameDifficulty})`);
     
-    // Get all legal moves
     let legalMoves = [];
+    // Get all legal moves
     for (let startRow = 0; startRow < BOARD_SIZE; startRow++) {
         for (let startCol = 0; startCol < BOARD_SIZE; startCol++) {
             const piece = board[startRow][startCol];
@@ -870,7 +907,8 @@ function makeAIMove() {
                                     startCol,
                                     endRow,
                                     endCol,
-                                    score: 0
+                                    score: 0,
+                                    isCapture: !!originalPiece
                                 });
                             }
                         }
@@ -891,12 +929,17 @@ function makeAIMove() {
         return;
     }
 
-    // Evaluate and score moves based on difficulty
+    // Evaluate moves with new scoring
     legalMoves.forEach(move => {
         if (gameDifficulty === 'hard') {
             move.score = evaluateHardMove(move.piece, move.startRow, move.startCol, move.endRow, move.endCol);
         } else {
             move.score = evaluateEasyMove(move.piece, move.startRow, move.startCol, move.endRow, move.endCol);
+            
+            // Extra bonus for captures in easy mode
+            if (move.isCapture && move.piece.toLowerCase() === 'p') {
+                move.score += 300; // Strong bonus for pawn captures in easy mode
+            }
         }
     });
 
@@ -906,15 +949,18 @@ function makeAIMove() {
     // Select move based on difficulty
     let selectedMove;
     if (gameDifficulty === 'hard') {
-        // Choose one of the top 3 moves in hard mode
-        const topMoves = legalMoves.slice(0, 3);
+        // Choose one of the top 2 moves in hard mode (more focused selection)
+        const topMoves = legalMoves.slice(0, 2);
         selectedMove = topMoves[Math.floor(Math.random() * topMoves.length)];
     } else {
-        // In easy mode, sometimes choose a suboptimal move
-        if (Math.random() < 0.3) { // 30% chance of random move
-            selectedMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+        // In easy mode, bias towards captures but still allow some randomness
+        if (legalMoves.some(move => move.isCapture)) {
+            const captureMoves = legalMoves.filter(move => move.isCapture);
+            selectedMove = captureMoves[Math.floor(Math.random() * captureMoves.length)];
         } else {
-            selectedMove = legalMoves[0];
+            // If no captures available, choose from top 3 moves
+            const topMoves = legalMoves.slice(0, 3);
+            selectedMove = topMoves[Math.floor(Math.random() * topMoves.length)];
         }
     }
 
@@ -1251,3 +1297,9 @@ function promptPawnPromotion(startRow, startCol, endRow, endCol) {
     
     document.getElementById('chessboard').appendChild(dialog);
 }
+
+// Export functions that need to be accessible from other modules
+export {
+    updateGameResult,
+    leaderboardManager
+};
