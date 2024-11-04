@@ -1,90 +1,145 @@
 // leaderboard.js
 
-// Leaderboard data structure
 class LeaderboardManager {
     constructor() {
-        this.storageKey = 'chessLeaderboard';
-        this.data = this.loadLeaderboard();
+        this.dbName = 'ChessLeaderboard';
+        this.dbVersion = 1;
+        this.storeName = 'scores';
+        this.initDB();
     }
 
-    // Load leaderboard data from localStorage
-    loadLeaderboard() {
-        const stored = localStorage.getItem(this.storageKey);
-        return stored ? JSON.parse(stored) : {};
+    async initDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.dbName, this.dbVersion);
+
+            request.onerror = () => {
+                console.error("Error opening DB");
+                reject(request.error);
+            };
+
+            request.onsuccess = () => {
+                this.db = request.result;
+                this.displayLeaderboard();
+                resolve();
+            };
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(this.storeName)) {
+                    db.createObjectStore(this.storeName, { keyPath: 'username' });
+                }
+            };
+        });
     }
 
-    // Save leaderboard data to localStorage
-    saveLeaderboard() {
-        localStorage.setItem(this.storageKey, JSON.stringify(this.data));
+    async loadLeaderboard() {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                console.log('Database not initialized');
+                resolve({});
+                return;
+            }
+
+            const transaction = this.db.transaction([this.storeName], 'readonly');
+            const store = transaction.objectStore(this.storeName);
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                const data = {};
+                request.result.forEach(record => {
+                    data[record.username] = record;
+                });
+                resolve(data);
+            };
+
+            request.onerror = () => {
+                console.error('Error loading leaderboard:', request.error);
+                reject(request.error);
+            };
+        });
     }
 
-    // Add or update player score
-    updateScore(username, gameResult) {
+    async updateScore(username, gameResult) {
+        if (!this.db) {
+            console.error('Database not initialized');
+            return;
+        }
+
         console.log(`Updating score for ${username} with result: ${gameResult}`);
+
+        const transaction = this.db.transaction([this.storeName], 'readwrite');
+        const store = transaction.objectStore(this.storeName);
         
-        if (!this.data[username]) {
-            this.data[username] = {
+        // Get existing record or create new one
+        const getRequest = store.get(username);
+        
+        getRequest.onsuccess = () => {
+            let record = getRequest.result || {
+                username,
                 wins: 0,
                 losses: 0,
                 draws: 0,
                 totalGames: 0,
                 points: 0
             };
-        }
 
-        const player = this.data[username];
-        player.totalGames++;
+            record.totalGames++;
+            
+            switch (gameResult) {
+                case 'win':
+                    record.wins++;
+                    record.points += 3;
+                    break;
+                case 'loss':
+                    record.losses++;
+                    break;
+                case 'draw':
+                    record.draws++;
+                    record.points += 1;
+                    break;
+            }
 
-        switch (gameResult) {
-            case 'win':
-                player.wins++;
-                player.points += 3;
-                break;
-            case 'loss':
-                player.losses++;
-                player.points += 0;
-                break;
-            case 'draw':
-                player.draws++;
-                player.points += 1;
-                break;
-        }
+            store.put(record);
+            this.displayLeaderboard();
+        };
 
-        this.saveLeaderboard();
-        this.displayLeaderboard();
+        getRequest.onerror = () => {
+            console.error('Error updating score:', getRequest.error);
+        };
     }
 
-    // Get top 10 players sorted by points
-    getTopPlayers(limit = 10) {
-        return Object.entries(this.data)
-            .map(([username, stats]) => ({
-                username,
-                ...stats
-            }))
-            .sort((a, b) => b.points - a.points)
-            .slice(0, limit);
+    async getTopPlayers(limit = 10) {
+        try {
+            const data = await this.loadLeaderboard();
+            return Object.values(data)
+                .sort((a, b) => b.points - a.points)
+                .slice(0, limit);
+        } catch (error) {
+            console.error('Error getting top players:', error);
+            return [];
+        }
     }
 
-    // Display leaderboard
-    displayLeaderboard() {
+    async displayLeaderboard() {
         const tbody = document.getElementById('leaderboard-body');
         if (!tbody) return;
 
-        const topPlayers = this.getTopPlayers();
-        tbody.innerHTML = topPlayers.map((player, index) => `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${player.username}</td>
-                <td>${player.points}</td>
-                <td>${player.wins}/${player.losses}/${player.draws}</td>
-                <td>${player.totalGames}</td>
-            </tr>
-        `).join('');
+        try {
+            const topPlayers = await this.getTopPlayers();
+            tbody.innerHTML = topPlayers.map((player, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${player.username}</td>
+                    <td>${player.points}</td>
+                    <td>${player.wins}/${player.losses}/${player.draws}</td>
+                    <td>${player.totalGames}</td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('Error displaying leaderboard:', error);
+        }
     }
 }
-
-// Initialize leaderboard manager
-const leaderboardManager = new LeaderboardManager();
 
 // Create and add leaderboard UI components
 function initializeLeaderboard() {
@@ -188,9 +243,6 @@ function initializeLeaderboard() {
 
     // Initialize username handling
     initializeUsernameHandling();
-    
-    // Display existing leaderboard
-    leaderboardManager.displayLeaderboard();
 }
 
 // Initialize username handling
@@ -221,6 +273,9 @@ function initializeUsernameHandling() {
         });
     }
 }
+
+// Initialize leaderboard manager
+const leaderboardManager = new LeaderboardManager();
 
 // Update game result and leaderboard
 function updateGameResult(winner) {
