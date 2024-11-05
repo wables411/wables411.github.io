@@ -28,12 +28,14 @@
     margin: 0;
     position: relative;
     background: transparent !important;
+    min-height: 500px; /* Added to ensure container is visible */
 }
 
 /* Game info container */
 .game-info-container {
     width: 100%;
     max-width: min(80vh, 600px);
+    margin-top: 20px;
 }
 
 /* Difficulty Selection Screen */
@@ -48,10 +50,14 @@
     gap: 30px;
     padding: 40px;
     border-radius: 10px;
-    border: 1px solid rgba(50, 205, 50, 0.3);
-    position: relative;
+    border: 2px solid rgba(50, 205, 50, 0.3);
+    position: absolute; /* Changed to absolute */
+    top: 0; /* Added */
+    left: 0; /* Added */
+    right: 0; /* Added */
+    bottom: 0; /* Added */
     z-index: 100;
-    background: rgba(0, 0, 0, 0.7) !important;
+    background: rgba(0, 0, 0, 0.9) !important; /* Darkened background */
 }
 
 /* Difficulty Screen Title */
@@ -75,11 +81,12 @@
 
 /* Button Styles */
 .difficulty-btn,
-.start-btn {
+.start-btn,
+#username-submit {
     padding: 15px 30px;
     font-size: 1.3rem;
     border: 2px solid rgba(50, 205, 50, 0.5);
-    color: #fff;
+    color: #fff !important;
     text-shadow: 0 0 5px #32CD32;
     transition: all 0.3s ease;
     font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
@@ -88,25 +95,30 @@
     cursor: pointer;
     border-radius: 24px;
     box-shadow: 0 0 10px rgba(50, 205, 50, 0.3);
-    background: rgba(50, 205, 50, 0.2);
+    background: rgba(50, 205, 50, 0.2) !important;
+    position: relative; /* Added */
+    z-index: 101; /* Added to ensure buttons are clickable */
 }
 
 .difficulty-btn:disabled,
-.start-btn:disabled {
+.start-btn:disabled,
+#username-submit:disabled {
     opacity: 0.5;
-    cursor: not-allowed;
-    background: rgba(50, 205, 50, 0.1);
+    cursor: not-allowed !important;
+    background: rgba(50, 205, 50, 0.1) !important;
+    pointer-events: none; /* Added */
 }
 
 .difficulty-btn:not(:disabled):hover,
-.start-btn:not(:disabled):hover {
-    background: rgba(50, 205, 50, 0.3);
+.start-btn:not(:disabled):hover,
+#username-submit:not(:disabled):hover {
+    background: rgba(50, 205, 50, 0.3) !important;
     transform: translateY(-3px);
     box-shadow: 0 0 20px rgba(50, 205, 50, 0.4);
 }
 
 .difficulty-btn.selected {
-    background: rgba(50, 205, 50, 0.3);
+    background: rgba(50, 205, 50, 0.3) !important;
     transform: scale(1.05);
     box-shadow: 0 0 25px rgba(50, 205, 50, 0.5);
 }
@@ -115,6 +127,9 @@
 .start-btn {
     padding: 20px 40px;
     font-size: 1.5rem;
+}
+
+.start-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
@@ -210,6 +225,7 @@
     white-space: pre-wrap;
     border: 1px solid rgba(50, 205, 50, 0.3);
     background: rgba(0, 0, 0, 0.7) !important;
+    color: white;
 }
 
 /* Debug section */
@@ -226,6 +242,35 @@
     border: 1px solid rgba(50, 205, 50, 0.3);
     text-align: center;
     background: rgba(0, 0, 0, 0.7) !important;
+    color: white;
+}
+
+/* Promotion dialog */
+.promotion-dialog {
+    display: flex;
+    flex-direction: column;
+    background: rgba(0, 0, 0, 0.9) !important;
+    border-radius: 8px;
+    padding: 4px;
+    border: 1px solid rgba(50, 205, 50, 0.3);
+    box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
+    z-index: 1000;
+}
+
+.promotion-piece {
+    width: 50px;
+    height: 50px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+    filter: drop-shadow(0 0 5px rgba(50, 205, 50, 0.5));
+}
+
+.promotion-piece:hover {
+    transform: scale(1.1);
+    filter: brightness(1.2) drop-shadow(0 0 8px rgba(50, 205, 50, 0.7));
 }
 
 /* Animations */
@@ -257,36 +302,6 @@
     }
 }
 
-/* Mobile optimizations */
-@media (max-width: 768px) {
-    #difficulty-screen {
-        padding: 20px;
-    }
-
-    .difficulty-buttons {
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    .difficulty-btn {
-        padding: 12px 24px;
-        font-size: 1.1rem;
-    }
-
-    .start-btn {
-        padding: 15px 30px;
-        font-size: 1.3rem;
-    }
-
-    #status {
-        font-size: 1.2rem;
-    }
-
-    #move-history {
-        height: 120px;
-    }
-}
-
 /* Leaderboard section styles */
 .leaderboard-section {
     margin: 20px auto !important;
@@ -314,6 +329,8 @@
 
 .username-input {
     margin-bottom: 20px;
+    position: relative;
+    z-index: 102;
 }
 
 .username-input input {
@@ -360,8 +377,35 @@
     background: rgba(50, 205, 50, 0.1);
 }
 
-/* Mobile responsiveness for leaderboard */
+/* Mobile optimizations */
 @media (max-width: 768px) {
+    #difficulty-screen {
+        padding: 20px;
+    }
+
+    .difficulty-buttons {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .difficulty-btn {
+        padding: 12px 24px;
+        font-size: 1.1rem;
+    }
+
+    .start-btn {
+        padding: 15px 30px;
+        font-size: 1.3rem;
+    }
+
+    #status {
+        font-size: 1.2rem;
+    }
+
+    #move-history {
+        height: 120px;
+    }
+
     .username-input {
         display: flex;
         flex-direction: column;
@@ -378,16 +422,4 @@
     .leaderboard-table {
         font-size: 0.9rem;
     }
-}
-
-/* Animation for username input button */
-.username-input button:hover {
-    background: rgba(50, 205, 50, 0.3) !important;
-    box-shadow: 0 0 15px rgba(50, 205, 50, 0.4);
-}
-
-.username-input button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed !important;
-    background: rgba(50, 205, 50, 0.1) !important;
 }
