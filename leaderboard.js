@@ -5,8 +5,15 @@ const supabaseUrl = 'https://roxwocgknkiqnsgiojgz.supabase.co'
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+// Initialize singleton instance
+let leaderboardManagerInstance = null;
+
 class LeaderboardManager {
     constructor() {
+        if (leaderboardManagerInstance) {
+            return leaderboardManagerInstance;
+        }
+        leaderboardManagerInstance = this;
         this.loadLeaderboard();
     }
 
@@ -79,7 +86,10 @@ class LeaderboardManager {
                 });
 
             if (error) throw error;
-            await this.loadLeaderboard(); // Refresh display
+            
+            // Force immediate refresh
+            setTimeout(() => this.loadLeaderboard(), 500);
+            
         } catch (error) {
             console.error('Error updating score:', error);
         }
@@ -264,9 +274,6 @@ function initializeUsernameHandling() {
     }
 }
 
-// Initialize leaderboard manager
-const leaderboardManager = new LeaderboardManager();
-
 // Update game result and leaderboard
 function updateGameResult(winner) {
     const currentPlayer = localStorage.getItem('currentPlayer');
@@ -278,21 +285,25 @@ function updateGameResult(winner) {
     console.log(`Game ended with winner: ${winner}, current player: ${currentPlayer}`);
 
     if (winner === 'draw') {
-        leaderboardManager.updateScore(currentPlayer, 'draw');
+        leaderboardManagerInstance.updateScore(currentPlayer, 'draw');
     } else if (winner === 'blue') {
-        leaderboardManager.updateScore(currentPlayer, 'win');
+        leaderboardManagerInstance.updateScore(currentPlayer, 'win');
     } else {
-        leaderboardManager.updateScore(currentPlayer, 'loss');
+        leaderboardManagerInstance.updateScore(currentPlayer, 'loss');
     }
 }
 
 // Initialize everything when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     initializeLeaderboard();
     initializeUsernameHandling();
+    
+    // Ensure leaderboard is loaded
+    const manager = new LeaderboardManager();
+    await manager.loadLeaderboard();
 });
 
 export {
     updateGameResult,
-    leaderboardManager
+    LeaderboardManager
 };
