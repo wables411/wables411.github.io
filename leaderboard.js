@@ -167,7 +167,7 @@ function initializeUsernameHandling() {
 }
 
 // Update game result and leaderboard
-function updateGameResult(winner) {
+window.updateGameResult = function(winner) {
     const currentPlayer = localStorage.getItem('currentPlayer');
     if (!currentPlayer) {
         console.warn('No player username found');
@@ -183,7 +183,7 @@ function updateGameResult(winner) {
             leaderboardManagerInstance.updateScore(currentPlayer, 'loss');
         }
     }
-}
+};
 
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
