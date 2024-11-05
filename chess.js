@@ -1,5 +1,22 @@
-// Add at the top of chess.js
-import { updateGameResult } from './leaderboard.js';
+let updateGameResult;
+
+// Wait for leaderboard to be ready
+async function initializeLeaderboard() {
+    const leaderboardModule = await import('./leaderboard.js');
+    updateGameResult = leaderboardModule.updateGameResult;
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        console.log("Initializing chess game...");
+        initializeLeaderboard().then(() => {
+            initDifficultySelection();
+        });
+    } catch (error) {
+        console.error("Error during initialization:", error);
+    }
+});
 // Console initialization
 console.log("Enhanced Chess game script is running");
 
@@ -119,21 +136,15 @@ function initDifficultySelection() {
 
         function selectDifficulty(difficulty, button, otherButton) {
             selectedDifficulty = difficulty;
+            gameDifficulty = difficulty; // Add this line
             button.classList.add('selected');
             otherButton.classList.remove('selected');
             startBtn.disabled = false;
             debug(`${difficulty} mode selected`);
         }
 
-        easyBtn.addEventListener('click', () => {
-            selectDifficulty('easy', easyBtn, hardBtn);
-            gameDifficulty = 'easy';
-        });
-
-        hardBtn.addEventListener('click', () => {
-            selectDifficulty('hard', hardBtn, easyBtn);
-            gameDifficulty = 'hard';
-        });
+        easyBtn.addEventListener('click', () => selectDifficulty('easy', easyBtn, hardBtn));
+        hardBtn.addEventListener('click', () => selectDifficulty('hard', hardBtn, easyBtn));
 
         startBtn.addEventListener('click', () => {
             if (selectedDifficulty) {
@@ -143,17 +154,9 @@ function initDifficultySelection() {
             }
         });
 
-        document.getElementById('restart-game').addEventListener('click', () => {
-            resetGame();
-            chessGame.style.display = 'none';
-            difficultyScreen.style.display = 'flex';
-            selectedDifficulty = null;
-            startBtn.disabled = true;
-            easyBtn.classList.remove('selected');
-            hardBtn.classList.remove('selected');
-            debug('Game reset - selecting difficulty');
-        });
-
+        // Add these lines to make sure the start button is initially disabled
+        startBtn.disabled = true;
+        debug('Difficulty selection initialized');
     } catch (error) {
         console.error("Error initializing difficulty selection:", error);
     }
@@ -249,16 +252,6 @@ function selectRandomChessboard() {
     const boardNumber = Math.floor(Math.random() * boardCount) + 1;
     return `images/chessboard${boardNumber}.png`;
 }
-
-// Event listener for page load
-window.addEventListener('DOMContentLoaded', function() {
-    try {
-        console.log("Initializing chess game...");
-        initDifficultySelection();
-    } catch (error) {
-        console.error("Error during initialization:", error);
-    }
-});
 
 // AI Evaluation Functions
 function evaluateEasyMove(piece, startRow, startCol, endRow, endCol) {
