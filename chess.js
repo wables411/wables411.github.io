@@ -274,13 +274,13 @@ function evaluateEasyMove(piece, startRow, startCol, endRow, endCol) {
     
     // Strongly encourage capturing moves in easy mode
     if (originalPiece) {
-        score += pieceValues[originalPiece.toLowerCase()] * 1.5; // 50% bonus for captures
-        
-        // Extra bonus for pawn captures
-        if (piece.toLowerCase() === 'p') {
-            score += 200; // Strong bonus for pawn captures
-        }
+    score += pieceValues[originalPiece.toLowerCase()] * 2.0; // Increased from 1.5 to 2.0
+    
+    // Extra bonus for pawn captures
+    if (piece.toLowerCase() === 'p') {
+        score += 400; // Increased from 200 to 400
     }
+}
     
     // Positional bonuses
     if (piece.toLowerCase() === 'p') {
@@ -931,7 +931,7 @@ function makeAIMove() {
             
             // Extra bonus for captures in easy mode
             if (move.isCapture && move.piece.toLowerCase() === 'p') {
-                move.score += 300; // Strong bonus for pawn captures in easy mode
+                move.score += 400; // Increased bonus for pawn captures in easy mode
             }
         }
     });
@@ -942,14 +942,25 @@ function makeAIMove() {
     // Select move based on difficulty
     let selectedMove;
     if (gameDifficulty === 'hard') {
-        // Choose one of the top 2 moves in hard mode (more focused selection)
-        const topMoves = legalMoves.slice(0, 2);
-        selectedMove = topMoves[Math.floor(Math.random() * topMoves.length)];
+        // In hard mode, usually choose the best move
+        if (Math.random() < 0.8) { // 80% chance to pick the best move
+            selectedMove = legalMoves[0];
+        } else {
+            // 20% chance to pick from top 2 moves
+            const topMoves = legalMoves.slice(0, 2);
+            selectedMove = topMoves[Math.floor(Math.random() * topMoves.length)];
+        }
     } else {
-        // In easy mode, bias towards captures but still allow some randomness
+        // In easy mode, strongly bias towards captures
         if (legalMoves.some(move => move.isCapture)) {
             const captureMoves = legalMoves.filter(move => move.isCapture);
-            selectedMove = captureMoves[Math.floor(Math.random() * captureMoves.length)];
+            // Prioritize pawn captures
+            const pawnCaptures = captureMoves.filter(move => move.piece.toLowerCase() === 'p');
+            if (pawnCaptures.length > 0) {
+                selectedMove = pawnCaptures[Math.floor(Math.random() * pawnCaptures.length)];
+            } else {
+                selectedMove = captureMoves[Math.floor(Math.random() * captureMoves.length)];
+            }
         } else {
             // If no captures available, choose from top 3 moves
             const topMoves = legalMoves.slice(0, 3);
@@ -1294,5 +1305,4 @@ function promptPawnPromotion(startRow, startCol, endRow, endCol) {
 // Export functions that need to be accessible from other modules
 export {
     updateGameResult,
-    leaderboardManager
 };
