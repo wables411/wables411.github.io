@@ -286,3 +286,108 @@
         height: 120px;
     }
 }
+
+/* Leaderboard section styles */
+.leaderboard-section {
+    margin: 20px auto !important;
+    padding: 20px !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(50, 205, 50, 0.3) !important;
+    color: white !important;
+    max-width: 800px !important;
+}
+
+.leaderboard-container {
+    width: 100%;
+    margin: 0 auto;
+}
+
+.leaderboard-title {
+    color: #ff0000;
+    text-shadow: 0 0 5px #32CD32,
+                 0 0 10px #32CD32,
+                 0 0 15px #32CD32;
+    margin-bottom: 20px;
+    font-size: 2em;
+}
+
+.username-input {
+    margin-bottom: 20px;
+}
+
+.username-input input {
+    padding: 8px 12px;
+    border: 1px solid rgba(50, 205, 50, 0.3);
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border-radius: 4px;
+    margin-right: 10px;
+    width: 200px;
+}
+
+.username-input button {
+    background: rgba(50, 205, 50, 0.2) !important;
+    color: white !important;
+    border: 1px solid rgba(50, 205, 50, 0.3) !important;
+    padding: 8px 16px !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+}
+
+.leaderboard-table {
+    overflow-x: auto;
+}
+
+.leaderboard-table table {
+    width: 100%;
+    border-collapse: collapse;
+    color: white;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid rgba(50, 205, 50, 0.2);
+}
+
+.leaderboard-table th {
+    background: rgba(50, 205, 50, 0.2);
+}
+
+.leaderboard-table tr:nth-child(even) {
+    background: rgba(50, 205, 50, 0.1);
+}
+
+/* Mobile responsiveness for leaderboard */
+@media (max-width: 768px) {
+    .username-input {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .username-input input {
+        width: 100%;
+        max-width: 300px;
+        margin-right: 0;
+    }
+
+    .leaderboard-table {
+        font-size: 0.9rem;
+    }
+}
+
+/* Animation for username input button */
+.username-input button:hover {
+    background: rgba(50, 205, 50, 0.3) !important;
+    box-shadow: 0 0 15px rgba(50, 205, 50, 0.4);
+}
+
+.username-input button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed !important;
+    background: rgba(50, 205, 50, 0.1) !important;
+}
