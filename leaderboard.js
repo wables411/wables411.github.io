@@ -133,39 +133,37 @@ class LeaderboardManager {
 
 // Initialize username handling
 function initializeUsernameHandling() {
-    console.log("Initializing username handling..."); // Debug log
     const usernameInput = document.getElementById('username-input');
     const usernameSubmit = document.getElementById('username-submit');
     const difficultyScreen = document.getElementById('difficulty-screen');
     
+    // Debug log what we found
+    console.log("Found elements:", {
+        usernameInput: !!usernameInput,
+        usernameSubmit: !!usernameSubmit,
+        difficultyScreen: !!difficultyScreen
+    });
+
     if (!usernameInput || !usernameSubmit || !difficultyScreen) {
-        console.error("Could not find required username elements");
+        console.error("Missing required elements for username handling");
         return;
     }
 
-    // Hide difficulty screen initially
+    // Initially hide difficulty screen
     difficultyScreen.style.display = 'none';
 
-    // Check for existing username
-    const savedUsername = localStorage.getItem('currentPlayer');
-    if (savedUsername) {
-        usernameInput.value = savedUsername;
-        usernameInput.disabled = true;
-        usernameSubmit.disabled = true;
-        difficultyScreen.style.display = 'flex';
-    }
-
-    usernameSubmit.addEventListener('click', () => {
-        console.log("Username submit clicked"); // Debug log
+    // Username submit click
+    usernameSubmit.onclick = () => {
+        console.log("Username submit clicked");
         const username = usernameInput.value.trim();
         if (username) {
-            console.log(`Setting username: ${username}`); // Debug log
+            console.log(`Setting username: ${username}`);
             localStorage.setItem('currentPlayer', username);
             usernameInput.disabled = true;
             usernameSubmit.disabled = true;
             difficultyScreen.style.display = 'flex';
         }
-    });
+    };
 }
 
 // Update game result and leaderboard
