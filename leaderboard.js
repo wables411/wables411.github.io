@@ -1,80 +1,51 @@
-// leaderboard.js
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.1/+esm'
+
+// Initialize Supabase client
+const supabaseUrl = 'https://roxwocgknkiqnsgiojgz.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 class LeaderboardManager {
     constructor() {
-        this.dbName = 'ChessLeaderboard';
-        this.dbVersion = 1;
-        this.storeName = 'scores';
-        this.initDB();
-    }
-
-    async initDB() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, this.dbVersion);
-
-            request.onerror = () => {
-                console.error("Error opening DB");
-                reject(request.error);
-            };
-
-            request.onsuccess = () => {
-                this.db = request.result;
-                this.displayLeaderboard();
-                resolve();
-            };
-
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains(this.storeName)) {
-                    db.createObjectStore(this.storeName, { keyPath: 'username' });
-                }
-            };
-        });
+        this.loadLeaderboard();
     }
 
     async loadLeaderboard() {
-        return new Promise((resolve, reject) => {
-            if (!this.db) {
-                console.log('Database not initialized');
-                resolve({});
-                return;
+        try {
+            const { data, error } = await supabase
+                .from('leaderboard')
+                .select('*')
+                .order('points', { ascending: false });
+
+            if (error) {
+                throw error;
             }
-
-            const transaction = this.db.transaction([this.storeName], 'readonly');
-            const store = transaction.objectStore(this.storeName);
-            const request = store.getAll();
-
-            request.onsuccess = () => {
-                const data = {};
-                request.result.forEach(record => {
-                    data[record.username] = record;
-                });
-                resolve(data);
-            };
-
-            request.onerror = () => {
-                console.error('Error loading leaderboard:', request.error);
-                reject(request.error);
-            };
-        });
+            
+            this.leaderboardData = data || [];
+            this.displayLeaderboard();
+        } catch (error) {
+            console.error('Error loading leaderboard:', error);
+            this.leaderboardData = [];
+        }
     }
 
     async updateScore(username, gameResult) {
-        if (!this.db) {
-            console.error('Database not initialized');
+        if (!username) {
+            console.warn('No username provided');
             return;
         }
 
         console.log(`Updating score for ${username} with result: ${gameResult}`);
 
-        const transaction = this.db.transaction([this.storeName], 'readwrite');
-        const store = transaction.objectStore(this.storeName);
-        
-        // Get existing record or create new one
-        const getRequest = store.get(username);
-        
-        getRequest.onsuccess = () => {
-            let record = getRequest.result || {
+        try {
+            // Get existing record
+            const { data: existingRecord } = await supabase
+                .from('leaderboard')
+                .select('*')
+                .eq('username', username)
+                .single();
+
+            let record = existingRecord || {
                 username,
                 wins: 0,
                 losses: 0,
@@ -83,8 +54,8 @@ class LeaderboardManager {
                 points: 0
             };
 
+            // Update record
             record.totalGames++;
-            
             switch (gameResult) {
                 case 'win':
                     record.wins++;
@@ -99,21 +70,31 @@ class LeaderboardManager {
                     break;
             }
 
-            store.put(record);
-            this.displayLeaderboard();
-        };
+            // Upsert the record
+            const { error } = await supabase
+                .from('leaderboard')
+                .upsert(record, {
+                    onConflict: 'username',
+                    returning: 'minimal'
+                });
 
-        getRequest.onerror = () => {
-            console.error('Error updating score:', getRequest.error);
-        };
+            if (error) throw error;
+            await this.loadLeaderboard(); // Refresh display
+        } catch (error) {
+            console.error('Error updating score:', error);
+        }
     }
 
     async getTopPlayers(limit = 10) {
         try {
-            const data = await this.loadLeaderboard();
-            return Object.values(data)
-                .sort((a, b) => b.points - a.points)
-                .slice(0, limit);
+            const { data, error } = await supabase
+                .from('leaderboard')
+                .select('*')
+                .order('points', { ascending: false })
+                .limit(limit);
+
+            if (error) throw error;
+            return data || [];
         } catch (error) {
             console.error('Error getting top players:', error);
             return [];
@@ -176,73 +157,6 @@ function initializeLeaderboard() {
     if (gameSection) {
         gameSection.insertBefore(leaderboardSection, gameSection.firstChild);
     }
-
-    // Add styles
-    const styleSheet = document.createElement('style');
-    styleSheet.textContent = `
-        .leaderboard-section {
-            margin-top: 20px;
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 8px;
-            border: 1px solid rgba(50, 205, 50, 0.3);
-        }
-
-        .leaderboard-container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .leaderboard-title {
-            color: #fff;
-            text-shadow: 0 0 5px #32CD32,
-                         0 0 10px #32CD32,
-                         0 0 15px #32CD32;
-            margin-bottom: 20px;
-        }
-
-        .username-input {
-            margin-bottom: 20px;
-        }
-
-        .username-input input {
-            padding: 8px 12px;
-            border: 1px solid rgba(50, 205, 50, 0.3);
-            background: rgba(0, 0, 0, 0.5);
-            color: white;
-            border-radius: 4px;
-            margin-right: 10px;
-        }
-
-        .leaderboard-table {
-            overflow-x: auto;
-        }
-
-        .leaderboard-table table {
-            width: 100%;
-            border-collapse: collapse;
-            color: white;
-        }
-
-        .leaderboard-table th,
-        .leaderboard-table td {
-            padding: 10px;
-            text-align: center;
-            border: 1px solid rgba(50, 205, 50, 0.2);
-        }
-
-        .leaderboard-table th {
-            background: rgba(50, 205, 50, 0.2);
-        }
-
-        .leaderboard-table tr:nth-child(even) {
-            background: rgba(50, 205, 50, 0.1);
-        }
-    `;
-    document.head.appendChild(styleSheet);
-
-    // Initialize username handling
-    initializeUsernameHandling();
 }
 
 // Initialize username handling
@@ -299,6 +213,7 @@ function updateGameResult(winner) {
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     initializeLeaderboard();
+    initializeUsernameHandling();
 });
 
 export {
