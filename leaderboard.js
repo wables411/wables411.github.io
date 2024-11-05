@@ -1,11 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
+// Initialize Supabase client with CDN version
+const supabase = supabaseClient.createClient(
+    'https://roxwocgknkiqnsgiojgz.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
+);
 
-// Initialize Supabase client
-const supabaseUrl = 'https://roxwocgknkiqnsgiojgz.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y';
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Initialize singleton instance
+// Global instance
 let leaderboardManagerInstance = null;
 
 class LeaderboardManager {
@@ -44,10 +43,7 @@ class LeaderboardManager {
             return;
         }
 
-        console.log(`Updating score for ${username} with result: ${gameResult}`);
-
         try {
-            // Get existing record
             const { data: existingRecord, error: fetchError } = await supabase
                 .from('leaderboard')
                 .select('*')
@@ -68,7 +64,6 @@ class LeaderboardManager {
                 points: 0
             };
 
-            // Update record
             record.totalGames++;
             switch (gameResult) {
                 case 'win':
@@ -84,21 +79,6 @@ class LeaderboardManager {
                     break;
             }
 
-            // Save to localStorage as backup
-            try {
-                let localLeaderboard = JSON.parse(localStorage.getItem('chessLeaderboard') || '[]');
-                const existingIndex = localLeaderboard.findIndex(p => p.username === username);
-                if (existingIndex >= 0) {
-                    localLeaderboard[existingIndex] = record;
-                } else {
-                    localLeaderboard.push(record);
-                }
-                localStorage.setItem('chessLeaderboard', JSON.stringify(localLeaderboard));
-            } catch (e) {
-                console.error('Error updating localStorage:', e);
-            }
-
-            // Update Supabase
             const { error: upsertError } = await supabase
                 .from('leaderboard')
                 .upsert(record);
@@ -146,24 +126,22 @@ class LeaderboardManager {
             return data || [];
         } catch (error) {
             console.error('Error getting top players:', error);
-            const localData = localStorage.getItem('chessLeaderboard');
-            return localData ? JSON.parse(localData).slice(0, limit) : [];
+            return [];
         }
     }
 }
 
-function initializeUserHandling() {
+// Initialize username handling
+function initializeUsernameHandling() {
     const usernameInput = document.getElementById('username-input');
     const usernameSubmit = document.getElementById('username-submit');
     const difficultyScreen = document.getElementById('difficulty-screen');
-
-    // Hide difficulty screen initially if no username is set
+    
     if (difficultyScreen) {
         const savedUsername = localStorage.getItem('currentPlayer');
         difficultyScreen.style.display = savedUsername ? 'flex' : 'none';
     }
 
-    // Load existing username if available
     if (usernameInput) {
         const savedUsername = localStorage.getItem('currentPlayer');
         if (savedUsername) {
@@ -175,7 +153,6 @@ function initializeUserHandling() {
         }
     }
 
-    // Handle username submission
     if (usernameSubmit) {
         usernameSubmit.addEventListener('click', () => {
             const username = usernameInput?.value.trim();
@@ -183,7 +160,7 @@ function initializeUserHandling() {
                 localStorage.setItem('currentPlayer', username);
                 usernameInput.disabled = true;
                 usernameSubmit.disabled = true;
-
+                
                 if (difficultyScreen) {
                     difficultyScreen.style.display = 'flex';
                 }
@@ -192,15 +169,13 @@ function initializeUserHandling() {
     }
 }
 
-// Update game result
+// Update game result and leaderboard
 function updateGameResult(winner) {
     const currentPlayer = localStorage.getItem('currentPlayer');
     if (!currentPlayer) {
         console.warn('No player username found');
         return;
     }
-
-    console.log(`Game ended with winner: ${winner}, current player: ${currentPlayer}`);
 
     if (leaderboardManagerInstance) {
         if (winner === 'draw') {
@@ -213,14 +188,13 @@ function updateGameResult(winner) {
     }
 }
 
-// Initialize when DOM is loaded
+// Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
     const manager = new LeaderboardManager();
     await manager.loadLeaderboard();
-    initializeUserHandling();
+    initializeUsernameHandling();
 });
 
-export {
-    updateGameResult,
-    LeaderboardManager
-};
+// Make necessary functions globally available
+window.LeaderboardManager = LeaderboardManager;
+window.updateGameResult = updateGameResult;
