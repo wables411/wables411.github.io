@@ -1,5 +1,4 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.1/+esm'
-
+import { createClient } from '@supabase/supabase-js';
 // Initialize Supabase client
 const supabaseUrl = 'https://roxwocgknkiqnsgiojgz.supabase.co'
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
@@ -37,63 +36,68 @@ class LeaderboardManager {
     }
 
     async updateScore(username, gameResult) {
-        if (!username) {
-            console.warn('No username provided');
+    if (!username) {
+        console.warn('No username provided');
+        return;
+    }
+
+    console.log(`Updating score for ${username} with result: ${gameResult}`);
+
+    try {
+        // Get existing record
+        const { data: existingRecord, error: fetchError } = await supabase
+            .from('leaderboard')
+            .select('*')
+            .eq('username', username)
+            .single();
+
+        if (fetchError) {
+            console.error('Error fetching record:', fetchError);
             return;
         }
 
-        console.log(`Updating score for ${username} with result: ${gameResult}`);
+        let record = existingRecord || {
+            username,
+            wins: 0,
+            losses: 0,
+            draws: 0,
+            totalGames: 0,
+            points: 0
+        };
 
-        try {
-            // Get existing record
-            const { data: existingRecord } = await supabase
-                .from('leaderboard')
-                .select('*')
-                .eq('username', username)
-                .single();
-
-            let record = existingRecord || {
-                username,
-                wins: 0,
-                losses: 0,
-                draws: 0,
-                totalGames: 0,
-                points: 0
-            };
-
-            // Update record
-            record.totalGames++;
-            switch (gameResult) {
-                case 'win':
-                    record.wins++;
-                    record.points += 3;
-                    break;
-                case 'loss':
-                    record.losses++;
-                    break;
-                case 'draw':
-                    record.draws++;
-                    record.points += 1;
-                    break;
-            }
-
-            // Upsert the record
-            const { error } = await supabase
-                .from('leaderboard')
-                .upsert(record, {
-                    onConflict: 'username',
-                    returning: 'minimal'
-                });
-
-            if (error) throw error;
-            
-            // Force immediate refresh
-            setTimeout(() => this.loadLeaderboard(), 500);
-            
-        } catch (error) {
-            console.error('Error updating score:', error);
+        // Update record
+        record.totalGames++;
+        switch (gameResult) {
+            case 'win':
+                record.wins++;
+                record.points += 3;
+                break;
+            case 'loss':
+                record.losses++;
+                break;
+            case 'draw':
+                record.draws++;
+                record.points += 1;
+                break;
         }
+
+        // Upsert the record
+        const { error: upsertError } = await supabase
+            .from('leaderboard')
+            .upsert(record);
+
+        if (upsertError) {
+            console.error('Error upserting record:', upsertError);
+            return;
+        }
+        
+        // Force immediate refresh
+        await this.loadLeaderboard();
+        
+    } catch (error) {
+        console.error('Error updating score:', error);
     }
+}
 
     async getTopPlayers(limit = 10) {
         try {
@@ -286,10 +290,13 @@ function updateGameResult(winner) {
 
     if (winner === 'draw') {
         leaderboardManagerInstance.updateScore(currentPlayer, 'draw');
+    const manager = new LeaderboardManager();
+    if (winner === 'draw') {
+        manager.updateScore(currentPlayer, 'draw');
     } else if (winner === 'blue') {
-        leaderboardManagerInstance.updateScore(currentPlayer, 'win');
+        manager.updateScore(currentPlayer, 'win');
     } else {
-        leaderboardManagerInstance.updateScore(currentPlayer, 'loss');
+        manager.updateScore(currentPlayer, 'loss');
     }
 }
 
