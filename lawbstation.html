@@ -99,6 +99,32 @@
             <!-- Chess Game Section -->
             <div class="section-container game-section">
                 <h2 class="section-title">Chess Game</h2>
+                
+                <div class="leaderboard-section">
+                    <div class="leaderboard-container">
+                        <h2 class="leaderboard-title">Top Players</h2>
+                        <div class="username-input">
+                            <input type="text" id="username-input" placeholder="Enter your username" maxlength="20">
+                            <button id="username-submit" class="difficulty-btn">Set Username</button>
+                        </div>
+                        <div class="leaderboard-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Player</th>
+                                        <th>Points</th>
+                                        <th>W/L/D</th>
+                                        <th>Games</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaderboard-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="chess-container">
                     <!-- Difficulty Selection Screen -->
                     <div id="difficulty-screen">
