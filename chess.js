@@ -149,9 +149,8 @@ function isPawnPromotion(piece, endRow) {
     return piece.toLowerCase() === 'p' && (endRow === 0 || endRow === 7);
 }
 
-// Difficulty selection and game initialization
 function initDifficultySelection() {
-    console.log("Initializing difficulty selection..."); // Debug log
+    console.log("Initializing difficulty selection..."); // Add this debug log
     
     const easyBtn = document.getElementById('easy-mode');
     const hardBtn = document.getElementById('hard-mode');
@@ -159,6 +158,7 @@ function initDifficultySelection() {
     const difficultyScreen = document.getElementById('difficulty-screen');
     const chessGame = document.getElementById('chess-game');
 
+    // First check if elements exist
     if (!easyBtn || !hardBtn || !startBtn || !difficultyScreen || !chessGame) {
         console.error("Required elements not found:", {
             easyBtn: !!easyBtn,
@@ -170,38 +170,39 @@ function initDifficultySelection() {
         return;
     }
 
-    // Make sure buttons start in correct state
-    startBtn.disabled = true;
-    easyBtn.classList.remove('selected');
-    hardBtn.classList.remove('selected');
+    // Make sure game screen is hidden and difficulty screen is shown
+    chessGame.style.display = 'none';
+    difficultyScreen.style.display = 'flex';
 
-    function selectDifficulty(difficulty, button, otherButton) {
-        console.log(`Selecting difficulty: ${difficulty}`); // Debug log
-        selectedDifficulty = difficulty;
-        gameDifficulty = difficulty;
-        button.classList.add('selected');
-        otherButton.classList.remove('selected');
+    // Easy button click
+    easyBtn.onclick = () => {
+        console.log("Easy clicked");
+        selectedDifficulty = 'easy';
+        gameDifficulty = 'easy';
+        easyBtn.classList.add('selected');
+        hardBtn.classList.remove('selected');
         startBtn.disabled = false;
-    }
+    };
 
-    easyBtn.addEventListener('click', () => {
-        console.log("Easy button clicked"); // Debug log
-        selectDifficulty('easy', easyBtn, hardBtn);
-    });
+    // Hard button click
+    hardBtn.onclick = () => {
+        console.log("Hard clicked");
+        selectedDifficulty = 'hard';
+        gameDifficulty = 'hard';
+        hardBtn.classList.add('selected');
+        easyBtn.classList.remove('selected');
+        startBtn.disabled = false;
+    };
 
-    hardBtn.addEventListener('click', () => {
-        console.log("Hard button clicked"); // Debug log
-        selectDifficulty('hard', hardBtn, easyBtn);
-    });
-
-    startBtn.addEventListener('click', () => {
-        console.log("Start button clicked"); // Debug log
+    // Start button click
+    startBtn.onclick = () => {
+        console.log("Start clicked");
         if (selectedDifficulty) {
             difficultyScreen.style.display = 'none';
             chessGame.style.display = 'block';
             startGame();
         }
-    });
+    };
 }
 
 function startGame() {
