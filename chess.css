@@ -249,6 +249,26 @@ button,
     box-shadow: 0 0 10px rgba(50, 205, 50, 0.3);
 }
 
+/* Add your new styles here */
+.difficulty-btn:disabled,
+.start-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(50, 205, 50, 0.1);
+}
+
+.difficulty-btn:not(:disabled),
+.start-btn:not(:disabled) {
+    opacity: 1;
+    cursor: pointer;
+    background: rgba(50, 205, 50, 0.2);
+}
+
+/* Then your media queries and other responsive styles would follow */
+@media (max-width: 768px) {
+    /* ... */
+}
+
 .difficulty-btn:hover,
 button:hover {
     background: rgba(50, 205, 50, 0.2);
