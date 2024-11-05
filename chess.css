@@ -103,7 +103,6 @@ button,
     animation: borderGlow 6s linear infinite;
 }
 
-/* Chessboard */
 #chessboard {
     width: 100%;
     aspect-ratio: 1;
@@ -118,7 +117,6 @@ button,
     border: 2px solid rgba(50, 205, 50, 0.3);
 }
 
-/* Chess pieces */
 .piece {
     position: absolute;
     width: 12.5%;
@@ -129,9 +127,6 @@ button,
     cursor: pointer;
     transition: all 0.2s ease;
     z-index: 2;
-    user-select: none;
-    -webkit-user-select: none;
-    filter: drop-shadow(0 0 5px rgba(50, 205, 50, 0.5));
 }
 
 .piece:hover {
