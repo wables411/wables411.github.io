@@ -6,18 +6,15 @@
 }
 
 /* Remove any wrapper background colors */
-.game-container, 
 .chess-container, 
 #difficulty-screen,
 #game-info,
 #move-history,
 .game-info-container,
 .difficulty-btn,
-button,
 .start-btn,
 .promotion-dialog,
 #chess-game,
-.section-container.game-section,
 .chess-container::after,
 .chess-container::before,
 #chess-game::after,
@@ -486,4 +483,28 @@ button:active {
         padding: 12px 24px;
         font-size: 1.2rem;
     }
+}
+
+/* Leaderboard section specific styles */
+.leaderboard-section {
+    margin: 20px auto !important;
+    padding: 20px !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(50, 205, 50, 0.3) !important;
+    color: white !important;
+    max-width: 800px !important;
+}
+
+.leaderboard-section button,
+.leaderboard-section input {
+    background: rgba(50, 205, 50, 0.2) !important;
+}
+
+.leaderboard-section .leaderboard-table th {
+    background: rgba(50, 205, 50, 0.2) !important;
+}
+
+.leaderboard-section .leaderboard-table tr:nth-child(even) {
+    background: rgba(50, 205, 50, 0.1) !important;
 }
