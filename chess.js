@@ -1,13 +1,7 @@
-// Get reference to global updateGameResult and LeaderboardManager
-const updateGameResult = window.updateGameResult;
-const LeaderboardManager = window.LeaderboardManager;
-
-// Initialize when DOM is loaded
+// Start of chess.js
 document.addEventListener('DOMContentLoaded', function() {
     try {
         console.log("Initializing chess game...");
-        const manager = new LeaderboardManager();
-        manager.loadLeaderboard();
         initDifficultySelection();
         initRestartButton();
     } catch (error) {
