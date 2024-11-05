@@ -133,40 +133,39 @@ class LeaderboardManager {
 
 // Initialize username handling
 function initializeUsernameHandling() {
+    console.log("Initializing username handling..."); // Debug log
     const usernameInput = document.getElementById('username-input');
     const usernameSubmit = document.getElementById('username-submit');
     const difficultyScreen = document.getElementById('difficulty-screen');
     
-    if (difficultyScreen) {
-        const savedUsername = localStorage.getItem('currentPlayer');
-        difficultyScreen.style.display = savedUsername ? 'flex' : 'none';
+    if (!usernameInput || !usernameSubmit || !difficultyScreen) {
+        console.error("Could not find required username elements");
+        return;
     }
 
-    if (usernameInput) {
-        const savedUsername = localStorage.getItem('currentPlayer');
-        if (savedUsername) {
-            usernameInput.value = savedUsername;
+    // Hide difficulty screen initially
+    difficultyScreen.style.display = 'none';
+
+    // Check for existing username
+    const savedUsername = localStorage.getItem('currentPlayer');
+    if (savedUsername) {
+        usernameInput.value = savedUsername;
+        usernameInput.disabled = true;
+        usernameSubmit.disabled = true;
+        difficultyScreen.style.display = 'flex';
+    }
+
+    usernameSubmit.addEventListener('click', () => {
+        console.log("Username submit clicked"); // Debug log
+        const username = usernameInput.value.trim();
+        if (username) {
+            console.log(`Setting username: ${username}`); // Debug log
+            localStorage.setItem('currentPlayer', username);
             usernameInput.disabled = true;
-            if (usernameSubmit) {
-                usernameSubmit.disabled = true;
-            }
+            usernameSubmit.disabled = true;
+            difficultyScreen.style.display = 'flex';
         }
-    }
-
-    if (usernameSubmit) {
-        usernameSubmit.addEventListener('click', () => {
-            const username = usernameInput?.value.trim();
-            if (username) {
-                localStorage.setItem('currentPlayer', username);
-                usernameInput.disabled = true;
-                usernameSubmit.disabled = true;
-                
-                if (difficultyScreen) {
-                    difficultyScreen.style.display = 'flex';
-                }
-            }
-        });
-    }
+    });
 }
 
 // Update game result and leaderboard
