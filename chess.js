@@ -1,28 +1,15 @@
-let updateGameResult;
-
-// Wait for leaderboard to be ready
-async function initializeLeaderboard() {
-    try {
-        await import('./leaderboard.js').then(module => {
-            updateGameResult = module.updateGameResult;
-            console.log("Leaderboard initialized successfully");
-        });
-    } catch (error) {
-        console.error("Error initializing leaderboard:", error);
-    }
-}
+// Get reference to global updateGameResult and LeaderboardManager
+const updateGameResult = window.updateGameResult;
+const LeaderboardManager = window.LeaderboardManager;
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     try {
         console.log("Initializing chess game...");
-        // Make sure leaderboard is initialized before game setup
-        initializeLeaderboard().then(() => {
-            const manager = new LeaderboardManager();
-            manager.loadLeaderboard();
-            initDifficultySelection();
-            initRestartButton();
-        });
+        const manager = new LeaderboardManager();
+        manager.loadLeaderboard();
+        initDifficultySelection();
+        initRestartButton();
     } catch (error) {
         console.error("Error during initialization:", error);
     }
@@ -1344,7 +1331,5 @@ function promptPawnPromotion(startRow, startCol, endRow, endCol) {
     document.getElementById('chessboard').appendChild(dialog);
 }
 
-// Export functions that need to be accessible from other modules
-export {
-    updateGameResult,
-};
+// Make necessary functions accessible globally
+window.updateGameResult = updateGameResult;
