@@ -3,9 +3,10 @@ let updateGameResult;
 // Wait for leaderboard to be ready
 async function initializeLeaderboard() {
     try {
-        const leaderboardModule = await import('./leaderboard.js');
-        updateGameResult = leaderboardModule.updateGameResult;
-        console.log("Leaderboard initialized successfully");
+        await import('./leaderboard.js').then(module => {
+            updateGameResult = module.updateGameResult;
+            console.log("Leaderboard initialized successfully");
+        });
     } catch (error) {
         console.error("Error initializing leaderboard:", error);
     }
@@ -15,9 +16,12 @@ async function initializeLeaderboard() {
 document.addEventListener('DOMContentLoaded', function() {
     try {
         console.log("Initializing chess game...");
+        // Make sure leaderboard is initialized before game setup
         initializeLeaderboard().then(() => {
+            const manager = new LeaderboardManager();
+            manager.loadLeaderboard();
             initDifficultySelection();
-            initRestartButton(); // Add restart button initialization
+            initRestartButton();
         });
     } catch (error) {
         console.error("Error during initialization:", error);
