@@ -2,8 +2,13 @@ let updateGameResult;
 
 // Wait for leaderboard to be ready
 async function initializeLeaderboard() {
-    const leaderboardModule = await import('./leaderboard.js');
-    updateGameResult = leaderboardModule.updateGameResult;
+    try {
+        const leaderboardModule = await import('./leaderboard.js');
+        updateGameResult = leaderboardModule.updateGameResult;
+        console.log("Leaderboard initialized successfully");
+    } catch (error) {
+        console.error("Error initializing leaderboard:", error);
+    }
 }
 
 // Initialize when DOM is loaded
@@ -12,13 +17,46 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("Initializing chess game...");
         initializeLeaderboard().then(() => {
             initDifficultySelection();
+            initRestartButton(); // Add restart button initialization
         });
     } catch (error) {
         console.error("Error during initialization:", error);
     }
 });
-// Console initialization
-console.log("Enhanced Chess game script is running");
+
+// Initialize restart button
+function initRestartButton() {
+    const restartButton = document.getElementById('restart-game');
+    if (restartButton) {
+        restartButton.addEventListener('click', () => {
+            console.log("Restart button clicked");
+            const difficultyScreen = document.getElementById('difficulty-screen');
+            const chessGame = document.getElementById('chess-game');
+            
+            // Show difficulty screen and hide chess game
+            if (difficultyScreen && chessGame) {
+                difficultyScreen.style.display = 'flex';
+                chessGame.style.display = 'none';
+            }
+            
+            // Reset difficulty selection
+            selectedDifficulty = null;
+            const easyBtn = document.getElementById('easy-mode');
+            const hardBtn = document.getElementById('hard-mode');
+            const startBtn = document.getElementById('start-game');
+            
+            if (easyBtn && hardBtn && startBtn) {
+                easyBtn.classList.remove('selected');
+                hardBtn.classList.remove('selected');
+                startBtn.disabled = true;
+            }
+            
+            // Reset game state
+            resetGame();
+            debug("Game restarted");
+        });
+    }
+}
 
 // Game constants and initial state
 const BOARD_SIZE = 8;
