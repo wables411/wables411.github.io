@@ -159,6 +159,82 @@ function initializeLeaderboard() {
     }
 }
 
+// Add styles
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `
+    .leaderboard-section {
+        margin-top: 20px;
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.7);
+        border-radius: 8px;
+        border: 1px solid rgba(50, 205, 50, 0.3);
+        color: white;
+    }
+
+    .leaderboard-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .leaderboard-title {
+        color: #ff0000;
+        text-shadow: 0 0 5px #32CD32,
+                     0 0 10px #32CD32,
+                     0 0 15px #32CD32;
+        margin-bottom: 20px;
+        font-size: 2em;
+    }
+
+    .username-input {
+        margin-bottom: 20px;
+    }
+
+    .username-input input {
+        padding: 8px 12px;
+        border: 1px solid rgba(50, 205, 50, 0.3);
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        border-radius: 4px;
+        margin-right: 10px;
+        width: 200px;
+    }
+
+    .username-input button {
+        background: rgba(50, 205, 50, 0.2);
+        color: white;
+        border: 1px solid rgba(50, 205, 50, 0.3);
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .leaderboard-table {
+        overflow-x: auto;
+    }
+
+    .leaderboard-table table {
+        width: 100%;
+        border-collapse: collapse;
+        color: white;
+    }
+
+    .leaderboard-table th,
+    .leaderboard-table td {
+        padding: 10px;
+        text-align: center;
+        border: 1px solid rgba(50, 205, 50, 0.2);
+    }
+
+    .leaderboard-table th {
+        background: rgba(50, 205, 50, 0.2);
+    }
+
+    .leaderboard-table tr:nth-child(even) {
+        background: rgba(50, 205, 50, 0.1);
+    }
+`;
+document.head.appendChild(styleSheet);
+
 // Initialize username handling
 function initializeUsernameHandling() {
     const usernameInput = document.getElementById('username-input');
