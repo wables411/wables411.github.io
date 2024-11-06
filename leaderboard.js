@@ -1,10 +1,9 @@
+// Replace your entire leaderboard.js with this updated version
 const supabase = window.supabase.createClient(
     'https://roxwocgknkiqnsgiojgz.supabase.co',
-    // Make sure this is your actual anon/public key, not the secret key
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
 );
 
-// Global instance
 let leaderboardManagerInstance = null;
 
 class LeaderboardManager {
@@ -18,32 +17,35 @@ class LeaderboardManager {
 
     async loadLeaderboard() {
         try {
+            console.log('Loading leaderboard...');
             const { data, error } = await supabase
                 .from('leaderboard')
                 .select('*')
                 .order('points', { ascending: false });
 
             if (error) {
+                console.error('Supabase error loading leaderboard:', error);
                 throw error;
             }
             
+            console.log('Leaderboard data loaded:', data);
             this.leaderboardData = data || [];
-            this.displayLeaderboard();
+            await this.displayLeaderboard();
         } catch (error) {
             console.error('Error loading leaderboard:', error);
-            const localData = localStorage.getItem('chessLeaderboard');
-            this.leaderboardData = localData ? JSON.parse(localData) : [];
-            this.displayLeaderboard();
         }
     }
 
     async updateScore(username, gameResult) {
         if (!username) {
-            console.warn('No username provided');
+            console.error('No username provided for score update');
             return;
         }
 
+        console.log(`Updating score for ${username} with result: ${gameResult}`);
+
         try {
+            // First fetch existing record
             const { data: existingRecord, error: fetchError } = await supabase
                 .from('leaderboard')
                 .select('*')
@@ -55,6 +57,7 @@ class LeaderboardManager {
                 return;
             }
 
+            // Create or update record
             let record = existingRecord || {
                 username,
                 wins: 0,
@@ -64,6 +67,7 @@ class LeaderboardManager {
                 points: 0
             };
 
+            // Update stats
             record.totalGames++;
             switch (gameResult) {
                 case 'win':
@@ -79,16 +83,24 @@ class LeaderboardManager {
                     break;
             }
 
-            const { error: upsertError } = await supabase
+            console.log('Upserting record:', record);
+
+            // Upsert the record
+            const { data: upsertData, error: upsertError } = await supabase
                 .from('leaderboard')
-                .upsert(record);
+                .upsert(record)
+                .select();
 
             if (upsertError) {
                 console.error('Error upserting record:', upsertError);
                 return;
             }
 
+            console.log('Successfully upserted record:', upsertData);
+            
+            // Reload leaderboard
             await this.loadLeaderboard();
+            
         } catch (error) {
             console.error('Error updating score:', error);
         }
@@ -96,10 +108,15 @@ class LeaderboardManager {
 
     async displayLeaderboard() {
         const tbody = document.getElementById('leaderboard-body');
-        if (!tbody) return;
+        if (!tbody) {
+            console.error('Leaderboard tbody element not found');
+            return;
+        }
 
         try {
             const topPlayers = await this.getTopPlayers();
+            console.log('Displaying top players:', topPlayers);
+            
             tbody.innerHTML = topPlayers.map((player, index) => `
                 <tr>
                     <td>${index + 1}</td>
@@ -122,7 +139,11 @@ class LeaderboardManager {
                 .order('points', { ascending: false })
                 .limit(limit);
 
-            if (error) throw error;
+            if (error) {
+                console.error('Error getting top players:', error);
+                throw error;
+            }
+            
             return data || [];
         } catch (error) {
             console.error('Error getting top players:', error);
@@ -137,24 +158,14 @@ function initializeUsernameHandling() {
     const usernameSubmit = document.getElementById('username-submit');
     const difficultyScreen = document.getElementById('difficulty-screen');
     
-    // Debug log what we found
-    console.log("Found elements:", {
-        usernameInput: !!usernameInput,
-        usernameSubmit: !!usernameSubmit,
-        difficultyScreen: !!difficultyScreen
-    });
-
     if (!usernameInput || !usernameSubmit || !difficultyScreen) {
-        console.error("Missing required elements for username handling");
+        console.error('Missing required elements for username handling');
         return;
     }
 
-    // Initially hide difficulty screen
     difficultyScreen.style.display = 'none';
 
-    // Username submit click
     usernameSubmit.onclick = () => {
-        console.log("Username submit clicked");
         const username = usernameInput.value.trim();
         if (username) {
             console.log(`Setting username: ${username}`);
@@ -166,13 +177,15 @@ function initializeUsernameHandling() {
     };
 }
 
-// Update game result and leaderboard
+// Update game result
 window.updateGameResult = function(winner) {
     const currentPlayer = localStorage.getItem('currentPlayer');
     if (!currentPlayer) {
         console.warn('No player username found');
         return;
     }
+
+    console.log(`Game ended with winner: ${winner}, current player: ${currentPlayer}`);
 
     if (leaderboardManagerInstance) {
         if (winner === 'draw') {
@@ -182,16 +195,15 @@ window.updateGameResult = function(winner) {
         } else {
             leaderboardManagerInstance.updateScore(currentPlayer, 'loss');
         }
+    } else {
+        console.error('LeaderboardManager instance not found');
     }
 };
 
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('Initializing leaderboard...');
     const manager = new LeaderboardManager();
     await manager.loadLeaderboard();
     initializeUsernameHandling();
 });
-
-// Make necessary functions globally available
-window.LeaderboardManager = LeaderboardManager;
-window.updateGameResult = updateGameResult;
