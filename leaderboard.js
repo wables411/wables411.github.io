@@ -37,74 +37,54 @@ class LeaderboardManager {
     }
 
     async updateScore(username, gameResult) {
-        if (!username) {
-            console.error('No username provided for score update');
-            return;
-        }
-
-        console.log(`Updating score for ${username} with result: ${gameResult}`);
-
-        try {
-            // First fetch existing record
-            const { data: existingRecord, error: fetchError } = await supabase
-                .from('leaderboard')
-                .select('*')
-                .eq('username', username)
-                .single();
-
-            if (fetchError && fetchError.code !== 'PGRST116') {
-                console.error('Error fetching record:', fetchError);
-                return;
-            }
-
-            // Create or update record
-            let record = existingRecord || {
-                username,
-                wins: 0,
-                losses: 0,
-                draws: 0,
-                totalGames: 0,
-                points: 0
-            };
-
-            // Update stats
-            record.totalGames++;
-            switch (gameResult) {
-                case 'win':
-                    record.wins++;
-                    record.points += 3;
-                    break;
-                case 'loss':
-                    record.losses++;
-                    break;
-                case 'draw':
-                    record.draws++;
-                    record.points += 1;
-                    break;
-            }
-
-            console.log('Upserting record:', record);
-
-            // Upsert the record
-            const { data: upsertData, error: upsertError } = await supabase
-                .from('leaderboard')
-                .upsert(record)
-                .select();
-
-            if (upsertError) {
-                console.error('Error upserting record:', upsertError);
-                return;
-            }
-
-            console.log('Successfully upserted record:', upsertData);
-            
-            // Reload leaderboard
-            await this.loadLeaderboard();
-            
-        } catch (error) {
-            console.error('Error updating score:', error);
-        }
+    if (!username || username === '0') {
+        console.error('Invalid username');
+        return;
     }
+
+    console.log(`Updating score for ${username} with result: ${gameResult}`);
+
+    try {
+        // First try to get existing record
+        const { data: existingRecord, error: fetchError } = await supabase
+            .from('leaderboard')
+            .select('*')
+            .eq('username', username)
+            .single();
+            
+        if (fetchError && fetchError.code !== 'PGRST116') {
+            throw fetchError;
+        }
+
+        // Prepare the record
+        const record = {
+            username,
+            wins: (existingRecord?.wins || 0) + (gameResult === 'win' ? 1 : 0),
+            losses: (existingRecord?.losses || 0) + (gameResult === 'loss' ? 1 : 0),
+            draws: (existingRecord?.draws || 0) + (gameResult === 'draw' ? 1 : 0),
+            totalGames: (existingRecord?.totalGames || 0) + 1,
+            points: (existingRecord?.points || 0) + (gameResult === 'win' ? 3 : gameResult === 'draw' ? 1 : 0)
+        };
+
+        console.log('Upserting record:', record);
+
+        // Upsert the record
+        const { error: upsertError } = await supabase
+            .from('leaderboard')
+            .upsert(record, { 
+                onConflict: 'username',
+                returning: 'minimal'
+            });
+
+        if (upsertError) throw upsertError;
+
+        console.log('Successfully updated leaderboard');
+        await this.loadLeaderboard();
+
+    } catch (error) {
+        console.error('Error updating score:', error);
+    }
+}
 
     async displayLeaderboard() {
         const tbody = document.getElementById('leaderboard-body');
@@ -167,12 +147,15 @@ function initializeUsernameHandling() {
 
     usernameSubmit.onclick = () => {
         const username = usernameInput.value.trim();
-        if (username) {
+        // Add validation for username
+        if (username && username.length >= 2) { // Ensure username is at least 2 characters
             console.log(`Setting username: ${username}`);
             localStorage.setItem('currentPlayer', username);
             usernameInput.disabled = true;
             usernameSubmit.disabled = true;
             difficultyScreen.style.display = 'flex';
+        } else {
+            alert('Please enter a username with at least 2 characters');
         }
     };
 }
