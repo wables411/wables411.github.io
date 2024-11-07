@@ -1023,50 +1023,8 @@ function executeMove(startRow, startCol, endRow, endCol, promotionPiece = null) 
         debug(`\nExecuting move for ${color} ${getPieceName(piece)}`);
         debug(`From ${coordsToAlgebraic(startRow, startCol)} to ${coordsToAlgebraic(endRow, endCol)}`);
         
-        // Handle castling
-        if (pieceType === 'k' && Math.abs(endCol - startCol) === 2) {
-            const row = color === 'blue' ? 7 : 0;
-            
-            // Update king movement state
-            if (color === 'blue') {
-                pieceState.blueKingMoved = true;
-            } else {
-                pieceState.redKingMoved = true;
-            }
-            
-            // Handle rook movement for castling
-            if (endCol === 6) { // Kingside
-                board[row][5] = board[row][7];
-                board[row][7] = null;
-                if (color === 'blue') {
-                    pieceState.blueRooksMove.right = true;
-                } else {
-                    pieceState.redRooksMove.right = true;
-                }
-            } else if (endCol === 2) { // Queenside
-                board[row][3] = board[row][0];
-                board[row][0] = null;
-                if (color === 'blue') {
-                    pieceState.blueRooksMove.left = true;
-                } else {
-                    pieceState.redRooksMove.left = true;
-                }
-            }
-        }
-        
-        // Update rook movement state for future castling
-        if (pieceType === 'r') {
-            if (color === 'blue') {
-                if (startCol === 0) pieceState.blueRooksMove.left = true;
-                if (startCol === 7) pieceState.blueRooksMove.right = true;
-            } else {
-                if (startCol === 0) pieceState.redRooksMove.left = true;
-                if (startCol === 7) pieceState.redRooksMove.right = true;
-            }
-        }
-        
         // Handle pawn promotion
-        if (isPawnPromotion(piece, endRow)) {
+        if (pieceType === 'p' && (endRow === 0 || endRow === 7)) {
             const newPiece = promotionPiece || (color === 'blue' ? 'q' : 'Q');
             board[endRow][endCol] = newPiece;
             board[startRow][startCol] = null;
@@ -1276,7 +1234,7 @@ function onSquareClick(row, col) {
             const piece = board[startRow][startCol];
             
             if (canPieceMove(piece, startRow, startCol, row, col)) {
-                if (isPawnPromotion(piece, row)) {
+                if (piece.toLowerCase() === 'p' && (row === 0 || row === 7)) {
                     promptPawnPromotion(startRow, startCol, row, col);
                 } else {
                     executeMove(startRow, startCol, row, col);
@@ -1320,8 +1278,15 @@ function promptPawnPromotion(startRow, startCol, endRow, endCol) {
     const dialog = document.createElement('div');
     dialog.className = 'promotion-dialog';
     dialog.style.position = 'absolute';
+    
+    // Adjust position based on which side is promoting
+    if (endRow === 0) { // Blue promoting at top
+        dialog.style.top = '12.5%';  // Position below the promotion square
+    } else { // Red promoting at bottom
+        dialog.style.bottom = '12.5%';  // Position above the promotion square
+    }
+    
     dialog.style.left = `${endCol * 12.5}%`;
-    dialog.style.top = `${endRow * 12.5}%`;
     dialog.style.zIndex = '1000';
     
     promotionPieces.forEach(piece => {
@@ -1329,14 +1294,20 @@ function promptPawnPromotion(startRow, startCol, endRow, endCol) {
         pieceButton.className = 'promotion-piece';
         const promotedPiece = color === 'blue' ? piece : piece.toUpperCase();
         pieceButton.style.backgroundImage = `url('${pieceImages[promotedPiece]}')`;
+        pieceButton.style.cursor = 'pointer';
+        
         pieceButton.onclick = () => {
             executeMove(startRow, startCol, endRow, endCol, promotedPiece);
             dialog.remove();
         };
+        
         dialog.appendChild(pieceButton);
     });
     
-    document.getElementById('chessboard').appendChild(dialog);
+    const chessboard = document.getElementById('chessboard');
+    if (chessboard) {
+        chessboard.appendChild(dialog);
+    }
 }
 
 // Make necessary functions accessible globally
