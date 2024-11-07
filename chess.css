@@ -329,3 +329,34 @@ button,
         gap: 15px;
     }
 }
+
+/* Promotion dialog */
+.promotion-dialog {
+    display: flex;
+    flex-direction: column;
+    background: rgba(0, 0, 0, 0.9) !important;
+    border-radius: 8px;
+    padding: 4px;
+    border: 1px solid rgba(50, 205, 50, 0.3);
+    box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
+    z-index: 1000;
+    position: absolute;
+}
+
+.promotion-piece {
+    width: 50px;
+    height: 50px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+    filter: drop-shadow(0 0 5px rgba(50, 205, 50, 0.5));
+    padding: 5px;
+    margin: 2px;
+}
+
+.promotion-piece:hover {
+    transform: scale(1.1);
+    filter: brightness(1.2) drop-shadow(0 0 8px rgba(50, 205, 50, 0.7));
+}
