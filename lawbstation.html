@@ -95,11 +95,36 @@
                     <div id="imageGallery" class="image-container"></div>
                 </div>
             </div>
-
-            <!-- Chess Game Section -->
+<!-- Chess Game Section -->
             <div class="section-container game-section">
                 <h2 class="section-title">Chess Game</h2>
+
+                <!-- Game Mode Selection -->
+                <div class="game-mode-select">
+                    <button class="mode-btn selected" id="ai-mode">Play vs AI</button>
+                    <button class="mode-btn" id="online-mode">Play Online</button>
+                </div>
+
+                <!-- Online Controls -->
+                <div class="online-controls" style="display: none;">
+                    <div class="game-id-display" id="game-id"></div>
+                    <input type="text" class="online-input" id="join-game-input" placeholder="Enter Game ID to Join">
+                    <button class="difficulty-btn" id="create-game">Create New Game</button>
+                    <button class="difficulty-btn" id="join-game">Join Game</button>
+                    <div class="online-status" id="connection-status"></div>
+                    <div class="player-info">
+                        <div class="player" id="blue-player">
+                            <span class="player-name">Blue Player</span>
+                            <span class="player-status">Waiting...</span>
+                        </div>
+                        <div class="player" id="red-player">
+                            <span class="player-name">Red Player</span>
+                            <span class="player-status">Waiting...</span>
+                        </div>
+                    </div>
+                </div>
                 
+                <!-- Leaderboard Section -->
                 <div class="leaderboard-section">
                     <div class="leaderboard-container">
                         <h2 class="leaderboard-title">Top Players</h2>
@@ -136,7 +161,7 @@
                         <button id="start-game" class="start-btn" disabled>Start Game</button>
                     </div>
                     
-                    <!-- Chess Game (Initially Hidden) -->
+                    <!-- Chess Game -->
                     <div id="chess-game" style="display: none;">
                         <div id="chessboard"></div>
                     </div>
@@ -164,6 +189,7 @@
 
     <!-- Scripts -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="loadImages.js"></script>
     <script src="leaderboard.js"></script>
     <script src="chess.js"></script>
 </body>
