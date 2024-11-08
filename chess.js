@@ -771,60 +771,58 @@ function initGameModeControls() {
 
 function initDifficultySelection() {
     try {
-        console.log("Initializing difficulty selection...");
-        const easyBtn = document.getElementById('easy-mode');
-        const hardBtn = document.getElementById('hard-mode');
-        const startBtn = document.getElementById('start-game');
-        const difficultyScreen = document.getElementById('difficulty-screen');
-        const chessGame = document.getElementById('chess-game');
-
-        if (!easyBtn || !hardBtn || !startBtn || !difficultyScreen || !chessGame) {
-            console.error("Missing difficulty selection elements", {
-                easyBtn: !!easyBtn,
-                hardBtn: !!hardBtn,
-                startBtn: !!startBtn,
-                difficultyScreen: !!difficultyScreen,
-                chessGame: !!chessGame
-            });
-            return;
-        }
-
-        difficultyScreen.style.display = 'flex';
-        chessGame.style.display = 'none';
-
-        startBtn.disabled = true;
+        debug('\n----- Initializing Difficulty Selection -----');
+        
+        const elements = {
+            easyBtn: document.getElementById('easy-mode'),
+            hardBtn: document.getElementById('hard-mode'),
+            startBtn: document.getElementById('start-game'),
+            difficultyScreen: document.getElementById('difficulty-screen'),
+            chessGame: document.getElementById('chess-game')
+        };
+        
+        // Debug each element
+        Object.entries(elements).forEach(([name, element]) => {
+            debug(`${name} found: ${!!element}`);
+            if (!element) throw new Error(`${name} not found`);
+        });
+        
+        // Rest of your initDifficultySelection code...
+        elements.difficultyScreen.style.display = 'flex';
+        elements.chessGame.style.display = 'none';
+        elements.startBtn.disabled = true;
         selectedDifficulty = null;
 
-        easyBtn.addEventListener('click', () => {
-            console.log("Easy mode selected");
+        elements.easyBtn.addEventListener('click', () => {
+            debug('Easy mode clicked');
             gameDifficulty = 'easy';
             selectedDifficulty = 'easy';
-            easyBtn.classList.add('selected');
-            hardBtn.classList.remove('selected');
-            startBtn.disabled = false;
+            elements.easyBtn.classList.add('selected');
+            elements.hardBtn.classList.remove('selected');
+            elements.startBtn.disabled = false;
         });
 
-        hardBtn.addEventListener('click', () => {
-            console.log("Hard mode selected");
+        elements.hardBtn.addEventListener('click', () => {
+            debug('Hard mode clicked');
             gameDifficulty = 'hard';
             selectedDifficulty = 'hard';
-            hardBtn.classList.add('selected');
-            easyBtn.classList.remove('selected');
-            startBtn.disabled = false;
+            elements.hardBtn.classList.add('selected');
+            elements.easyBtn.classList.remove('selected');
+            elements.startBtn.disabled = false;
         });
 
-        startBtn.addEventListener('click', () => {
+        elements.startBtn.addEventListener('click', () => {
             if (selectedDifficulty) {
-                console.log("Starting game with difficulty:", selectedDifficulty);
-                difficultyScreen.style.display = 'none';
-                chessGame.style.display = 'block';
+                debug(`Starting game with ${selectedDifficulty} difficulty`);
+                elements.difficultyScreen.style.display = 'none';
+                elements.chessGame.style.display = 'block';
                 startGame();
             }
         });
-
-        debug('Difficulty selection initialized');
+        
+        debug('Difficulty selection initialized successfully');
     } catch (error) {
-        console.error("Error initializing difficulty selection:", error);
+        console.error("Error in initDifficultySelection:", error);
         debug(`Error initializing difficulty selection: ${error.message}`);
     }
 }
