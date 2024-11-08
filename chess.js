@@ -110,6 +110,59 @@ function updateStatusDisplay(message) {
         debug(`Status updated: ${message}`);
     }
 }
+function countDiagonalMoves(row, col) {
+    let count = 0;
+    const directions = [[1,1], [1,-1], [-1,1], [-1,-1]];
+    
+    for (const [dr, dc] of directions) {
+        let r = row + dr;
+        let c = col + dc;
+        while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+            count++;
+            if (board[r][c]) break;
+            r += dr;
+            c += dc;
+        }
+    }
+    return count;
+}
+
+function countOrthogonalMoves(row, col) {
+    let count = 0;
+    const directions = [[0,1], [0,-1], [1,0], [-1,0]];
+    
+    for (const [dr, dc] of directions) {
+        let r = row + dr;
+        let c = col + dc;
+        while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+            count++;
+            if (board[r][c]) break;
+            r += dr;
+            c += dc;
+        }
+    }
+    return count;
+}
+
+function isFileOpen(col) {
+    for (let row = 0; row < BOARD_SIZE; row++) {
+        const piece = board[row][col];
+        if (piece && piece.toLowerCase() === 'p') {
+            return false;
+        }
+    }
+    return true;
+}
+
+function canMakeMove(startRow, startCol, endRow, endCol) {
+    const piece = board[startRow][startCol];
+    if (!piece) return false;
+    
+    const color = getPieceColor(piece);
+    if (color !== currentPlayer) return false;
+    
+    return canPieceMove(piece, startRow, startCol, endRow, endCol);
+}
 
 // Move validation functions
 function isValidPawnMove(color, startRow, startCol, endRow, endCol) {
@@ -354,53 +407,6 @@ function canPieceMove(piece, startRow, startCol, endRow, endCol, checkForCheck =
     return true;
 }
 
-function makeMove(startRow, startCol, endRow, endCol, promotionPiece = null) {
-    const piece = board[startRow][startCol];
-    const color = getPieceColor(piece);
-    const pieceType = piece.toLowerCase();
-    const capturedPiece = board[endRow][endCol];
-
-    // Handle castling
-    if (pieceType === 'k' && Math.abs(endCol - startCol) === 2) {
-        const row = color === 'blue' ? 7 : 0;
-        if (endCol === 6) { // Kingside
-            board[row][5] = board[row][7];
-            board[row][7] = null;
-        } else if (endCol === 2) { // Queenside
-            board[row][3] = board[row][0];
-            board[row][0] = null;
-        }
-    }
-
-    // Handle pawn promotion
-    if (pieceType === 'p' && (endRow === 0 || endRow === 7)) {
-        board[endRow][endCol] = promotionPiece || (color === 'blue' ? 'q' : 'Q');
-    } else {
-        board[endRow][endCol] = piece;
-    }
-    
-    board[startRow][startCol] = null;
-    
-    // Update move history and display
-    addMoveToHistory(piece, startRow, startCol, endRow, endCol, capturedPiece);
-    placePieces();
-    
-    // Update game state
-    currentPlayer = currentPlayer === 'blue' ? 'red' : 'blue';
-    
-    // Check for game end conditions
-    if (isCheckmate(currentPlayer)) {
-        gameState = 'checkmate';
-        endGame(color);
-    } else if (isStalemate(currentPlayer)) {
-        gameState = 'stalemate';
-        endGame('draw');
-    } else if (isKingInCheck(currentPlayer)) {
-        gameState = 'check';
-        updateStatusDisplay(`${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)} is in check!`);
-    }
-}
-
 function isCheckmate(color) {
     if (!isKingInCheck(color)) return false;
     return !hasLegalMoves(color);
@@ -427,6 +433,28 @@ function hasLegalMoves(color) {
         }
     }
     return false;
+}
+
+// After hasLegalMoves and before makeAIMove...
+
+function endGame(winner) {
+    gameState = 'ended';
+    const message = winner === 'draw' ? 
+        "Game Over - Draw!" : 
+        `Game Over - ${winner.charAt(0).toUpperCase() + winner.slice(1)} wins!`;
+    
+    updateStatusDisplay(message);
+    
+    // Update leaderboard if available
+    if (typeof updateGameResult === 'function') {
+        updateGameResult(winner);
+    }
+    
+    // Disable board interaction
+    const chessboard = document.getElementById('chessboard');
+    if (chessboard) {
+        chessboard.style.pointerEvents = 'none';
+    }
 }
 
 // AI Move Generation and Evaluation
@@ -688,6 +716,25 @@ function evaluatePieceProtection(row, col, color) {
     return protectionCount;
 }
 
+function evaluateMobility(color) {
+    let mobility = 0;
+    for (let row = 0; row < BOARD_SIZE; row++) {
+        for (let col = 0; col < BOARD_SIZE; col++) {
+            const piece = board[row][col];
+            if (piece && getPieceColor(piece) === color) {
+                for (let endRow = 0; endRow < BOARD_SIZE; endRow++) {
+                    for (let endCol = 0; endCol < BOARD_SIZE; endCol++) {
+                        if (canPieceMove(piece, row, col, endRow, endCol)) {
+                            mobility++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return mobility;
+}
+
 // Game initialization and event handling
 document.addEventListener('DOMContentLoaded', function() {
     try {
@@ -863,6 +910,42 @@ function startGame() {
     } catch (error) {
         console.error("Error starting game:", error);
         debug(`Error starting game: ${error.message}`);
+    }
+}
+
+function resetGame() {
+    try {
+        debug('\n----- Game Reset -----');
+        
+        board = JSON.parse(JSON.stringify(initialBoard));
+        currentPlayer = 'blue';
+        selectedPiece = null;
+        moveHistory = [];
+        gameState = 'active';
+        lastMove = null;
+        
+        Object.assign(pieceState, {
+            blueKingMoved: false,
+            redKingMoved: false,
+            blueRooksMove: { left: false, right: false },
+            redRooksMove: { left: false, right: false },
+            lastPawnDoubleMove: null
+        });
+        
+        updateStatusDisplay("Select Difficulty");
+        const moveHistoryElement = document.getElementById('move-history');
+        if (moveHistoryElement) moveHistoryElement.innerHTML = '';
+        
+        const chessboard = document.getElementById('chessboard');
+        if (chessboard) {
+            chessboard.style.pointerEvents = 'auto';
+            chessboard.innerHTML = '';
+        }
+        
+        debug('Game reset completed');
+    } catch (error) {
+        console.error("Error resetting game:", error);
+        debug(`Error resetting game: ${error.message}`);
     }
 }
 
@@ -1283,20 +1366,53 @@ async function executeMove(startRow, startCol, endRow, endCol, promotionPiece = 
     if (!canMakeMove(startRow, startCol, endRow, endCol)) return false;
 
     const piece = board[startRow][startCol];
+    const color = getPieceColor(piece);
     const capturedPiece = board[endRow][endCol];
     
-    // Execute the move locally
-    makeMove(startRow, startCol, endRow, endCol, promotionPiece);
-
-    if (currentGameMode === GameMode.ONLINE) {
-        // Sync move with online game
-        await updateOnlineGame(startRow, startCol, endRow, endCol, promotionPiece);
+    // Update board state
+    if (promotionPiece) {
+        board[endRow][endCol] = promotionPiece;
     } else {
-        // Handle AI response
-        updateGameState();
-        if (currentPlayer === 'red') {
-            setTimeout(makeAIMove, 500);
+        board[endRow][endCol] = piece;
+    }
+    board[startRow][startCol] = null;
+
+    // Handle special moves like castling
+    if (piece.toLowerCase() === 'k' && Math.abs(endCol - startCol) === 2) {
+        const row = color === 'blue' ? 7 : 0;
+        if (endCol === 6) { // Kingside
+            board[row][5] = board[row][7];
+            board[row][7] = null;
+        } else if (endCol === 2) { // Queenside
+            board[row][3] = board[row][0];
+            board[row][0] = null;
         }
+    }
+
+    // Update move history and display
+    addMoveToHistory(piece, startRow, startCol, endRow, endCol, capturedPiece);
+    placePieces();
+    currentPlayer = currentPlayer === 'blue' ? 'red' : 'blue';
+
+    // Handle online game sync
+    if (currentGameMode === GameMode.ONLINE) {
+        await updateOnlineGame(startRow, startCol, endRow, endCol, promotionPiece);
+    }
+    
+    // Check game end conditions and update display
+    if (isCheckmate(currentPlayer)) {
+        endGame(color);
+    } else if (isStalemate(currentPlayer)) {
+        endGame('draw');
+    } else if (isKingInCheck(currentPlayer)) {
+        updateStatusDisplay(`${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)} is in check!`);
+    } else {
+        updateStatusDisplay(`${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)}'s turn`);
+    }
+
+    // Make AI move if it's AI's turn
+    if (currentGameMode === GameMode.AI && currentPlayer === 'red') {
+        setTimeout(makeAIMove, 500);
     }
 
     return true;
