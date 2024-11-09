@@ -934,6 +934,263 @@ function resetGame() {
     }
 }
 
+// Add these functions to chess.js before initGame()
+
+function placePieces() {
+    const chessboard = document.getElementById('chessboard');
+    if (!chessboard) return;
+    
+    chessboard.innerHTML = '';
+    
+    for (let row = 0; row < BOARD_SIZE; row++) {
+        for (let col = 0; col < BOARD_SIZE; col++) {
+            const piece = board[row][col];
+            if (piece) {
+                const pieceElement = createPieceElement(piece, row, col);
+                chessboard.appendChild(pieceElement);
+            }
+        }
+    }
+}
+
+function createPieceElement(piece, row, col) {
+    const pieceElement = document.createElement('div');
+    pieceElement.className = 'piece';
+    pieceElement.style.backgroundImage = `url('${pieceImages[piece]}')`;
+    pieceElement.style.left = `${col * 12.5}%`;
+    pieceElement.style.top = `${row * 12.5}%`;
+    pieceElement.setAttribute('data-row', row);
+    pieceElement.setAttribute('data-col', col);
+    pieceElement.addEventListener('click', onPieceClick);
+    return pieceElement;
+}
+
+function onPieceClick(event) {
+    try {
+        if (currentGameMode === GameMode.ONLINE && currentPlayer !== playerColor) return;
+        if (currentGameMode === GameMode.AI && currentPlayer !== 'blue') return;
+        if (gameState !== 'active' && gameState !== 'check') return;
+        
+        const clickedPiece = event.target;
+        const row = parseInt(clickedPiece.getAttribute('data-row'));
+        const col = parseInt(clickedPiece.getAttribute('data-col'));
+        const pieceType = board[row][col];
+        
+        if (selectedPiece) {
+            selectedPiece.style.opacity = '1';
+            removeHighlights();
+        }
+        
+        const pieceColor = getPieceColor(pieceType);
+        if ((currentGameMode === GameMode.ONLINE && pieceColor === playerColor) ||
+            (currentGameMode === GameMode.AI && pieceColor === 'blue')) {
+            if (selectedPiece === clickedPiece) {
+                selectedPiece = null;
+            } else {
+                selectedPiece = clickedPiece;
+                clickedPiece.style.opacity = '0.7';
+                showLegalMoves(row, col);
+            }
+        }
+    } catch (error) {
+        console.error("Error in onPieceClick:", error);
+    }
+}
+
+function showLegalMoves(row, col) {
+    removeHighlights();
+    
+    const piece = board[row][col];
+    if (!piece) return;
+    
+    for (let endRow = 0; endRow < BOARD_SIZE; endRow++) {
+        for (let endCol = 0; endCol < BOARD_SIZE; endCol++) {
+            if (canPieceMove(piece, row, col, endRow, endCol)) {
+                const target = board[endRow][endCol];
+                highlightSquare(endRow, endCol, !!target);
+            }
+        }
+    }
+}
+
+function highlightSquare(row, col, isCapture = false) {
+    const square = document.createElement('div');
+    square.className = 'highlight' + (isCapture ? ' capture' : '');
+    square.style.position = 'absolute';
+    square.style.left = `${col * 12.5}%`;
+    square.style.top = `${row * 12.5}%`;
+    square.style.width = '12.5%';
+    square.style.height = '12.5%';
+    square.style.zIndex = '5';
+    
+    square.setAttribute('data-row', row);
+    square.setAttribute('data-col', col);
+    
+    square.addEventListener('click', function(e) {
+        e.stopPropagation();
+        onSquareClick(row, col);
+    });
+    
+    document.getElementById('chessboard').appendChild(square);
+}
+
+function removeHighlights() {
+    const highlights = document.querySelectorAll('.highlight');
+    highlights.forEach(highlight => highlight.remove());
+}
+
+function onSquareClick(row, col) {
+    try {
+        if (currentGameMode === GameMode.ONLINE && currentPlayer !== playerColor) return;
+        if (currentGameMode === GameMode.AI && currentPlayer !== 'blue') return;
+        
+        if (gameState !== 'active' && gameState !== 'check') return;
+        
+        if (selectedPiece) {
+            const startRow = parseInt(selectedPiece.getAttribute('data-row'));
+            const startCol = parseInt(selectedPiece.getAttribute('data-col'));
+            const piece = board[startRow][startCol];
+            
+            if (canPieceMove(piece, startRow, startCol, row, col)) {
+                if (piece.toLowerCase() === 'p' && (row === 0 || row === 7)) {
+                    promptPawnPromotion(startRow, startCol, row, col);
+                } else {
+                    executeMove(startRow, startCol, row, col);
+                }
+            }
+            
+            selectedPiece.style.opacity = '1';
+            selectedPiece = null;
+            removeHighlights();
+        }
+    } catch (error) {
+        console.error("Error in onSquareClick:", error);
+    }
+}
+
+function promptPawnPromotion(startRow, startCol, endRow, endCol) {
+    const promotionPieces = ['q', 'r', 'n', 'b'];
+    const color = currentGameMode === GameMode.ONLINE ? playerColor : currentPlayer;
+    
+    const dialog = document.createElement('div');
+    dialog.className = 'promotion-dialog';
+    dialog.style.position = 'absolute';
+    
+    // Adjust position based on which side is promoting
+    if (endRow === 0) { // Blue promoting at top
+        dialog.style.top = '12.5%';  // Position below the promotion square
+    } else { // Red promoting at bottom
+        dialog.style.bottom = '12.5%';  // Position above the promotion square
+    }
+    
+    dialog.style.left = `${endCol * 12.5}%`;
+    dialog.style.zIndex = '1000';
+    
+    promotionPieces.forEach(piece => {
+        const pieceButton = document.createElement('div');
+        pieceButton.className = 'promotion-piece';
+        const promotedPiece = color === 'blue' ? piece : piece.toUpperCase();
+        pieceButton.style.backgroundImage = `url('${pieceImages[promotedPiece]}')`;
+        pieceButton.style.cursor = 'pointer';
+        
+        pieceButton.onclick = () => {
+            executeMove(startRow, startCol, endRow, endCol, promotedPiece);
+            dialog.remove();
+        };
+        
+        dialog.appendChild(pieceButton);
+    });
+    
+    const chessboard = document.getElementById('chessboard');
+    if (chessboard) {
+        chessboard.appendChild(dialog);
+    }
+}
+
+function executeMove(startRow, startCol, endRow, endCol, promotionPiece = null) {
+    if (!canMakeMove(startRow, startCol, endRow, endCol)) return false;
+
+    const piece = board[startRow][startCol];
+    const color = getPieceColor(piece);
+    const capturedPiece = board[endRow][endCol];
+    
+    // Update board state
+    if (promotionPiece) {
+        board[endRow][endCol] = promotionPiece;
+    } else {
+        board[endRow][endCol] = piece;
+    }
+    board[startRow][startCol] = null;
+
+    // Handle special moves like castling
+    if (piece.toLowerCase() === 'k' && Math.abs(endCol - startCol) === 2) {
+        const row = color === 'blue' ? 7 : 0;
+        if (endCol === 6) { // Kingside
+            board[row][5] = board[row][7];
+            board[row][7] = null;
+        } else if (endCol === 2) { // Queenside
+            board[row][3] = board[row][0];
+            board[row][0] = null;
+        }
+    }
+
+    // Update move history and display
+    addMoveToHistory(piece, startRow, startCol, endRow, endCol, capturedPiece);
+    placePieces();
+    currentPlayer = currentPlayer === 'blue' ? 'red' : 'blue';
+
+    // Update online game state if in online mode
+    if (currentGameMode === GameMode.ONLINE) {
+        updateOnlineGame(startRow, startCol, endRow, endCol, promotionPiece);
+    }
+    
+    // Check game end conditions and update display
+    if (isCheckmate(currentPlayer)) {
+        endGame(color);
+        if (currentGameMode === GameMode.ONLINE) {
+            updateOnlineGameStatus('completed', color);
+        }
+    } else if (isStalemate(currentPlayer)) {
+        endGame('draw');
+        if (currentGameMode === GameMode.ONLINE) {
+            updateOnlineGameStatus('completed', 'draw');
+        }
+    } else if (isKingInCheck(currentPlayer)) {
+        updateStatusDisplay(`${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)} is in check!`);
+    } else {
+        updateStatusDisplay(`${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)}'s turn`);
+    }
+
+    // Make AI move if it's AI's turn
+    if (currentGameMode === GameMode.AI && currentPlayer === 'red') {
+        setTimeout(makeAIMove, 500);
+    }
+
+    return true;
+}
+
+// Move history function
+function addMoveToHistory(piece, startRow, startCol, endRow, endCol, capturedPiece) {
+    try {
+        const moveText = `${getPieceName(piece)} ${coordsToAlgebraic(startRow, startCol)} to ${coordsToAlgebraic(endRow, endCol)}${capturedPiece ? ' captures ' + getPieceName(capturedPiece) : ''}`;
+        moveHistory.push(moveText);
+        
+        const historyElement = document.getElementById('move-history');
+        if (historyElement) {
+            const moveNumber = Math.floor(moveHistory.length / 2) + 1;
+            const newMove = document.createElement('div');
+            newMove.textContent = `${moveNumber}. ${moveText}`;
+            if (capturedPiece) {
+                newMove.style.color = '#ff6b6b';
+            }
+            historyElement.appendChild(newMove);
+            historyElement.scrollTop = historyElement.scrollHeight;
+        }
+    } catch (error) {
+        console.error("Error adding move to history:", error);
+    }
+}
+
 function initGame() {
     try {
         debug('\n----- Game Initialization -----');
