@@ -1,5 +1,3 @@
-const supabase = window.gameDatabase;
-
 // Game modes and state
 const GameMode = {
     AI: 'ai',
@@ -466,9 +464,23 @@ function selectBestMove() {
 
     // Evaluate each move
     legalMoves.forEach(move => {
-        move.score = gameDifficulty === 'hard' ? 
-            evaluateHardMove(board[move.startRow][move.startCol], move.startRow, move.startCol, move.endRow, move.endCol) :
-            evaluateEasyMove(board[move.startRow][move.startCol], move.startRow, move.startCol, move.endRow, move.endCol);
+        if (gameDifficulty === 'hard') {
+            move.score = evaluateHardMove(
+                board[move.startRow][move.startCol],
+                move.startRow, 
+                move.startCol,
+                move.endRow,
+                move.endCol
+            );
+        } else {
+            move.score = evaluateEasyMove(
+                board[move.startRow][move.startCol],
+                move.startRow,
+                move.startCol,
+                move.endRow,
+                move.endCol
+            );
+        }
     });
 
     // Sort moves by score
@@ -612,6 +624,7 @@ function evaluateHardMove(piece, startRow, startCol, endRow, endCol) {
     return score;
 }
 
+// Position evaluation functions
 function evaluatePawnPosition(row, col, color) {
     let score = 0;
     const advancement = color === 'red' ? row : (7 - row);
@@ -762,14 +775,11 @@ function initDifficultySelection() {
             chessGame: document.getElementById('chess-game')
         };
         
-        // Debug each element
         Object.entries(elements).forEach(([name, element]) => {
             debug(`${name} found: ${!!element}`);
             if (!element) throw new Error(`${name} not found`);
         });
         
-        elements.difficultyScreen.style.display = 'flex';
-        elements.chessGame.style.display = 'none';
         elements.startBtn.disabled = true;
         selectedDifficulty = null;
 
@@ -807,3 +817,173 @@ function initDifficultySelection() {
     }
 }
 
+function initRestartButton() {
+    const restartButton = document.getElementById('restart-game');
+    if (restartButton) {
+        restartButton.addEventListener('click', () => {
+            console.log("Restart button clicked");
+            const difficultyScreen = document.getElementById('difficulty-screen');
+            const chessGame = document.getElementById('chess-game');
+            
+            if (difficultyScreen && chessGame) {
+                difficultyScreen.style.display = 'flex';
+                chessGame.style.display = 'none';
+            }
+            
+            selectedDifficulty = null;
+            const easyBtn = document.getElementById('easy-mode');
+            const hardBtn = document.getElementById('hard-mode');
+            const startBtn = document.getElementById('start-game');
+            
+            if (easyBtn && hardBtn && startBtn) {
+                easyBtn.classList.remove('selected');
+                hardBtn.classList.remove('selected');
+                startBtn.disabled = true;
+            }
+            
+            resetGame();
+            debug("Game restarted");
+        });
+    }
+}
+
+function startGame() {
+    try {
+        console.log("Starting game...");
+        if (!isGameInitialized) {
+            resetGame();
+            initGame();
+            isGameInitialized = true;
+        }
+        
+        // Reset game state
+        board = JSON.parse(JSON.stringify(initialBoard));
+        currentPlayer = 'blue';
+        selectedPiece = null;
+        moveHistory = [];
+        gameState = 'active';
+        lastMove = null;
+        
+        // Reset piece states
+        Object.assign(pieceState, {
+            blueKingMoved: false,
+            redKingMoved: false,
+            blueRooksMove: { left: false, right: false },
+            redRooksMove: { left: false, right: false },
+            lastPawnDoubleMove: null
+        });
+
+        // Update display
+        createBoard();
+        placePieces();
+        updateStatusDisplay("Blue's turn");
+        debug(`New game started - ${gameDifficulty} mode`);
+        
+        // Clear move history display
+        const moveHistoryElement = document.getElementById('move-history');
+        if (moveHistoryElement) {
+            moveHistoryElement.innerHTML = '';
+        }
+
+        // Enable board interactions
+        const chessboard = document.getElementById('chessboard');
+        if (chessboard) {
+            chessboard.style.pointerEvents = 'auto';
+        }
+
+        debug('Game started successfully');
+    } catch (error) {
+        console.error("Error starting game:", error);
+        debug(`Error starting game: ${error.message}`);
+    }
+}
+
+function resetGame() {
+    try {
+        debug('\n----- Game Reset -----');
+        
+        board = JSON.parse(JSON.stringify(initialBoard));
+        currentPlayer = 'blue';
+        selectedPiece = null;
+        moveHistory = [];
+        gameState = 'active';
+        lastMove = null;
+        
+        Object.assign(pieceState, {
+            blueKingMoved: false,
+            redKingMoved: false,
+            blueRooksMove: { left: false, right: false },
+            redRooksMove: { left: false, right: false },
+            lastPawnDoubleMove: null
+        });
+        
+        updateStatusDisplay("Select Difficulty");
+        const moveHistoryElement = document.getElementById('move-history');
+        if (moveHistoryElement) moveHistoryElement.innerHTML = '';
+        
+        const chessboard = document.getElementById('chessboard');
+        if (chessboard) {
+            chessboard.style.pointerEvents = 'auto';
+            chessboard.innerHTML = '';
+        }
+        
+        debug('Game reset completed');
+    } catch (error) {
+        console.error("Error resetting game:", error);
+        debug(`Error resetting game: ${error.message}`);
+    }
+}
+
+function initGame() {
+    try {
+        debug('\n----- Game Initialization -----');
+        createBoard();
+        placePieces();
+        
+        // Add keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && selectedPiece) {
+                selectedPiece.style.opacity = '1';
+                selectedPiece = null;
+                removeHighlights();
+            }
+        });
+        
+        debug('Game initialization completed successfully');
+    } catch (error) {
+        console.error("Error during game initialization:", error);
+    }
+}
+
+function createBoard() {
+    try {
+        const chessboard = document.getElementById('chessboard');
+        if (!chessboard) {
+            throw new Error("Chessboard element not found");
+        }
+        const randomBoard = selectRandomChessboard();
+        chessboard.style.backgroundImage = `url('${randomBoard}')`;
+        debug(`Selected board: ${randomBoard}`);
+    } catch (error) {
+        console.error("Error creating board:", error);
+        throw error;
+    }
+}
+
+function selectRandomChessboard() {
+    const boardCount = 6;
+    const boardNumber = Math.floor(Math.random() * boardCount) + 1;
+    return `images/chessboard${boardNumber}.png`;
+}
+
+// Initialize everything when page loads
+window.addEventListener('load', function() {
+    try {
+        debug('\n----- Page Load Initialization -----');
+        initGame();
+        debug('Page load initialization completed');
+    } catch (error) {
+        console.error("Error during page load initialization:", error);
+        debug(`Error during page load: ${error.message}`);
+    }
+});
