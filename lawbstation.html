@@ -12,35 +12,28 @@
             margin: 1rem 0;
             padding: 1rem 0;
         }
-
         .header-section p {
             margin: 0.5rem 0;
         }
-
         .image-section {
             margin-top: 0.5rem;
             margin-bottom: 0.5rem;
         }
-
         .search-section {
             margin-top: 0.5rem;
         }
-
         .section-title {
             margin-bottom: 0.5rem;
             font-size: 1.5rem;
             color: white;
         }
-
         .search-container {
             margin: 0.5rem 0;
             padding: 0.5rem 0;
         }
-
         .image-display-section {
             margin: 1rem 0;
         }
-
         .game-section {
             margin-top: 2rem;
         }
@@ -95,59 +88,62 @@
                     <div id="imageGallery" class="image-container"></div>
                 </div>
             </div>
-<!-- Chess Game Section -->
-           <div class="section-container game-section">
-    <h2 class="section-title">Chess Game</h2>
 
-    <!-- Leaderboard Section -->
-    <div class="leaderboard-section">
-        <h2 class="leaderboard-title">Top Players</h2>
-        <div class="username-input">
-            <input type="text" id="username-input" placeholder="Enter your username" maxlength="20">
-            <button id="username-submit" class="difficulty-btn">Set Username</button>
-        </div>
-        <div class="leaderboard-table">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Player</th>
-                        <th>Points</th>
-                        <th>W/L/D</th>
-                        <th>Games</th>
-                    </tr>
-                </thead>
-                <tbody id="leaderboard-body"></tbody>
-            </table>
-        </div>
-    </div>
+            <!-- Chess Game Section -->
+            <div class="section-container game-section">
+                <h2 class="section-title">Chess Game</h2>
 
-    <div class="chess-container">
-        <!-- Difficulty Selection Screen -->
-        <div id="difficulty-screen">
-            <h2>Select Difficulty</h2>
-            <div class="difficulty-buttons">
-                <button id="easy-mode" class="difficulty-btn">Easy Mode</button>
-                <button id="hard-mode" class="difficulty-btn">Harder Mode</button>
+                <!-- Leaderboard Section -->
+                <div class="leaderboard-section">
+                    <h2 class="leaderboard-title">Top Players</h2>
+                    <div class="username-input">
+                        <input type="text" id="username-input" placeholder="Enter your username" maxlength="20">
+                        <button id="username-submit" class="difficulty-btn">Set Username</button>
+                    </div>
+                    <div class="leaderboard-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Player</th>
+                                    <th>Points</th>
+                                    <th>W/L/D</th>
+                                    <th>Games</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="chess-container">
+                    <!-- Difficulty Selection Screen -->
+                    <div id="difficulty-screen">
+                        <h2>Select Difficulty</h2>
+                        <div class="difficulty-buttons">
+                            <button id="easy-mode" class="difficulty-btn">Easy Mode</button>
+                            <button id="hard-mode" class="difficulty-btn">Harder Mode</button>
+                        </div>
+                        <button id="start-game" class="start-btn" disabled>Start Game</button>
+                    </div>
+                    
+                    <!-- Chess Game -->
+                    <div id="chess-game" style="display: none;">
+                        <div id="chessboard"></div>
+                    </div>
+                </div>
+
+                <div class="game-info-container">
+                    <div id="game-info">
+                        <div id="status">Enter username to play</div>
+                        <div id="move-history"></div>
+                        <button id="restart-game" class="difficulty-btn">Restart Game</button>
+                    </div>
+                    <div id="debug"></div>
+                </div>
             </div>
-            <button id="start-game" class="start-btn" disabled>Start Game</button>
-        </div>
-        
-        <!-- Chess Game -->
-        <div id="chess-game" style="display: none;">
-            <div id="chessboard"></div>
         </div>
     </div>
-
-    <div class="game-info-container">
-        <div id="game-info">
-            <div id="status">Enter username to play</div>
-            <div id="move-history"></div>
-            <button id="restart-game" class="difficulty-btn">Restart Game</button>
-        </div>
-        <div id="debug"></div>
-    </div>
-</div>
 
     <!-- Audius player iframe -->
     <iframe class="fixed-player"
@@ -157,17 +153,17 @@
             frameborder="0">
     </iframe>
 
-<!-- In lawbstation.html -->
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script>
-// Initialize Supabase once globally
-window.gameDatabase = window.supabase.createClient(
-    'https://roxwocgknkiqnsgiojgz.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
-);
-</script>
-<script src="loadImages.js"></script>
-<script src="leaderboard.js"></script>
-<script src="chess.js"></script>
+    <!-- Scripts -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        // Initialize Supabase client globally
+        window.gameDatabase = supabase.createClient(
+            'https://roxwocgknkiqnsgiojgz.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
+        );
+    </script>
+    <script src="loadImages.js"></script>
+    <script src="leaderboard.js"></script>
+    <script src="chess.js"></script>
 </body>
 </html>
