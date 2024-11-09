@@ -154,16 +154,23 @@
     </iframe>
 
     <!-- Scripts -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script>
-        // Initialize Supabase client globally
-        window.gameDatabase = supabase.createClient(
-            'https://roxwocgknkiqnsgiojgz.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
-        );
-    </script>
-    <script src="loadImages.js"></script>
-    <script src="leaderboard.js"></script>
-    <script src="chess.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+    // Initialize Supabase client globally first
+    try {
+        if (!window.gameDatabase) {
+            window.gameDatabase = window.supabase.createClient(
+                'https://roxwocgknkiqnsgiojgz.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
+            );
+        }
+    } catch (error) {
+        console.error('Error initializing Supabase:', error);
+    }
+</script>
+<!-- Game scripts -->
+<script src="loadImages.js"></script>
+<script src="leaderboard.js"></script>
+<script src="chess.js"></script>
 </body>
 </html>
