@@ -1,7 +1,7 @@
 /* Game Section Layout */
 .game-section {
     padding: 20px;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: transparent;  /* Changed from rgba(0, 0, 0, 0.7) */
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     margin: 20px auto;
@@ -39,7 +39,7 @@
 .username-input input {
     padding: 12px;
     border: 1px solid rgba(50, 205, 50, 0.3);
-    background: rgba(0, 0, 0, 0.5);
+    background: transparent;  /* Changed from rgba(0, 0, 0, 0.5) */
     color: white;
     border-radius: 4px;
     font-family: monospace;
@@ -308,11 +308,12 @@
 }
 
 .promotion-dialog {
-    background-color: rgba(0, 0, 0, 0.8);
+    background-color: rgba(0, 0, 0, 0.5);  /* Slightly transparent instead of 0.8 */
     padding: 10px;
     border-radius: 5px;
     display: flex;
     gap: 10px;
+    border: 1px solid rgba(50, 205, 50, 0.3);  /* Added border */
 }
 
 .promotion-piece {
