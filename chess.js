@@ -572,14 +572,14 @@ function evaluateHardMove(piece, startRow, startCol, endRow, endCol) {
     board[endRow][endCol] = piece;
     board[startRow][startCol] = null;
     
-    // Enhanced piece values
+    // Enhanced piece values (adjusted for better relative value)
     const pieceValues = {
-        'p': 150,
-        'n': 375,
-        'b': 385,
-        'r': 600,
-        'q': 1200,
-        'k': 2000
+        'p': 100,   // Base pawn value
+        'n': 320,   // Knights slightly higher value in closed positions
+        'b': 330,   // Bishops slightly higher value in open positions
+        'r': 500,   // Rook value
+        'q': 900,   // Queen value
+        'k': 20000  // King value (very high to prioritize king safety)
     };
     
     // Capturing bonus with 30% additional value
@@ -634,6 +634,159 @@ function evaluateHardMove(piece, startRow, startCol, endRow, endCol) {
     score += Math.random() * 15;
     
     return score;
+}
+
+// Missing helper functions to add:
+function hasFriendlyPawnNeighbor(row, col) {
+    const color = getPieceColor(board[row][col]);
+    for (const dc of [-1, 1]) {
+        const c = col + dc;
+        if (isWithinBoard(row, c) && board[row][c]?.toLowerCase() === 'p' && 
+            getPieceColor(board[row][c]) === color) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function isPieceProtected(row, col, color) {
+    return evaluatePieceProtection(row, col, color) > 0;
+}
+
+function isIsolatedPawn(col) {
+    for (let c of [col - 1, col + 1]) {
+        if (c >= 0 && c < BOARD_SIZE) {
+            for (let row = 0; row < BOARD_SIZE; row++) {
+                if (board[row][c]?.toLowerCase() === 'p') {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+function isPassedPawn(row, col, color) {
+    const direction = color === 'red' ? 1 : -1;
+    const startRow = color === 'red' ? row + 1 : row - 1;
+    const endRow = color === 'red' ? BOARD_SIZE : -1;
+    
+    for (let r = startRow; r !== endRow; r += direction) {
+        for (let c = col - 1; c <= col + 1; c++) {
+            if (c >= 0 && c < BOARD_SIZE && 
+                board[r]?.[c]?.toLowerCase() === 'p' && 
+                getPieceColor(board[r][c]) !== color) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+function hasBishopPair(color) {
+    let bishopCount = 0;
+    const bishopPiece = color === 'red' ? 'B' : 'b';
+    for (let row = 0; row < BOARD_SIZE; row++) {
+        for (let col = 0; col < BOARD_SIZE; col++) {
+            if (board[row][col] === bishopPiece) {
+                bishopCount++;
+            }
+        }
+    }
+    return bishopCount >= 2;
+}
+
+function isOnLongDiagonal(row, col) {
+    return Math.abs(row - col) === 0 || Math.abs(row - (7 - col)) === 0;
+}
+
+function hasConnectedRook(row, col) {
+    const color = getPieceColor(board[row][col]);
+    const rookPiece = color === 'red' ? 'R' : 'r';
+    
+    // Check same row
+    for (let c = 0; c < BOARD_SIZE; c++) {
+        if (c !== col && board[row][c] === rookPiece) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function evaluatePawnShield(row, col, color) {
+    let score = 0;
+    const direction = color === 'red' ? 1 : -1;
+    const pawnPiece = color === 'red' ? 'P' : 'p';
+    
+    // Check three files around king
+    for (let c = col - 1; c <= col + 1; c++) {
+        if (c >= 0 && c < BOARD_SIZE) {
+            const r = row + direction;
+            if (isWithinBoard(r, c) && board[r][c] === pawnPiece) {
+                score += 30;
+            }
+        }
+    }
+    return score;
+}
+
+function countOpenFilesNearKing(row, col) {
+    let count = 0;
+    for (let c = col - 1; c <= col + 1; c++) {
+        if (c >= 0 && c < BOARD_SIZE && isFileOpen(c)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+function countAttackingPiecesNearKing(row, col, color) {
+    let count = 0;
+    const enemyColor = color === 'red' ? 'blue' : 'red';
+    
+    for (let r = row - 1; r <= row + 1; r++) {
+        for (let c = col - 1; c <= col + 1; c++) {
+            if (isWithinBoard(r, c) && isSquareUnderAttack(r, c, enemyColor)) {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
+function evaluatePieceActivity(row, col) {
+    const piece = board[row][col];
+    if (!piece) return 0;
+    
+    let mobility = 0;
+    for (let endRow = 0; endRow < BOARD_SIZE; endRow++) {
+        for (let endCol = 0; endCol < BOARD_SIZE; endCol++) {
+            if (canPieceMove(piece, row, col, endRow, endCol)) {
+                mobility++;
+            }
+        }
+    }
+    return mobility;
+}
+
+function evaluateKingAttackPotential(color) {
+    const enemyKingPos = findKing(color === 'red' ? 'blue' : 'red');
+    if (!enemyKingPos) return 0;
+    
+    let attackingPieces = 0;
+    for (let row = 0; row < BOARD_SIZE; row++) {
+        for (let col = 0; col < BOARD_SIZE; col++) {
+            const piece = board[row][col];
+            if (piece && getPieceColor(piece) === color) {
+                const distance = Math.max(
+                    Math.abs(row - enemyKingPos.row),
+                    Math.abs(col - enemyKingPos.col)
+                );
+                if (distance <= 2) attackingPieces++;
+            }
+        }
+    }
+    return attackingPieces * 10;
 }
 
 // Position evaluation functions
