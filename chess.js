@@ -61,6 +61,18 @@ const pieceImages = {
     'p': 'images/bluepawn.png'
 };
 
+function isWalletConnected() {
+    return !!localStorage.getItem('currentPlayer');
+}
+
+function checkGameAccess() {
+    if (!isWalletConnected()) {
+        updateStatusDisplay("Connect Phantom Wallet to play");
+        return false;
+    }
+    return true;
+}
+
 // Core utility functions
 function getPieceColor(piece) {
     if (!piece) return null;
@@ -850,10 +862,8 @@ function initRestartButton() {
 function startGame() {
     try {
         console.log("Starting game...");
-        if (!isGameInitialized) {
-            resetGame();
-            initGame();
-            isGameInitialized = true;
+        if (!checkGameAccess()) {
+            return;
         }
         
         // Reset game state
@@ -917,7 +927,7 @@ function resetGame() {
             lastPawnDoubleMove: null
         });
         
-        updateStatusDisplay("Select Difficulty");
+       updateStatusDisplay("Connect Phantom Wallet to play");
         const moveHistoryElement = document.getElementById('move-history');
         if (moveHistoryElement) moveHistoryElement.innerHTML = '';
         
@@ -967,10 +977,10 @@ function createPieceElement(piece, row, col) {
 
 function onPieceClick(event) {
     try {
+        if (!checkGameAccess()) return;
         if (currentGameMode === GameMode.ONLINE && currentPlayer !== playerColor) return;
         if (currentGameMode === GameMode.AI && currentPlayer !== 'blue') return;
         if (gameState !== 'active' && gameState !== 'check') return;
-        
         const clickedPiece = event.target;
         const row = parseInt(clickedPiece.getAttribute('data-row'));
         const col = parseInt(clickedPiece.getAttribute('data-col'));
