@@ -221,25 +221,29 @@ class LeaderboardManager {
         return `${address.slice(0, 4)}...${address.slice(-4)}`;
     }
 
-    async getTopPlayers(limit = 10) {
-        try {
-            const { data, error } = await supabase
-                .from('leaderboard')
-                .select('*')
-                .filter('username', 'iregex', '^[1-9A-HJ-NP-Za-km-z]{32,44}$')
-                .order('points', { ascending: false })
-                .limit(limit);
+async getTopPlayers(limit = 10) {
+    try {
+        const { data, error } = await supabase
+            .from('leaderboard')
+            .select('*')
+            // Changed the filter to use a simpler pattern matching
+            .order('points', { ascending: false })
+            .limit(limit);
 
-            if (error) {
-                console.error('Error getting top players:', error);
-                throw error;
-            }
-            
-            return data || [];
-        } catch (error) {
+        if (error) {
             console.error('Error getting top players:', error);
-            return [];
+            throw error;
         }
+        
+        // Filter wallet addresses on the client side instead
+        const validData = data ? data.filter(player => 
+            isValidSolanaAddress(player.username)
+        ) : [];
+        
+        return validData;
+    } catch (error) {
+        console.error('Error getting top players:', error);
+        return [];
     }
 }
 
