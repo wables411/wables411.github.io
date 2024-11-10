@@ -2,6 +2,116 @@ const supabase = window.gameDatabase;
 
 let leaderboardManagerInstance = null;
 
+// Function to check if a string is a valid Solana wallet address
+function isValidSolanaAddress(address) {
+    // Solana addresses are 44 characters long and base58 encoded
+    return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
+}
+
+class WalletConnector {
+    constructor() {
+        this.supportedWallets = {
+            phantom: window.solana,
+            solflare: window.solflare,
+            magicEden: window.magicEden
+        };
+    }
+
+    async connectWallet(walletType) {
+        try {
+            const wallet = this.supportedWallets[walletType];
+            
+            if (!wallet) {
+                const walletUrls = {
+                    phantom: 'https://phantom.app/',
+                    solflare: 'https://solflare.com/',
+                    magicEden: 'https://magiceden.io/'
+                };
+                
+                window.open(walletUrls[walletType], '_blank');
+                throw new Error(`Please install ${walletType} wallet`);
+            }
+
+            let response;
+            if (walletType === 'solflare') {
+                if (!wallet.isConnected) {
+                    response = await wallet.connect();
+                }
+                response = { publicKey: wallet.publicKey };
+            } else {
+                response = await wallet.connect();
+            }
+
+            const walletAddress = response.publicKey.toString();
+            console.log(`Connected ${walletType} wallet:`, walletAddress);
+            
+            // Save wallet info
+            localStorage.setItem('currentPlayer', walletAddress);
+            localStorage.setItem('walletType', walletType);
+            
+            // Update UI
+            this.updateWalletUI(walletAddress);
+            
+            // Show difficulty screen
+            const difficultyScreen = document.getElementById('difficulty-screen');
+            if (difficultyScreen) {
+                difficultyScreen.style.display = 'flex';
+            }
+
+            // Update status
+            const statusElement = document.getElementById('status');
+            if (statusElement) {
+                statusElement.textContent = 'Select difficulty to play';
+            }
+
+            return walletAddress;
+        } catch (error) {
+            console.error(`Error connecting ${walletType} wallet:`, error);
+            alert(`Failed to connect ${walletType} wallet. Please try again.`);
+            throw error;
+        }
+    }
+
+    updateWalletUI(walletAddress) {
+        // Hide all connect buttons
+        document.querySelectorAll('.wallet-btn').forEach(btn => {
+            btn.style.display = 'none';
+        });
+        
+        // Show wallet address
+        const addressDisplay = document.getElementById('wallet-address');
+        if (addressDisplay) {
+            addressDisplay.style.display = 'block';
+            addressDisplay.textContent = `Connected: ${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`;
+        }
+    }
+
+    async reconnectWallet() {
+        const savedWalletType = localStorage.getItem('walletType');
+        const savedAddress = localStorage.getItem('currentPlayer');
+        
+        if (savedWalletType && savedAddress) {
+            const wallet = this.supportedWallets[savedWalletType];
+            if (wallet) {
+                try {
+                    if (savedWalletType === 'solflare') {
+                        if (!wallet.isConnected) {
+                            await wallet.connect();
+                        }
+                    }
+                    this.updateWalletUI(savedAddress);
+                    return true;
+                } catch (error) {
+                    console.error('Error reconnecting wallet:', error);
+                    localStorage.removeItem('currentPlayer');
+                    localStorage.removeItem('walletType');
+                }
+            }
+        }
+        return false;
+    }
+}
+
 class LeaderboardManager {
     constructor() {
         if (leaderboardManagerInstance) {
@@ -33,7 +143,7 @@ class LeaderboardManager {
     }
 
     async updateScore(walletAddress, gameResult) {
-        if (!walletAddress) {
+        if (!walletAddress || !isValidSolanaAddress(walletAddress)) {
             console.error('Invalid wallet address');
             return;
         }
@@ -116,6 +226,7 @@ class LeaderboardManager {
             const { data, error } = await supabase
                 .from('leaderboard')
                 .select('*')
+                .filter('username', 'iregex', '^[1-9A-HJ-NP-Za-km-z]{32,44}$')
                 .order('points', { ascending: false })
                 .limit(limit);
 
@@ -132,78 +243,60 @@ class LeaderboardManager {
     }
 }
 
-// Wallet connection handling
-async function connectWallet() {
-    try {
-        if (!window.solana || !window.solana.isPhantom) {
-            alert('Please install Phantom Wallet to play!');
-            window.open('https://phantom.app/', '_blank');
-            return;
-        }
+// Initialize wallet connector
+const walletConnector = new WalletConnector();
 
-        const response = await window.solana.connect();
-        const walletAddress = response.publicKey.toString();
-        
-        console.log('Connected wallet:', walletAddress);
-        localStorage.setItem('currentPlayer', walletAddress);
-        
-        // Update UI
-        document.getElementById('connect-wallet').style.display = 'none';
-        const addressDisplay = document.getElementById('wallet-address');
-        addressDisplay.style.display = 'block';
-        addressDisplay.textContent = `Connected: ${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`;
-        
-        // Show difficulty screen
-        const difficultyScreen = document.getElementById('difficulty-screen');
-        if (difficultyScreen) {
-            difficultyScreen.style.display = 'flex';
-        }
-
-        // Update status
-        const statusElement = document.getElementById('status');
-        if (statusElement) {
-            statusElement.textContent = 'Select difficulty to play';
-        }
-
-        return walletAddress;
-    } catch (error) {
-        console.error('Error connecting wallet:', error);
-        alert('Failed to connect wallet. Please try again.');
-    }
+function adjustColor(color, percent) {
+    const num = parseInt(color.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) + amt;
+    const G = (num >> 8 & 0x00FF) + amt;
+    const B = (num & 0x0000FF) + amt;
+    return '#' + (
+        0x1000000 +
+        (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+        (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+        (B < 255 ? B < 1 ? 0 : B : 255)
+    ).toString(16).slice(1);
 }
 
-// Initialize wallet handling
 function initializeWalletConnection() {
-    const connectButton = document.getElementById('connect-wallet');
-    const difficultyScreen = document.getElementById('difficulty-screen');
-    
-    if (!connectButton || !difficultyScreen) {
-        console.error('Missing required elements for wallet connection');
-        return;
+    // Create wallet buttons container
+    const walletButtons = document.createElement('div');
+    walletButtons.className = 'wallet-buttons';
+
+    // Create buttons for each wallet
+    const wallets = [
+        { name: 'Phantom', type: 'phantom', color: '#AB9FF2' },
+        { name: 'Solflare', type: 'solflare', color: '#FC822B' },
+        { name: 'Magic Eden', type: 'magicEden', color: '#E42575' }
+    ];
+
+    wallets.forEach(wallet => {
+        const button = document.createElement('button');
+        button.className = 'wallet-btn';
+        button.textContent = `Connect ${wallet.name}`;
+        button.style.background = `linear-gradient(45deg, ${wallet.color}, ${adjustColor(wallet.color, 20)})`;
+        button.onclick = () => walletConnector.connectWallet(wallet.type);
+        walletButtons.appendChild(button);
+    });
+
+    // Add wallet address display
+    const addressDisplay = document.createElement('div');
+    addressDisplay.id = 'wallet-address';
+    addressDisplay.className = 'wallet-address';
+    addressDisplay.style.display = 'none';
+
+    // Replace old wallet connection UI
+    const walletConnection = document.querySelector('.wallet-connection');
+    if (walletConnection) {
+        walletConnection.innerHTML = '';
+        walletConnection.appendChild(walletButtons);
+        walletConnection.appendChild(addressDisplay);
     }
 
-    connectButton.onclick = async () => {
-        await connectWallet();
-        
-        const easyBtn = document.getElementById('easy-mode');
-        const hardBtn = document.getElementById('hard-mode');
-        const startBtn = document.getElementById('start-game');
-        
-        if (easyBtn && hardBtn && startBtn) {
-            easyBtn.addEventListener('click', () => {
-                easyBtn.classList.add('selected');
-                hardBtn.classList.remove('selected');
-                startBtn.disabled = false;
-                window.gameDifficulty = 'easy';
-            });
-            hardBtn.addEventListener('click', () => {
-                hardBtn.classList.add('selected');
-                easyBtn.classList.remove('selected');
-                startBtn.disabled = false;
-                window.gameDifficulty = 'hard';
-            });
-        }
-    };
+    // Try to reconnect existing wallet
+    walletConnector.reconnectWallet();
 }
 
 // Update game result
@@ -235,18 +328,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     const manager = new LeaderboardManager();
     await manager.loadLeaderboard();
     initializeWalletConnection();
-    
-    // Check if wallet is already connected
-    const savedAddress = localStorage.getItem('currentPlayer');
-    if (savedAddress) {
-        document.getElementById('connect-wallet').style.display = 'none';
-        const addressDisplay = document.getElementById('wallet-address');
-        addressDisplay.style.display = 'block';
-        addressDisplay.textContent = `Connected: ${savedAddress.slice(0, 4)}...${savedAddress.slice(-4)}`;
-        
-        const difficultyScreen = document.getElementById('difficulty-screen');
-        if (difficultyScreen) {
-            difficultyScreen.style.display = 'flex';
-        }
-    }
 });
