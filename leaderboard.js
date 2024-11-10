@@ -32,20 +32,20 @@ class LeaderboardManager {
         }
     }
 
-    async updateScore(username, gameResult) {
-        if (!username || username === '0') {
-            console.error('Invalid username');
+    async updateScore(walletAddress, gameResult) {
+        if (!walletAddress) {
+            console.error('Invalid wallet address');
             return;
         }
 
-        console.log(`Updating score for ${username} with result: ${gameResult}`);
+        console.log(`Updating score for ${walletAddress} with result: ${gameResult}`);
 
         try {
             // First try to get existing record
             const { data: existingRecord, error: fetchError } = await supabase
                 .from('leaderboard')
                 .select('*')
-                .eq('username', username)
+                .eq('username', walletAddress)
                 .single();
                 
             if (fetchError && fetchError.code !== 'PGRST116') {
@@ -54,7 +54,7 @@ class LeaderboardManager {
 
             // Prepare the record
             const record = {
-                username,
+                username: walletAddress,
                 wins: (existingRecord?.wins || 0) + (gameResult === 'win' ? 1 : 0),
                 losses: (existingRecord?.losses || 0) + (gameResult === 'loss' ? 1 : 0),
                 draws: (existingRecord?.draws || 0) + (gameResult === 'draw' ? 1 : 0),
@@ -64,7 +64,6 @@ class LeaderboardManager {
 
             console.log('Upserting record:', record);
 
-            // Upsert the record
             const { error: upsertError } = await supabase
                 .from('leaderboard')
                 .upsert(record, { 
@@ -96,7 +95,7 @@ class LeaderboardManager {
             tbody.innerHTML = topPlayers.map((player, index) => `
                 <tr>
                     <td>${index + 1}</td>
-                    <td>${player.username}</td>
+                    <td>${this.formatAddress(player.username)}</td>
                     <td>${player.points}</td>
                     <td>${player.wins}/${player.losses}/${player.draws}</td>
                     <td>${player.totalGames}</td>
@@ -105,6 +104,11 @@ class LeaderboardManager {
         } catch (error) {
             console.error('Error displaying leaderboard:', error);
         }
+    }
+
+    formatAddress(address) {
+        if (!address) return '';
+        return `${address.slice(0, 4)}...${address.slice(-4)}`;
     }
 
     async getTopPlayers(limit = 10) {
@@ -128,45 +132,76 @@ class LeaderboardManager {
     }
 }
 
-// Initialize username handling
-function initializeUsernameHandling() {
-    const usernameInput = document.getElementById('username-input');
-    const usernameSubmit = document.getElementById('username-submit');
+// Wallet connection handling
+async function connectWallet() {
+    try {
+        if (!window.solana || !window.solana.isPhantom) {
+            alert('Please install Phantom Wallet to play!');
+            window.open('https://phantom.app/', '_blank');
+            return;
+        }
+
+        const response = await window.solana.connect();
+        const walletAddress = response.publicKey.toString();
+        
+        console.log('Connected wallet:', walletAddress);
+        localStorage.setItem('currentPlayer', walletAddress);
+        
+        // Update UI
+        document.getElementById('connect-wallet').style.display = 'none';
+        const addressDisplay = document.getElementById('wallet-address');
+        addressDisplay.style.display = 'block';
+        addressDisplay.textContent = `Connected: ${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`;
+        
+        // Show difficulty screen
+        const difficultyScreen = document.getElementById('difficulty-screen');
+        if (difficultyScreen) {
+            difficultyScreen.style.display = 'flex';
+        }
+
+        // Update status
+        const statusElement = document.getElementById('status');
+        if (statusElement) {
+            statusElement.textContent = 'Select difficulty to play';
+        }
+
+        return walletAddress;
+    } catch (error) {
+        console.error('Error connecting wallet:', error);
+        alert('Failed to connect wallet. Please try again.');
+    }
+}
+
+// Initialize wallet handling
+function initializeWalletConnection() {
+    const connectButton = document.getElementById('connect-wallet');
     const difficultyScreen = document.getElementById('difficulty-screen');
     
-    if (!usernameInput || !usernameSubmit || !difficultyScreen) {
-        console.error('Missing required elements for username handling');
+    if (!connectButton || !difficultyScreen) {
+        console.error('Missing required elements for wallet connection');
         return;
     }
 
-    usernameSubmit.onclick = () => {
-        const username = usernameInput.value.trim();
-        if (username && username.length >= 2) {
-            console.log(`Setting username: ${username}`);
-            localStorage.setItem('currentPlayer', username);
-            usernameInput.disabled = true;
-            usernameSubmit.disabled = true;
-            // Show difficulty screen after username is set
-            difficultyScreen.style.display = 'flex';
-            const easyBtn = document.getElementById('easy-mode');
-            const hardBtn = document.getElementById('hard-mode');
-            const startBtn = document.getElementById('start-game');
-            if (easyBtn && hardBtn && startBtn) {
-                easyBtn.addEventListener('click', () => {
-                    easyBtn.classList.add('selected');
-                    hardBtn.classList.remove('selected');
-                    startBtn.disabled = false;
-                    window.gameDifficulty = 'easy';
-                });
-                hardBtn.addEventListener('click', () => {
-                    hardBtn.classList.add('selected');
-                    easyBtn.classList.remove('selected');
-                    startBtn.disabled = false;
-                    window.gameDifficulty = 'hard';
-                });
-            }
-        } else {
-            alert('Please enter a username with at least 2 characters');
+    connectButton.onclick = async () => {
+        await connectWallet();
+        
+        const easyBtn = document.getElementById('easy-mode');
+        const hardBtn = document.getElementById('hard-mode');
+        const startBtn = document.getElementById('start-game');
+        
+        if (easyBtn && hardBtn && startBtn) {
+            easyBtn.addEventListener('click', () => {
+                easyBtn.classList.add('selected');
+                hardBtn.classList.remove('selected');
+                startBtn.disabled = false;
+                window.gameDifficulty = 'easy';
+            });
+            hardBtn.addEventListener('click', () => {
+                hardBtn.classList.add('selected');
+                easyBtn.classList.remove('selected');
+                startBtn.disabled = false;
+                window.gameDifficulty = 'hard';
+            });
         }
     };
 }
@@ -175,7 +210,7 @@ function initializeUsernameHandling() {
 window.updateGameResult = function(winner) {
     const currentPlayer = localStorage.getItem('currentPlayer');
     if (!currentPlayer) {
-        console.warn('No player username found');
+        console.warn('No wallet address found');
         return;
     }
 
@@ -196,8 +231,22 @@ window.updateGameResult = function(winner) {
 
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('Initializing leaderboard...');
+    console.log('Initializing leaderboard and wallet connection...');
     const manager = new LeaderboardManager();
     await manager.loadLeaderboard();
-    initializeUsernameHandling();
+    initializeWalletConnection();
+    
+    // Check if wallet is already connected
+    const savedAddress = localStorage.getItem('currentPlayer');
+    if (savedAddress) {
+        document.getElementById('connect-wallet').style.display = 'none';
+        const addressDisplay = document.getElementById('wallet-address');
+        addressDisplay.style.display = 'block';
+        addressDisplay.textContent = `Connected: ${savedAddress.slice(0, 4)}...${savedAddress.slice(-4)}`;
+        
+        const difficultyScreen = document.getElementById('difficulty-screen');
+        if (difficultyScreen) {
+            difficultyScreen.style.display = 'flex';
+        }
+    }
 });
