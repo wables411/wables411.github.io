@@ -119,31 +119,30 @@
             </div>
 
             <!-- Chess Game Section -->
-               <div class="section-container game-section">
-        <h2 class="section-title">LAWB CHESS</h2>
+<div class="section-container game-section">
+    <h2 class="section-title">LAWB CHESS</h2>
 
-        <!-- Leaderboard Section -->
-        <div class="leaderboard-section">
-            <h2 class="leaderboard-title">Top Players</h2>
-            <div class="wallet-connection">
-                <button id="connect-wallet" class="wallet-btn">Connect Phantom Wallet</button>
-                <div id="wallet-address" class="wallet-address" style="display: none;"></div>
-            </div>
-            <div class="leaderboard-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Player</th>
-                            <th>Points</th>
-                            <th>W/L/D</th>
-                            <th>Games</th>
-                        </tr>
-                    </thead>
-                    <tbody id="leaderboard-body"></tbody>
-                </table>
-            </div>
+    <!-- Leaderboard Section -->
+    <div class="leaderboard-section">
+        <h2 class="leaderboard-title">Top Players</h2>
+        <div class="wallet-connection">
+            <!-- Wallet buttons will be inserted here by JavaScript -->
         </div>
+        <div class="leaderboard-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Points</th>
+                        <th>W/L/D</th>
+                        <th>Games</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body"></tbody>
+            </table>
+        </div>
+    </div>
 
         <div class="chess-container">
             <!-- Difficulty Selection Screen -->
@@ -172,23 +171,32 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script>
-        try {
-            if (!window.gameDatabase) {
-                window.gameDatabase = window.supabase.createClient(
-                    'https://roxwocgknkiqnsgiojgz.supabase.co',
-                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
-                );
-            }
-        } catch (error) {
-            console.error('Error initializing Supabase:', error);
+   <!-- Audius player iframe -->
+<iframe class="fixed-player"
+        src="https://audius.co/embed/track/2VAzEM0?flavor=tiny"
+        allowTransparency="true"
+        allow="encrypted-media"
+        frameborder="0">
+</iframe>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.0.12/lib/index.iife.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+    try {
+        if (!window.gameDatabase) {
+            window.gameDatabase = window.supabase.createClient(
+                'https://roxwocgknkiqnsgiojgz.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
+            );
         }
-    </script>
-    <script src="loadImages.js"></script>
-    <script src="leaderboard.js"></script>
-    <script src="chess.js"></script>
+    } catch (error) {
+        console.error('Error initializing Supabase:', error);
+    }
+</script>
+<script src="loadImages.js"></script>
+<script src="leaderboard.js"></script>
+<script src="chess.js"></script>
 </body>
 </html>
