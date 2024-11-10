@@ -191,6 +191,31 @@ class LeaderboardManager {
         }
     }
 
+    async getTopPlayers(limit = 10) {
+        try {
+            const { data, error } = await supabase
+                .from('leaderboard')
+                .select('*')
+                .order('points', { ascending: false })
+                .limit(limit);
+
+            if (error) {
+                console.error('Error getting top players:', error);
+                throw error;
+            }
+            
+            // Filter wallet addresses on the client side instead
+            const validData = data ? data.filter(player => 
+                isValidSolanaAddress(player.username)
+            ) : [];
+            
+            return validData;
+        } catch (error) {
+            console.error('Error getting top players:', error);
+            return [];
+        }
+    }
+    
     async displayLeaderboard() {
         const tbody = document.getElementById('leaderboard-body');
         if (!tbody) {
@@ -219,31 +244,6 @@ class LeaderboardManager {
     formatAddress(address) {
         if (!address) return '';
         return `${address.slice(0, 4)}...${address.slice(-4)}`;
-    }
-
-async getTopPlayers(limit = 10) {
-    try {
-        const { data, error } = await supabase
-            .from('leaderboard')
-            .select('*')
-            // Changed the filter to use a simpler pattern matching
-            .order('points', { ascending: false })
-            .limit(limit);
-
-        if (error) {
-            console.error('Error getting top players:', error);
-            throw error;
-        }
-        
-        // Filter wallet addresses on the client side instead
-        const validData = data ? data.filter(player => 
-            isValidSolanaAddress(player.username)
-        ) : [];
-        
-        return validData;
-    } catch (error) {
-        console.error('Error getting top players:', error);
-        return [];
     }
 }
 
