@@ -37,6 +37,35 @@
         .game-section {
             margin-top: 2rem;
         }
+        /* Wallet Button Styles */
+        .wallet-btn {
+            background: linear-gradient(45deg, #9945FF, #14F195);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 24px;
+            color: white;
+            font-family: Impact, sans-serif;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 10px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .wallet-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(153, 69, 255, 0.4);
+        }
+        .wallet-address {
+            font-family: monospace;
+            background: rgba(20, 241, 149, 0.1);
+            padding: 8px 16px;
+            border-radius: 8px;
+            margin: 10px 0;
+            word-break: break-all;
+            border: 1px solid rgba(20, 241, 149, 0.2);
+        }
     </style>
 </head>
 <body class="lawbstation-body">
@@ -90,87 +119,76 @@
             </div>
 
             <!-- Chess Game Section -->
-            <div class="section-container game-section">
-                <h2 class="section-title">LAWB CHESS</h2>
+               <div class="section-container game-section">
+        <h2 class="section-title">LAWB CHESS</h2>
 
-                <!-- Leaderboard Section -->
-                <div class="leaderboard-section">
-                    <h2 class="leaderboard-title">Top Players</h2>
-                    <div class="username-input">
-                        <input type="text" id="username-input" placeholder="Enter your username" maxlength="20">
-                        <button id="username-submit" class="difficulty-btn">Set Username</button>
-                    </div>
-                    <div class="leaderboard-table">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Rank</th>
-                                    <th>Player</th>
-                                    <th>Points</th>
-                                    <th>W/L/D</th>
-                                    <th>Games</th>
-                                </tr>
-                            </thead>
-                            <tbody id="leaderboard-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="chess-container">
-                    <!-- Difficulty Selection Screen -->
-                    <div id="difficulty-screen">
-                        <h2>Select Difficulty</h2>
-                        <div class="difficulty-buttons">
-                            <button id="easy-mode" class="difficulty-btn">Easy Mode</button>
-                            <button id="hard-mode" class="difficulty-btn">Harder Mode</button>
-                        </div>
-                        <button id="start-game" class="start-btn" disabled>Start Game</button>
-                    </div>
-                    
-                    <!-- Chess Game -->
-                    <div id="chess-game" style="display: none;">
-                        <div id="chessboard"></div>
-                    </div>
-                </div>
-
-                <div class="game-info-container">
-                    <div id="game-info">
-                        <div id="status">Enter username to play</div>
-                        <div id="move-history"></div>
-                        <button id="restart-game" class="difficulty-btn">Restart Game</button>
-                    </div>
-                    <div id="debug"></div>
-                </div>
+        <!-- Leaderboard Section -->
+        <div class="leaderboard-section">
+            <h2 class="leaderboard-title">Top Players</h2>
+            <div class="wallet-connection">
+                <button id="connect-wallet" class="wallet-btn">Connect Phantom Wallet</button>
+                <div id="wallet-address" class="wallet-address" style="display: none;"></div>
             </div>
+            <div class="leaderboard-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Points</th>
+                            <th>W/L/D</th>
+                            <th>Games</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="chess-container">
+            <!-- Difficulty Selection Screen -->
+            <div id="difficulty-screen" style="display: none;">
+                <h2>Select Difficulty</h2>
+                <div class="difficulty-buttons">
+                    <button id="easy-mode" class="difficulty-btn">Easy Mode</button>
+                    <button id="hard-mode" class="difficulty-btn">Harder Mode</button>
+                </div>
+                <button id="start-game" class="start-btn" disabled>Start Game</button>
+            </div>
+            
+            <!-- Chess Game -->
+            <div id="chess-game" style="display: none;">
+                <div id="chessboard"></div>
+            </div>
+        </div>
+
+        <div class="game-info-container">
+            <div id="game-info">
+                <div id="status">Connect Phantom Wallet to play</div>
+                <div id="move-history"></div>
+                <button id="restart-game" class="difficulty-btn">Restart Game</button>
+            </div>
+            <div id="debug"></div>
         </div>
     </div>
 
-    <!-- Audius player iframe -->
-    <iframe class="fixed-player"
-            src="https://audius.co/embed/track/2VAzEM0?flavor=tiny"
-            allowTransparency="true"
-            allow="encrypted-media"
-            frameborder="0">
-    </iframe>
-
     <!-- Scripts -->
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script>
-    // Initialize Supabase client globally first
-    try {
-        if (!window.gameDatabase) {
-            window.gameDatabase = window.supabase.createClient(
-                'https://roxwocgknkiqnsgiojgz.supabase.co',
-                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
-            );
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        try {
+            if (!window.gameDatabase) {
+                window.gameDatabase = window.supabase.createClient(
+                    'https://roxwocgknkiqnsgiojgz.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
+                );
+            }
+        } catch (error) {
+            console.error('Error initializing Supabase:', error);
         }
-    } catch (error) {
-        console.error('Error initializing Supabase:', error);
-    }
-</script>
-<!-- Game scripts -->
-<script src="loadImages.js"></script>
-<script src="leaderboard.js"></script>
-<script src="chess.js"></script>
+    </script>
+    <script src="loadImages.js"></script>
+    <script src="leaderboard.js"></script>
+    <script src="chess.js"></script>
 </body>
 </html>
