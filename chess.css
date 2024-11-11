@@ -381,3 +381,33 @@
 .promotion-piece:hover {
     transform: scale(1.1);
 }
+
+/* Game Mode Selection Styles */
+.game-mode-selection {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.mode-btn {
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid rgba(50, 205, 50, 0.3);
+    padding: 12px 24px;
+    border-radius: 8px;
+    color: white;
+    font-family: Impact, sans-serif;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.mode-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
+}
+
+.mode-btn.selected {
+    background: rgba(50, 205, 50, 0.3);
+    border-color: rgba(50, 205, 50, 0.6);
+}
