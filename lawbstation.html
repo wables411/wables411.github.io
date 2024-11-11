@@ -67,88 +67,78 @@
             border: 1px solid rgba(20, 241, 149, 0.2);
         }
         /* Multiplayer Styles */
-.multiplayer-menu {
-    padding: 20px;
-    background: rgba(0, 0, 0, 0.7);
-    border-radius: 8px;
-    margin-bottom: 20px;
-    border: 1px solid rgba(50, 205, 50, 0.3);
-}
-
-.multiplayer-option {
-    margin: 15px 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.multiplayer-btn {
-    background: linear-gradient(45deg, #32CD32, #228B22);
-    border: none;
-    padding: 15px 30px;
-    border-radius: 8px;
-    color: white;
-    font-family: Impact, sans-serif;
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-transform: uppercase;
-}
-
-.multiplayer-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0 15px rgba(50, 205, 50, 0.5);
-}
-
-.btn-description {
-    font-size: 0.8rem;
-    opacity: 0.8;
-    text-transform: none;
-}
-
-.join-game-container {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-#game-code-input {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid rgba(50, 205, 50, 0.3);
-    border-radius: 4px;
-    background: rgba(0, 0, 0, 0.5);
-    color: white;
-    font-family: monospace;
-}
-
-.game-lobby {
-    margin-top: 10px;
-    max-height: 300px;
-    overflow-y: auto;
-}
-
-.lobby-game {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(50, 205, 50, 0.3);
-    border-radius: 4px;
-    margin: 5px 0;
-}
-
-.cancel-btn {
-    background: linear-gradient(45deg, #FF4136, #85144b);
-}
-
-.cancel-btn:hover {
-    box-shadow: 0 0 15px rgba(255, 65, 54, 0.5);
-}
+        .multiplayer-menu {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(50, 205, 50, 0.3);
+        }
+        .multiplayer-option {
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .multiplayer-btn {
+            background: linear-gradient(45deg, #32CD32, #228B22);
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            color: white;
+            font-family: Impact, sans-serif;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-transform: uppercase;
+        }
+        .multiplayer-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(50, 205, 50, 0.5);
+        }
+        .btn-description {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            text-transform: none;
+        }
+        .join-game-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        #game-code-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid rgba(50, 205, 50, 0.3);
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-family: monospace;
+        }
+        .game-lobby {
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .lobby-game {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(50, 205, 50, 0.3);
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+        .cancel-btn {
+            background: linear-gradient(45deg, #FF4136, #85144b);
+        }
+        .cancel-btn:hover {
+            box-shadow: 0 0 15px rgba(255, 65, 54, 0.5);
+        }
     </style>
 </head>
 <body class="lawbstation-body">
@@ -202,132 +192,145 @@
             </div>
 
             <!-- Chess Game Section -->
-<div class="section-container game-section">
-    <h2 class="section-title">LAWB CHESS</h2>
+            <div class="section-container game-section">
+                <h2 class="section-title">LAWB CHESS</h2>
 
-    <!-- Leaderboard Section -->
-    <div class="leaderboard-section">
-        <h2 class="leaderboard-title">🦞🦞🦞🦞</h2>
-        <div class="wallet-connection">
-            <!-- Wallet buttons will be inserted here by JavaScript -->
-        </div>
-        <div class="leaderboard-table">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Player</th>
-                        <th>Points</th>
-                        <th>W/L/D</th>
-                        <th>Games</th>
-                    </tr>
-                </thead>
-                <tbody id="leaderboard-body"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Game Mode Selection -->
-<div class="game-mode-selection">
-    <button id="ai-mode" class="mode-btn selected">Play vs AI</button>
-    <button id="multiplayer-mode" class="mode-btn">Play Online</button>
-</div>
-    
-        <div class="chess-container">
-            <!-- Difficulty Selection Screen -->
-            <div id="difficulty-screen" style="display: none;">
-                <h2>Select Difficulty</h2>
-                <div class="difficulty-buttons">
-                    <button id="easy-mode" class="difficulty-btn">Easy Mode</button>
-                    <button id="hard-mode" class="difficulty-btn">Harder Mode</button>
+                <!-- Leaderboard Section -->
+                <div class="leaderboard-section">
+                    <h2 class="leaderboard-title">🦞🦞🦞🦞</h2>
+                    <div class="wallet-connection">
+                        <!-- Wallet buttons will be inserted here by JavaScript -->
+                    </div>
+                    <div class="leaderboard-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Player</th>
+                                    <th>Points</th>
+                                    <th>W/L/D</th>
+                                    <th>Games</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-body"></tbody>
+                        </table>
+                    </div>
                 </div>
-                <button id="start-game" class="start-btn" disabled>Start Game</button>
+
+                <!-- Game Mode Selection -->
+                <div class="game-mode-selection">
+                    <button id="ai-mode" class="mode-btn selected">Play vs AI</button>
+                    <button id="multiplayer-mode" class="mode-btn">Play Online</button>
+                </div>
+                
+                <div class="chess-container">
+                    <!-- Difficulty Selection Screen -->
+                    <div id="difficulty-screen" style="display: none;">
+                        <h2>Select Difficulty</h2>
+                        <div class="difficulty-buttons">
+                            <button id="easy-mode" class="difficulty-btn">Easy Mode</button>
+                            <button id="hard-mode" class="difficulty-btn">Harder Mode</button>
+                        </div>
+                        <button id="start-game" class="start-btn" disabled>Start Game</button>
+                    </div>
+
+                    <!-- Multiplayer Menu -->
+                    <div class="multiplayer-menu" style="display: none;">
+                        <h2 class="section-title">PvP</h2>
+                        
+                        <!-- Quick Match -->
+                        <div class="multiplayer-option">
+                            <button class="multiplayer-btn" id="quick-match">
+                                Quick Match
+                                <span class="btn-description">Find opponent automatically</span>
+                            </button>
+                        </div>
+
+                        <!-- Create/Join Game -->
+                        <div class="multiplayer-option">
+                            <button class="multiplayer-btn" id="create-game">
+                                Create Private Game
+                                <span class="btn-description">Get a code to share</span>
+                            </button>
+                            <div class="join-game-container">
+                                <input type="text" id="game-code-input" placeholder="Enter game code">
+                                <button class="multiplayer-btn" id="join-game">Join Game</button>
+                            </div>
+                        </div>
+
+                        <!-- Game Lobby -->
+                        <div class="multiplayer-option">
+                            <button class="multiplayer-btn" id="open-lobby">
+                                Game Lobby
+                                <span class="btn-description">Browse open games</span>
+                            </button>
+                            <div class="game-lobby" style="display: none;">
+                                <div class="lobby-games"></div>
+                            </div>
+                        </div>
+
+                        <div id="matchmaking-status" style="display: none;">
+                            <p class="status-text">Finding opponent...</p>
+                            <button class="multiplayer-btn cancel-btn" id="cancel-matchmaking">Cancel</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Chess Game -->
+                    <div id="chess-game" style="display: none;">
+                        <div id="chessboard"></div>
+                    </div>
+                </div>
+
+                <div class="game-info-container">
+                    <div id="game-info">
+                        <div id="status">Connect Phantom Wallet to play</div>
+                        <div id="move-history"></div>
+                        <button id="restart-game" class="difficulty-btn">Restart Game</button>
+                    </div>
+                    <div id="debug"></div>
+                </div>
             </div>
-
-            <!-- After the leaderboard section and before chess-container -->
-<div class="multiplayer-menu" style="display: none;">
-    <h2 class="section-title">PvP</h2>
-    
-    <!-- Quick Match -->
-    <div class="multiplayer-option">
-        <button class="multiplayer-btn" id="quick-match">
-            Quick Match
-            <span class="btn-description">Find opponent automatically</span>
-        </button>
-    </div>
-
-    <!-- Create/Join Game -->
-    <div class="multiplayer-option">
-        <button class="multiplayer-btn" id="create-game">
-            Create Private Game
-            <span class="btn-description">Get a code to share</span>
-        </button>
-        <div class="join-game-container">
-            <input type="text" id="game-code-input" placeholder="Enter game code">
-            <button class="multiplayer-btn" id="join-game">Join Game</button>
         </div>
     </div>
 
-    <!-- Game Lobby -->
-    <div class="multiplayer-option">
-        <button class="multiplayer-btn" id="open-lobby">
-            Game Lobby
-            <span class="btn-description">Browse open games</span>
-        </button>
-        <div class="game-lobby" style="display: none;">
-            <div class="lobby-games"></div>
-        </div>
-    </div>
+    <!-- Audius player iframe -->
+    <iframe class="fixed-player"
+            src="https://audius.co/embed/track/2VAzEM0?flavor=tiny"
+            allowTransparency="true"
+            allow="encrypted-media"
+            frameborder="0">
+    </iframe>
 
-    <div id="matchmaking-status" style="display: none;">
-        <p class="status-text">Finding opponent...</p>
-        <button class="multiplayer-btn cancel-btn" id="cancel-matchmaking">Cancel</button>
-    </div>
-</div>
-            
-            <!-- Chess Game -->
-            <div id="chess-game" style="display: none;">
-                <div id="chessboard"></div>
-            </div>
-        </div>
+    <!-- Load Buffer polyfill first -->
+    <script src="https://bundle.run/buffer@6.0.3"></script>
 
-        <div class="game-info-container">
-            <div id="game-info">
-                <div id="status">Connect Phantom Wallet to play</div>
-                <div id="move-history"></div>
-                <button id="restart-game" class="difficulty-btn">Restart Game</button>
-            </div>
-            <div id="debug"></div>
-        </div>
-    </div>
+    <!-- Core dependencies -->
+    <script>
+        // Initialize Buffer globally
+        window.Buffer = buffer.Buffer;
+    </script>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.0.12/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-   <!-- Audius player iframe -->
-<iframe class="fixed-player"
-        src="https://audius.co/embed/track/2VAzEM0?flavor=tiny"
-        allowTransparency="true"
-        allow="encrypted-media"
-        frameborder="0">
-</iframe>
-
-<!-- Scripts -->
-<script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.0.12/lib/index.iife.min.js"></script>
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script>
-    try {
-        if (!window.gameDatabase) {
-            window.gameDatabase = window.supabase.createClient(
-                'https://roxwocgknkiqnsgiojgz.supabase.co',
-                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
-            );
+    <!-- Initialize Supabase -->
+    <script>
+        try {
+            if (!window.gameDatabase) {
+                window.gameDatabase = window.supabase.createClient(
+                    'https://roxwocgknkiqnsgiojgz.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
+                );
+            }
+        } catch (error) {
+            console.error('Error initializing Supabase:', error);
         }
-    } catch (error) {
-        console.error('Error initializing Supabase:', error);
-    }
-</script>
-<script src="loadImages.js"></script>
-<script src="leaderboard.js"></script>
-<script src="multiplayer.js"></script> 
-<script src="chess.js"></script>
+    </script>
+
+    <!-- Game scripts -->
+    <script src="loadImages.js"></script>
+    <script src="leaderboard.js"></script>
+    <script src="multiplayer.js"></script>
+    <script src="chess.js"></script>
 </body>
 </html>
