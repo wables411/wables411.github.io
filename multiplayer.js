@@ -1,17 +1,15 @@
-// Multiplayer game handling
 class MultiplayerManager {
     constructor() {
+        this.supabase = window.gameDatabase;
         this.gameId = null;
         this.playerColor = null;
         this.subscription = null;
         this.gameState = null;
     }
 
-    // Quick Match
     async findQuickMatch() {
         try {
-            // First look for an available game
-            const { data: existingGame } = await supabase
+            const { data: existingGame } = await this.supabase
                 .from('chess_games')
                 .select('*')
                 .eq('game_state', 'waiting')
@@ -20,20 +18,19 @@ class MultiplayerManager {
                 .single();
 
             if (existingGame) {
-                // Join existing game as red player
                 await this.joinGame(existingGame.id, 'red');
                 return existingGame.id;
             }
 
-            // If no game available, create new one
-            const { data: newGame } = await supabase
+            const { data: newGame } = await this.supabase
                 .from('chess_games')
                 .insert({
                     blue_player: localStorage.getItem('currentPlayer'),
                     game_state: 'waiting',
                     current_player: 'blue',
                     board: JSON.stringify(initialBoard),
-                    piece_state: JSON.stringify(pieceState)
+                    piece_state: JSON.stringify(pieceState),
+                    game_id: Math.random().toString(36).substring(2, 8)
                 })
                 .select()
                 .single();
@@ -48,10 +45,10 @@ class MultiplayerManager {
         }
     }
 
-    // Create Private Game
     async createPrivateGame() {
         try {
-            const { data: game } = await supabase
+            const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const { data: game } = await this.supabase
                 .from('chess_games')
                 .insert({
                     blue_player: localStorage.getItem('currentPlayer'),
@@ -59,7 +56,7 @@ class MultiplayerManager {
                     current_player: 'blue',
                     board: JSON.stringify(initialBoard),
                     piece_state: JSON.stringify(pieceState),
-                    game_id: Math.random().toString(36).substring(2, 8) // Create readable game code
+                    game_id: gameCode
                 })
                 .select()
                 .single();
@@ -67,20 +64,22 @@ class MultiplayerManager {
             this.gameId = game.id;
             this.playerColor = 'blue';
             this.subscribeToGame();
-            return game.game_id; // Return readable game code
+            
+            // Show game code to player
+            alert(`Your game code is: ${gameCode}`);
+            return gameCode;
         } catch (error) {
             console.error('Error creating private game:', error);
             throw error;
         }
     }
 
-    // Join Game by Code
     async joinGameByCode(code) {
         try {
-            const { data: game } = await supabase
+            const { data: game } = await this.supabase
                 .from('chess_games')
                 .select('*')
-                .eq('game_id', code)
+                .eq('game_id', code.toUpperCase())
                 .eq('game_state', 'waiting')
                 .single();
 
@@ -92,14 +91,14 @@ class MultiplayerManager {
             return game.id;
         } catch (error) {
             console.error('Error joining game:', error);
+            alert('Game not found or already started');
             throw error;
         }
     }
 
-    // Join existing game
     async joinGame(gameId, color) {
         try {
-            const { error } = await supabase
+            const { error } = await this.supabase
                 .from('chess_games')
                 .update({
                     [`${color}_player`]: localStorage.getItem('currentPlayer'),
@@ -112,64 +111,84 @@ class MultiplayerManager {
             this.gameId = gameId;
             this.playerColor = color;
             this.subscribeToGame();
+            
+            // Update UI for game start
+            const multiplayerMenu = document.querySelector('.multiplayer-menu');
+            const chessGame = document.getElementById('chess-game');
+            if (multiplayerMenu) multiplayerMenu.style.display = 'none';
+            if (chessGame) chessGame.style.display = 'block';
+            
+            resetGame();
+            startGame();
         } catch (error) {
             console.error('Error joining game:', error);
             throw error;
         }
     }
 
-    // Subscribe to game updates
     subscribeToGame() {
         if (this.subscription) {
             this.subscription.unsubscribe();
         }
 
-        this.subscription = supabase
-            .from(`chess_games:id=eq.${this.gameId}`)
-            .on('UPDATE', payload => {
-                this.handleGameUpdate(payload.new);
-            })
+        this.subscription = this.supabase
+            .channel(`game_${this.gameId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'chess_games',
+                    filter: `id=eq.${this.gameId}`
+                },
+                payload => this.handleGameUpdate(payload.new)
+            )
             .subscribe();
     }
 
-    // Handle game updates
     handleGameUpdate(gameData) {
+        if (!gameData) return;
+        
         this.gameState = gameData;
         
-        // Update the game board
+        // Update game state
         board = JSON.parse(gameData.board);
         currentPlayer = gameData.current_player;
-        pieceState = JSON.parse(gameData.piece_state);
+        if (gameData.piece_state) {
+            pieceState = JSON.parse(gameData.piece_state);
+        }
         
         // Update UI
         placePieces();
         
-        // Update game status
-        if (gameData.game_state === 'check') {
-            updateStatusDisplay(`${gameData.current_player.charAt(0).toUpperCase() + gameData.current_player.slice(1)} is in check!`);
-        } else if (gameData.game_state === 'ended') {
-            if (gameData.winner === 'draw') {
-                updateStatusDisplay("Game Over - Draw!");
-            } else {
-                updateStatusDisplay(`Game Over - ${gameData.winner.charAt(0).toUpperCase() + gameData.winner.slice(1)} wins!`);
-            }
-        } else {
-            updateStatusDisplay(`${gameData.current_player.charAt(0).toUpperCase() + gameData.current_player.slice(1)}'s turn`);
+        // Handle different game states
+        switch (gameData.game_state) {
+            case 'check':
+                updateStatusDisplay(`${gameData.current_player.charAt(0).toUpperCase() + gameData.current_player.slice(1)} is in check!`);
+                break;
+            case 'ended':
+                if (gameData.winner === 'draw') {
+                    endGame('draw');
+                } else {
+                    endGame(gameData.winner);
+                }
+                break;
+            default:
+                updateStatusDisplay(`${gameData.current_player.charAt(0).toUpperCase() + gameData.current_player.slice(1)}'s turn`);
         }
     }
 
-    // Make a move in multiplayer game
     async makeMove(startRow, startCol, endRow, endCol, promotionPiece = null) {
-        try {
-            if (this.gameState.current_player !== this.playerColor) {
-                return false;
-            }
+        if (!this.gameId || !this.gameState || this.gameState.current_player !== this.playerColor) {
+            return false;
+        }
 
+        try {
             const newBoard = JSON.parse(JSON.stringify(board));
             newBoard[endRow][endCol] = promotionPiece || newBoard[startRow][startCol];
             newBoard[startRow][startCol] = null;
 
-            const { error } = await supabase
+            const { error } = await this.supabase
                 .from('chess_games')
                 .update({
                     board: JSON.stringify(newBoard),
@@ -195,7 +214,6 @@ class MultiplayerManager {
         }
     }
 
-    // Leave current game
     async leaveGame() {
         if (this.subscription) {
             this.subscription.unsubscribe();
@@ -203,7 +221,7 @@ class MultiplayerManager {
 
         if (this.gameId) {
             try {
-                await supabase
+                await this.supabase
                     .from('chess_games')
                     .update({
                         game_state: 'ended',
@@ -218,8 +236,14 @@ class MultiplayerManager {
         this.gameId = null;
         this.playerColor = null;
         this.gameState = null;
+        
+        // Reset UI
+        const multiplayerMenu = document.querySelector('.multiplayer-menu');
+        const chessGame = document.getElementById('chess-game');
+        if (multiplayerMenu) multiplayerMenu.style.display = 'block';
+        if (chessGame) chessGame.style.display = 'none';
     }
 }
 
-// Export for use in chess.js
+// Create global instance
 window.MultiplayerManager = MultiplayerManager;
