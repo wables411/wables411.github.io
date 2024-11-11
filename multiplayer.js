@@ -1,4 +1,3 @@
-// Multiplayer Manager Class
 class MultiplayerManager {
     constructor() {
         this.supabase = window.gameDatabase;
@@ -9,19 +8,16 @@ class MultiplayerManager {
     }
 
     initializeEventListeners() {
-        // Quick Match
         const quickMatchBtn = document.getElementById('quick-match');
         if (quickMatchBtn) {
             quickMatchBtn.onclick = () => this.findQuickMatch();
         }
 
-        // Create Game 
         const createGameBtn = document.getElementById('create-game');
         if (createGameBtn) {
             createGameBtn.onclick = () => this.createPrivateGame();
         }
 
-        // Join Game
         const joinGameBtn = document.getElementById('join-game');
         if (joinGameBtn) {
             joinGameBtn.onclick = () => {
@@ -31,7 +27,6 @@ class MultiplayerManager {
             };
         }
 
-        // Cancel Button
         const cancelBtn = document.getElementById('cancel-matchmaking');
         if (cancelBtn) {
             cancelBtn.onclick = () => {
@@ -89,6 +84,15 @@ class MultiplayerManager {
     }
 
     async createGame(gameId, player) {
+        const initialState = {
+            board: initialBoard,
+            state: {
+                currentPlayer: 'blue',
+                gameState: 'waiting',
+                pieceState: pieceState
+            }
+        };
+
         const { data, error } = await this.supabase
             .from('chess_games')
             .insert({
@@ -96,7 +100,7 @@ class MultiplayerManager {
                 blue_player: player,
                 game_state: 'waiting',
                 current_player: 'blue',
-                board: JSON.stringify(initialBoard),
+                board: JSON.stringify(initialState),
                 piece_state: JSON.stringify(pieceState)
             })
             .select();
@@ -192,13 +196,14 @@ class MultiplayerManager {
         if (!game) return;
 
         try {
-            // Update board
             if (game.board) {
-                board = JSON.parse(game.board);
-                placePieces();
+                const gameState = JSON.parse(game.board);
+                if (gameState && gameState.board) {
+                    board = gameState.board;
+                    placePieces();
+                }
             }
 
-            // Update turn
             if (game.current_player) {
                 currentPlayer = game.current_player;
                 const myTurn = currentPlayer === this.playerColor;
@@ -209,7 +214,6 @@ class MultiplayerManager {
                 updateStatusDisplay(myTurn ? "Your turn" : "Opponent's turn");
             }
 
-            // Handle game end
             if (game.game_state === 'ended') {
                 updateStatusDisplay(`Game Over - ${game.winner} wins!`);
                 document.getElementById('chessboard').style.pointerEvents = 'none';
@@ -228,14 +232,32 @@ class MultiplayerManager {
             newBoard[endRow][endCol] = promotion || newBoard[startRow][startCol];
             newBoard[startRow][startCol] = null;
 
+            const gameState = {
+                board: newBoard,
+                state: {
+                    currentPlayer: this.playerColor === 'blue' ? 'red' : 'blue',
+                    pieceState: pieceState,
+                    lastMove: {
+                        startRow,
+                        startCol,
+                        endRow,
+                        endCol,
+                        piece: board[startRow][startCol],
+                        promotion
+                    }
+                }
+            };
+
             const { error } = await this.supabase
                 .from('chess_games')
                 .update({
-                    board: JSON.stringify(newBoard),
+                    board: JSON.stringify(gameState),
                     current_player: this.playerColor === 'blue' ? 'red' : 'blue',
                     last_move: JSON.stringify({
-                        startRow, startCol,
-                        endRow, endCol,
+                        startRow,
+                        startCol,
+                        endRow,
+                        endCol,
                         piece: board[startRow][startCol],
                         promotion
                     })
@@ -275,5 +297,4 @@ class MultiplayerManager {
     }
 }
 
-// Initialize
 window.multiplayerManager = new MultiplayerManager();
