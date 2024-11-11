@@ -5,6 +5,7 @@ class MultiplayerManager {
         this.playerColor = null;
         this.subscription = null;
         this.gameState = null;
+        this.boardImage = null;
         this.initializeEventListeners();
     }
 
@@ -86,6 +87,90 @@ class MultiplayerManager {
                 currentGameMode = GameMode.ONLINE;
             };
         }
+
+        // Cancel Button
+        const cancelMatchmakingBtn = document.getElementById('cancel-matchmaking');
+        if (cancelMatchmakingBtn) {
+            cancelMatchmakingBtn.onclick = () => {
+                console.log('Cancel matchmaking clicked');
+                this.leaveGame();
+                const matchmakingStatus = document.getElementById('matchmaking-status');
+                if (matchmakingStatus) {
+                    matchmakingStatus.style.display = 'none';
+                }
+            };
+        }
+    }
+
+    async findQuickMatch() {
+        const currentPlayer = localStorage.getItem('currentPlayer');
+        if (!currentPlayer) {
+            alert('Please connect your wallet first');
+            return;
+        }
+
+        try {
+            // First try to join an existing game
+            const { data: availableGames, error: searchError } = await this.supabase
+                .from('chess_games')
+                .select()
+                .eq('game_state', 'waiting')
+                .is('red_player', null);
+
+            if (searchError) throw searchError;
+
+            if (availableGames && availableGames.length > 0) {
+                await this.joinGame(availableGames[0].id, 'red');
+                return;
+            }
+
+            // If no games available, create a new one
+            const boardNumber = Math.floor(Math.random() * 6) + 1;
+            const boardImage = `images/chessboard${boardNumber}.png`;
+
+            const { data: newGame, error: createError } = await this.supabase
+                .from('chess_games')
+                .insert([{
+                    blue_player: currentPlayer,
+                    game_state: 'waiting',
+                    current_player: 'blue',
+                    board: JSON.stringify(initialBoard),
+                    piece_state: JSON.stringify(pieceState),
+                    board_image: boardImage
+                }])
+                .select();
+
+            if (createError) throw createError;
+
+            this.gameId = newGame[0].id;
+            this.playerColor = 'blue';
+            this.boardImage = boardImage;
+            this.subscribeToGame();
+
+            // Show game board
+            const multiplayerMenu = document.querySelector('.multiplayer-menu');
+            const chessGame = document.getElementById('chess-game');
+            const chessboard = document.getElementById('chessboard');
+            
+            if (multiplayerMenu) multiplayerMenu.style.display = 'none';
+            if (chessGame) chessGame.style.display = 'block';
+            if (chessboard) {
+                chessboard.style.backgroundImage = `url('${this.boardImage}')`;
+                chessboard.style.pointerEvents = 'auto';
+            }
+
+            // Initialize game state
+            resetGame();
+            isMultiplayerMode = true;
+            playerColor = 'blue';
+            currentPlayer = 'blue';
+            placePieces();
+            updateStatusDisplay("Waiting for opponent...");
+
+        } catch (error) {
+            console.error('Error in findQuickMatch:', error);
+            throw error;
+        }
     }
 
     async createPrivateGame() {
@@ -97,6 +182,8 @@ class MultiplayerManager {
 
         try {
             const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const boardNumber = Math.floor(Math.random() * 6) + 1;
+            const boardImage = `images/chessboard${boardNumber}.png`;
             
             const { data: game, error } = await this.supabase
                 .from('chess_games')
@@ -106,7 +193,8 @@ class MultiplayerManager {
                     current_player: 'blue',
                     board: JSON.stringify(initialBoard),
                     piece_state: JSON.stringify(pieceState),
-                    game_id: gameCode
+                    game_id: gameCode,
+                    board_image: boardImage
                 }])
                 .select();
 
@@ -114,17 +202,28 @@ class MultiplayerManager {
 
             this.gameId = game[0].id;
             this.playerColor = 'blue';
+            this.boardImage = boardImage;
             this.subscribeToGame();
             
             // Show game board for creator
             const multiplayerMenu = document.querySelector('.multiplayer-menu');
             const chessGame = document.getElementById('chess-game');
+            const chessboard = document.getElementById('chessboard');
+            
             if (multiplayerMenu) multiplayerMenu.style.display = 'none';
             if (chessGame) chessGame.style.display = 'block';
+            if (chessboard) {
+                chessboard.style.backgroundImage = `url('${this.boardImage}')`;
+                chessboard.style.pointerEvents = 'auto';
+            }
             
-            // Reset and start game
+            // Initialize game state
             resetGame();
-            startGame();
+            isMultiplayerMode = true;
+            playerColor = 'blue';
+            currentPlayer = 'blue';
+            placePieces();
+            updateStatusDisplay("Waiting for opponent...");
             
             alert(`Game created! Share this code with your opponent: ${gameCode}`);
         } catch (error) {
@@ -144,7 +243,7 @@ class MultiplayerManager {
             // First get the game
             const { data: games, error: selectError } = await this.supabase
                 .from('chess_games')
-                .select('*')
+                .select()
                 .eq('game_id', code.toUpperCase());
 
             if (selectError) throw selectError;
@@ -156,6 +255,9 @@ class MultiplayerManager {
             if (game.game_state !== 'waiting') {
                 throw new Error('Game already started');
             }
+
+            // Save the board image
+            this.boardImage = game.board_image;
 
             // Update the game with red player
             const { error: updateError } = await this.supabase
@@ -175,15 +277,22 @@ class MultiplayerManager {
             // Show game board
             const multiplayerMenu = document.querySelector('.multiplayer-menu');
             const chessGame = document.getElementById('chess-game');
+            const chessboard = document.getElementById('chessboard');
+            
             if (multiplayerMenu) multiplayerMenu.style.display = 'none';
             if (chessGame) chessGame.style.display = 'block';
+            if (chessboard) {
+                chessboard.style.backgroundImage = `url('${this.boardImage}')`;
+                chessboard.style.pointerEvents = 'none'; // Red starts second
+            }
 
-            // Reset and start game
+            // Initialize game state
             resetGame();
-            startGame();
-            
-            // Set player color globally
+            isMultiplayerMode = true;
             playerColor = 'red';
+            currentPlayer = 'blue';
+            placePieces();
+            updateStatusDisplay("Opponent's turn");
             
         } catch (error) {
             console.error('Error joining game:', error);
@@ -228,27 +337,37 @@ class MultiplayerManager {
         
         if (gameData.current_player) {
             currentPlayer = gameData.current_player;
-            updateStatusDisplay(`${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)}'s turn`);
+            const isMyTurn = currentPlayer === this.playerColor;
+            
+            // Update board interactivity
+            const chessboard = document.getElementById('chessboard');
+            if (chessboard) {
+                chessboard.style.pointerEvents = isMyTurn ? 'auto' : 'none';
+                console.log(`Board interaction ${isMyTurn ? 'enabled' : 'disabled'} for ${this.playerColor}`);
+            }
+            
+            // Update status display
+            updateStatusDisplay(isMyTurn ? "Your turn" : "Opponent's turn");
         }
         
         if (gameData.piece_state) {
             pieceState = JSON.parse(gameData.piece_state);
         }
-
-        // Enable/disable board based on whose turn it is
-        const chessboard = document.getElementById('chessboard');
-        if (chessboard) {
-            chessboard.style.pointerEvents = currentPlayer === this.playerColor ? 'auto' : 'none';
-        }
     }
 
     async makeMove(startRow, startCol, endRow, endCol, promotionPiece = null) {
-        if (!this.gameId || this.gameState?.current_player !== this.playerColor) {
-            console.log('Invalid move attempt:', {
-                gameId: this.gameId,
-                currentPlayer: this.gameState?.current_player,
-                playerColor: this.playerColor
-            });
+        console.log('Attempting move:', {
+            startRow,
+            startCol,
+            endRow,
+            endCol,
+            promotionPiece,
+            currentPlayer,
+            playerColor: this.playerColor
+        });
+
+        if (!this.gameId || currentPlayer !== this.playerColor) {
+            console.log('Move rejected - not player\'s turn');
             return false;
         }
 
@@ -275,6 +394,7 @@ class MultiplayerManager {
                 .eq('id', this.gameId);
 
             if (error) throw error;
+            console.log('Move successfully made');
             return true;
         } catch (error) {
             console.error('Error making move:', error);
@@ -304,6 +424,7 @@ class MultiplayerManager {
         this.gameId = null;
         this.playerColor = null;
         this.gameState = null;
+        this.boardImage = null;
         
         const multiplayerMenu = document.querySelector('.multiplayer-menu');
         const chessGame = document.getElementById('chess-game');
