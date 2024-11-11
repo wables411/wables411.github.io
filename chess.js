@@ -671,6 +671,336 @@ function evaluateEasyMove(piece, startRow, startCol, endRow, endCol) {
     return score;
 }
 
+function evaluatePawnPosition(row, col, color) {
+    let score = 0;
+    const pawnAdvancement = color === 'red' ? row : 7 - row;
+    
+    // Reward pawn advancement
+    score += pawnAdvancement * 10;
+    
+    // Center control bonus
+    if (col >= 3 && col <= 4) {
+        score += 20;
+    }
+    
+    return score;
+}
+
+function hasFriendlyPawnNeighbor(row, col) {
+    for (let c = col - 1; c <= col + 1; c += 2) {
+        if (c >= 0 && c < 8) {
+            const piece = board[row][c];
+            if (piece && piece.toLowerCase() === 'p' && getPieceColor(piece) === getPieceColor(board[row][col])) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function isPieceProtected(row, col, color) {
+    return isSquareUnderAttack(row, col, color);
+}
+
+function isIsolatedPawn(col) {
+    for (let c = col - 1; c <= col + 1; c += 2) {
+        if (c >= 0 && c < 8) {
+            for (let r = 0; r < 8; r++) {
+                const piece = board[r][c];
+                if (piece && piece.toLowerCase() === 'p') {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+function isPassedPawn(row, col, color) {
+    const direction = color === 'red' ? 1 : -1;
+    const endRow = color === 'red' ? 7 : 0;
+    
+    for (let r = row; r !== endRow; r += direction) {
+        for (let c = col - 1; c <= col + 1; c++) {
+            if (c >= 0 && c < 8) {
+                const piece = board[r][c];
+                if (piece && piece.toLowerCase() === 'p' && getPieceColor(piece) !== color) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+function evaluateKnightPosition(row, col) {
+    let score = 0;
+    
+    // Center control bonus
+    const distanceFromCenter = Math.max(Math.abs(3.5 - row), Math.abs(3.5 - col));
+    score += (4 - distanceFromCenter) * 10;
+    
+    // Mobility bonus
+    let mobilityCount = 0;
+    const moves = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+    for (const [dr, dc] of moves) {
+        const newRow = row + dr;
+        const newCol = col + dc;
+        if (isWithinBoard(newRow, newCol)) mobilityCount++;
+    }
+    score += mobilityCount * 5;
+    
+    return score;
+}
+
+function getDistanceToEnemyKing(row, col, enemyColor) {
+    const kingPiece = enemyColor === 'blue' ? 'k' : 'K';
+    let kingRow, kingCol;
+    
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (board[r][c] === kingPiece) {
+                kingRow = r;
+                kingCol = c;
+                break;
+            }
+        }
+        if (kingRow !== undefined) break;
+    }
+    
+    return Math.max(Math.abs(kingRow - row), Math.abs(kingCol - col));
+}
+
+function isKnightOutpost(row, col, color) {
+    if (color === 'red' && row < 4) return false;
+    if (color === 'blue' && row > 3) return false;
+    
+    return !canBePawnAttacked(row, col, color);
+}
+
+function evaluateBishopPosition(row, col) {
+    return countDiagonalMoves(row, col) * 5;
+}
+
+function hasBishopPair(color) {
+    let bishopCount = 0;
+    const bishopChar = color === 'red' ? 'B' : 'b';
+    
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            if (board[row][col] === bishopChar) bishopCount++;
+            if (bishopCount >= 2) return true;
+        }
+    }
+    return false;
+}
+
+function isOnLongDiagonal(row, col) {
+    return Math.abs(row - col) === 0 || Math.abs(row - (7 - col)) === 0;
+}
+
+function evaluateRookPosition(row, col, color) {
+    let score = 0;
+    
+    // Open file bonus
+    if (isFileOpen(col)) score += 30;
+    
+    // Seventh rank bonus
+    if ((color === 'red' && row === 6) || (color === 'blue' && row === 1)) {
+        score += 40;
+    }
+    
+    return score + countOrthogonalMoves(row, col) * 5;
+}
+
+function hasConnectedRook(row, col) {
+    const color = getPieceColor(board[row][col]);
+    const rookChar = color === 'red' ? 'R' : 'r';
+    
+    for (let r = 0; r < 8; r++) {
+        if (r !== row && board[r][col] === rookChar) return true;
+    }
+    for (let c = 0; c < 8; c++) {
+        if (c !== col && board[row][c] === rookChar) return true;
+    }
+    return false;
+}
+
+function evaluateQueenPosition(row, col) {
+    return (countDiagonalMoves(row, col) + countOrthogonalMoves(row, col)) * 5;
+}
+
+function evaluateKingPosition(row, col, color) {
+    let score = 0;
+    
+    // Early game: prefer the back rank
+    if (isEarlyGame()) {
+        score += (color === 'red' ? row : 7 - row) * -20;
+    } else {
+        // Late game: king should be more active
+        const distanceFromCenter = Math.max(Math.abs(3.5 - row), Math.abs(3.5 - col));
+        score += (4 - distanceFromCenter) * 10;
+    }
+    
+    return score;
+}
+
+function evaluateKingSafety(row, col, color) {
+    let score = 0;
+    
+    // Pawn shield
+    const pawnRow = color === 'red' ? row + 1 : row - 1;
+    if (pawnRow >= 0 && pawnRow < 8) {
+        for (let c = col - 1; c <= col + 1; c++) {
+            if (c >= 0 && c < 8) {
+                const piece = board[pawnRow][c];
+                if (piece && piece.toLowerCase() === 'p' && getPieceColor(piece) === color) {
+                    score += 30;
+                }
+            }
+        }
+    }
+    
+    // Count attacking pieces
+    const enemyColor = color === 'red' ? 'blue' : 'red';
+    let attackCount = 0;
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const piece = board[r][c];
+            if (piece && getPieceColor(piece) === enemyColor) {
+                if (canPieceMove(piece, r, c, row, col)) {
+                    attackCount++;
+                }
+            }
+        }
+    }
+    score -= attackCount * 20;
+    
+    return score;
+}
+
+function evaluateControlOfCenter(row, col) {
+    if (row >= 2 && row <= 5 && col >= 2 && col <= 5) {
+        return (row >= 3 && row <= 4 && col >= 3 && col <= 4) ? 30 : 15;
+    }
+    return 0;
+}
+
+function evaluatePieceActivity(row, col) {
+    return countDiagonalMoves(row, col) + countOrthogonalMoves(row, col);
+}
+
+function evaluateKingAttackPotential(color) {
+    const enemyColor = color === 'red' ? 'blue' : 'red';
+    let score = 0;
+    
+    // Find enemy king
+    const kingPiece = enemyColor === 'blue' ? 'k' : 'K';
+    let kingRow, kingCol;
+    
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (board[r][c] === kingPiece) {
+                kingRow = r;
+                kingCol = c;
+                break;
+            }
+        }
+        if (kingRow !== undefined) break;
+    }
+    
+    // Count pieces attacking squares near king
+    for (let r = kingRow - 1; r <= kingRow + 1; r++) {
+        for (let c = kingCol - 1; c <= kingCol + 1; c++) {
+            if (isWithinBoard(r, c)) {
+                if (isSquareUnderAttack(r, c, color)) {
+                    score += 10;
+                }
+            }
+        }
+    }
+    
+    return score;
+}
+
+function isEarlyGame() {
+    let pieceCount = 0;
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            if (board[row][col]) pieceCount++;
+        }
+    }
+    return pieceCount >= 24;
+}
+
+function isEndGame() {
+    let pieceCount = 0;
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            if (board[row][col]) pieceCount++;
+        }
+    }
+    return pieceCount <= 12;
+}
+
+function evaluateEarlyGameBonus(piece, row, col) {
+    let score = 0;
+    const pieceType = piece.toLowerCase();
+    
+    switch (pieceType) {
+        case 'p':
+            // Central pawns are good in early game
+            if (col >= 2 && col <= 5) score += 20;
+            break;
+        case 'n':
+        case 'b':
+            // Development bonus
+            if ((piece === 'N' && row > 0) || (piece === 'n' && row < 7)) score += 30;
+            break;
+        case 'k':
+            // Penalize early king movement
+            if ((piece === 'K' && row > 0) || (piece === 'k' && row < 7)) score -= 50;
+            break;
+    }
+    
+    return score;
+}
+
+function evaluateEndGameBonus(piece, row, col) {
+    let score = 0;
+    const pieceType = piece.toLowerCase();
+    
+    switch (pieceType) {
+        case 'p':
+            // Passed pawns are more valuable in endgame
+            if (isPassedPawn(row, col, getPieceColor(piece))) score += 60;
+            break;
+        case 'k':
+            // King should be active in endgame
+            score += (4 - Math.max(Math.abs(3.5 - row), Math.abs(3.5 - col))) * 20;
+            break;
+    }
+    
+    return score;
+}
+
+function canBePawnAttacked(row, col, color) {
+    const enemyColor = color === 'red' ? 'blue' : 'red';
+    const attackRow = color === 'red' ? row + 1 : row - 1;
+    
+    if (attackRow >= 0 && attackRow < 8) {
+        for (let c = col - 1; c <= col + 1; c += 2) {
+            if (c >= 0 && c < 8) {
+                const piece = board[attackRow][c];
+                if (piece && piece.toLowerCase() === 'p' && getPieceColor(piece) === enemyColor) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 function evaluateHardMove(piece, startRow, startCol, endRow, endCol) {
     let score = 0;
     
