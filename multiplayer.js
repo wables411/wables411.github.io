@@ -1,3 +1,4 @@
+// Multiplayer Manager Class
 class MultiplayerManager {
     constructor() {
         this.supabase = window.gameDatabase;
@@ -5,9 +6,93 @@ class MultiplayerManager {
         this.playerColor = null;
         this.subscription = null;
         this.gameState = null;
+        this.initializeEventListeners();
+    }
+
+    initializeEventListeners() {
+        console.log('Initializing multiplayer event listeners');
+        
+        // Quick Match Button
+        const quickMatchBtn = document.getElementById('quick-match');
+        if (quickMatchBtn) {
+            quickMatchBtn.onclick = () => {
+                console.log('Quick match clicked');
+                this.findQuickMatch().catch(err => {
+                    console.error('Quick match error:', err);
+                    alert('Failed to start quick match. Please try again.');
+                });
+            };
+        }
+
+        // Create Game Button
+        const createGameBtn = document.getElementById('create-game');
+        if (createGameBtn) {
+            createGameBtn.onclick = () => {
+                console.log('Create game clicked');
+                this.createPrivateGame().catch(err => {
+                    console.error('Create game error:', err);
+                    alert('Failed to create game. Please try again.');
+                });
+            };
+        }
+
+        // Join Game Button
+        const joinGameBtn = document.getElementById('join-game');
+        const gameCodeInput = document.getElementById('game-code-input');
+        if (joinGameBtn && gameCodeInput) {
+            joinGameBtn.onclick = () => {
+                console.log('Join game clicked');
+                const code = gameCodeInput.value.trim();
+                if (code) {
+                    this.joinGameByCode(code).catch(err => {
+                        console.error('Join game error:', err);
+                        alert('Failed to join game. Please check the code and try again.');
+                    });
+                } else {
+                    alert('Please enter a game code');
+                }
+            };
+        }
+
+        // Multiplayer Mode Button
+        const multiplayerModeBtn = document.getElementById('multiplayer-mode');
+        const aiModeBtn = document.getElementById('ai-mode');
+        const multiplayerMenu = document.querySelector('.multiplayer-menu');
+        const difficultyScreen = document.getElementById('difficulty-screen');
+
+        if (multiplayerModeBtn) {
+            multiplayerModeBtn.onclick = () => {
+                console.log('Multiplayer mode clicked');
+                if (!localStorage.getItem('currentPlayer')) {
+                    alert('Please connect your wallet first');
+                    return;
+                }
+                isMultiplayerMode = true;
+                currentGameMode = GameMode.ONLINE;
+                multiplayerModeBtn.classList.add('selected');
+                if (aiModeBtn) aiModeBtn.classList.remove('selected');
+                if (difficultyScreen) difficultyScreen.style.display = 'none';
+                if (multiplayerMenu) multiplayerMenu.style.display = 'block';
+            };
+        }
+
+        // Cancel Button
+        const cancelMatchmakingBtn = document.getElementById('cancel-matchmaking');
+        if (cancelMatchmakingBtn) {
+            cancelMatchmakingBtn.onclick = () => {
+                console.log('Cancel matchmaking clicked');
+                this.leaveGame();
+            };
+        }
     }
 
     async findQuickMatch() {
+        const currentPlayer = localStorage.getItem('currentPlayer');
+        if (!currentPlayer) {
+            alert('Please connect your wallet first');
+            return;
+        }
+
         try {
             const { data: existingGame } = await this.supabase
                 .from('chess_games')
@@ -25,12 +110,11 @@ class MultiplayerManager {
             const { data: newGame } = await this.supabase
                 .from('chess_games')
                 .insert({
-                    blue_player: localStorage.getItem('currentPlayer'),
+                    blue_player: currentPlayer,
                     game_state: 'waiting',
                     current_player: 'blue',
                     board: JSON.stringify(initialBoard),
-                    piece_state: JSON.stringify(pieceState),
-                    game_id: Math.random().toString(36).substring(2, 8)
+                    piece_state: JSON.stringify(pieceState)
                 })
                 .select()
                 .single();
@@ -46,12 +130,18 @@ class MultiplayerManager {
     }
 
     async createPrivateGame() {
+        const currentPlayer = localStorage.getItem('currentPlayer');
+        if (!currentPlayer) {
+            alert('Please connect your wallet first');
+            return;
+        }
+
         try {
             const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
             const { data: game } = await this.supabase
                 .from('chess_games')
                 .insert({
-                    blue_player: localStorage.getItem('currentPlayer'),
+                    blue_player: currentPlayer,
                     game_state: 'waiting',
                     current_player: 'blue',
                     board: JSON.stringify(initialBoard),
@@ -64,9 +154,7 @@ class MultiplayerManager {
             this.gameId = game.id;
             this.playerColor = 'blue';
             this.subscribeToGame();
-            
-            // Show game code to player
-            alert(`Your game code is: ${gameCode}`);
+            alert(`Your game code is: ${gameCode}\nShare this code with your opponent.`);
             return gameCode;
         } catch (error) {
             console.error('Error creating private game:', error);
@@ -75,6 +163,12 @@ class MultiplayerManager {
     }
 
     async joinGameByCode(code) {
+        const currentPlayer = localStorage.getItem('currentPlayer');
+        if (!currentPlayer) {
+            alert('Please connect your wallet first');
+            return;
+        }
+
         try {
             const { data: game } = await this.supabase
                 .from('chess_games')
@@ -91,7 +185,6 @@ class MultiplayerManager {
             return game.id;
         } catch (error) {
             console.error('Error joining game:', error);
-            alert('Game not found or already started');
             throw error;
         }
     }
@@ -111,70 +204,18 @@ class MultiplayerManager {
             this.gameId = gameId;
             this.playerColor = color;
             this.subscribeToGame();
-            
-            // Update UI for game start
+
+            // Update UI
             const multiplayerMenu = document.querySelector('.multiplayer-menu');
             const chessGame = document.getElementById('chess-game');
             if (multiplayerMenu) multiplayerMenu.style.display = 'none';
             if (chessGame) chessGame.style.display = 'block';
-            
+
             resetGame();
             startGame();
         } catch (error) {
             console.error('Error joining game:', error);
             throw error;
-        }
-    }
-
-    subscribeToGame() {
-        if (this.subscription) {
-            this.subscription.unsubscribe();
-        }
-
-        this.subscription = this.supabase
-            .channel(`game_${this.gameId}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'chess_games',
-                    filter: `id=eq.${this.gameId}`
-                },
-                payload => this.handleGameUpdate(payload.new)
-            )
-            .subscribe();
-    }
-
-    handleGameUpdate(gameData) {
-        if (!gameData) return;
-        
-        this.gameState = gameData;
-        
-        // Update game state
-        board = JSON.parse(gameData.board);
-        currentPlayer = gameData.current_player;
-        if (gameData.piece_state) {
-            pieceState = JSON.parse(gameData.piece_state);
-        }
-        
-        // Update UI
-        placePieces();
-        
-        // Handle different game states
-        switch (gameData.game_state) {
-            case 'check':
-                updateStatusDisplay(`${gameData.current_player.charAt(0).toUpperCase() + gameData.current_player.slice(1)} is in check!`);
-                break;
-            case 'ended':
-                if (gameData.winner === 'draw') {
-                    endGame('draw');
-                } else {
-                    endGame(gameData.winner);
-                }
-                break;
-            default:
-                updateStatusDisplay(`${gameData.current_player.charAt(0).toUpperCase() + gameData.current_player.slice(1)}'s turn`);
         }
     }
 
@@ -201,8 +242,7 @@ class MultiplayerManager {
                         endCol,
                         piece: board[startRow][startCol],
                         promotion: promotionPiece
-                    },
-                    game_state: isKingInCheck(this.playerColor === 'blue' ? 'red' : 'blue') ? 'check' : 'active'
+                    }
                 })
                 .eq('id', this.gameId);
 
@@ -212,6 +252,43 @@ class MultiplayerManager {
             console.error('Error making move:', error);
             return false;
         }
+    }
+
+    subscribeToGame() {
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+        }
+
+        this.subscription = this.supabase
+            .channel(`game_${this.gameId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'chess_games',
+                    filter: `id=eq.${this.gameId}`
+                },
+                payload => this.handleGameUpdate(payload.new)
+            )
+            .subscribe();
+    }
+
+    handleGameUpdate(gameData) {
+        if (!gameData) return;
+
+        this.gameState = gameData;
+        
+        // Update game state
+        board = JSON.parse(gameData.board);
+        currentPlayer = gameData.current_player;
+        if (gameData.piece_state) {
+            pieceState = JSON.parse(gameData.piece_state);
+        }
+
+        // Update UI
+        placePieces();
+        updateStatusDisplay(`${gameData.current_player.charAt(0).toUpperCase() + gameData.current_player.slice(1)}'s turn`);
     }
 
     async leaveGame() {
@@ -233,10 +310,11 @@ class MultiplayerManager {
             }
         }
 
+        // Reset state
         this.gameId = null;
         this.playerColor = null;
         this.gameState = null;
-        
+
         // Reset UI
         const multiplayerMenu = document.querySelector('.multiplayer-menu');
         const chessGame = document.getElementById('chess-game');
@@ -246,4 +324,4 @@ class MultiplayerManager {
 }
 
 // Create global instance
-window.MultiplayerManager = MultiplayerManager;
+window.multiplayerManager = new MultiplayerManager();
