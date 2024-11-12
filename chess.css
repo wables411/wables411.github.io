@@ -8,35 +8,34 @@
     max-width: 1200px;
 }
 
-/* Wallet Connection Styles */
+/* Wallet Connection Styles - Consolidated */
 .wallet-connection {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    margin: 20px 0;
+    gap: 15px;
+    margin: 15px 0;
 }
 
-/* Update these wallet button styles in chess.css */
 .wallet-btn {
-    background: rgba(0, 0, 0, 0.3);  /* More transparent background */
-    border: 1px solid #FF0000;
+    background: transparent;
+    border: none;
     padding: 8px 16px;
-    border-radius: 24px;  /* Increased to match your image's rounded style */
-    color: #FF0000;
+    border-radius: 50px;
+    color: white;
     font-family: Impact, sans-serif;
-    font-size: 0.9rem;
+    font-size: 1rem;
     cursor: pointer;
     transition: all 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 1px;
     margin: 5px 0;
-    width: 180px;  /* Fixed width */
-    height: 40px;  /* Fixed height */
-    text-shadow: none;
+    width: 180px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
 }
 
 .wallet-btn:hover {
@@ -44,29 +43,19 @@
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
 }
 
-/* Specific button colors - made more transparent */
 .wallet-btn[onclick*="phantom" i] {
-    background: transparent;
-    border: 1px solid rgba(147, 112, 219, 0.2);  /* Optional: very faint border */
+    background: rgb(147, 112, 219);
+    opacity: 0.8;
 }
 
 .wallet-btn[onclick*="solflare" i] {
-    background: transparent;
-    border: 1px solid rgba(247, 147, 26, 0.2);  /* Optional: very faint border */
+    background: rgb(247, 147, 26);
+    opacity: 0.8;
 }
 
 .wallet-btn[onclick*="magic" i] {
-    background: transparent;
-    border: 1px solid rgba(237, 75, 158, 0.2);  /* Optional: very faint border */
-}
-
-/* Your other existing wallet styles */
-.wallet-connection {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    margin: 10px 0;
+    background: rgb(237, 75, 158);
+    opacity: 0.8;
 }
 
 .wallet-address {
@@ -80,37 +69,6 @@
     color: #FF0000;
     text-shadow: none;
     font-size: 0.9rem;
-}
-
-.wallet-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin: 20px 0;
-    width: 100%;
-    max-width: 300px;
-    align-items: center;
-}
-
-.wallet-connection {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;  /* Reduced gap between buttons */
-    margin: 10px 0;  /* Reduced margin */
-}
-
-/* Specific colors for each wallet type */
-.wallet-btn.phantom {
-    background: linear-gradient(45deg, rgba(153, 69, 255, 0.3), rgba(153, 69, 255, 0.1));
-}
-
-.wallet-btn.solflare {
-    background: linear-gradient(45deg, rgba(255, 140, 0, 0.3), rgba(255, 140, 0, 0.1));
-}
-
-.wallet-btn.magic-eden {
-    background: linear-gradient(45deg, rgba(255, 69, 129, 0.3), rgba(255, 69, 129, 0.1));
 }
 
 /* Leaderboard Section */
