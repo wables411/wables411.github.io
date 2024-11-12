@@ -91,12 +91,20 @@ class MultiplayerManager {
         try {
             console.log('Creating new game:', gameId);
 
+            const gameData = {
+                board: initialBoard,
+                meta: {
+                    lastMove: null,
+                    pieceState: pieceState
+                }
+            };
+
             const { data, error } = await this.supabase
                 .from('chess_games')
                 .insert({
                     game_id: gameId,
                     blue_player: player,
-                    board: initialBoard,
+                    board: gameData,
                     piece_state: pieceState,
                     game_state: 'waiting',
                     current_player: 'blue'
@@ -158,7 +166,7 @@ class MultiplayerManager {
 
             console.log('Successfully joined game:', data.id);
 
-            this.gameId = data.id;
+            this.gameId = data[0].id;
             this.playerColor = 'red';
             this.subscribeToGame();
             this.showGame('red');
@@ -177,6 +185,8 @@ class MultiplayerManager {
         isMultiplayerMode = true;
         playerColor = color;
         currentPlayer = 'blue'; // Game always starts with blue
+        
+        // Set up initial board
         board = JSON.parse(JSON.stringify(initialBoard));
         placePieces();
 
@@ -217,9 +227,13 @@ class MultiplayerManager {
         try {
             console.log('Processing game update:', game);
 
-            // Update board state
-            if (game.board) {
-                board = game.board;
+            // Handle board update
+            if (game.board && game.board.board) {
+                board = game.board.board;
+                if (game.board.meta && game.board.meta.pieceState) {
+                    Object.assign(pieceState, game.board.meta.pieceState);
+                }
+                console.log('Updated board state:', board);
                 placePieces();
             }
 
@@ -264,22 +278,27 @@ class MultiplayerManager {
             newBoard[endRow][endCol] = promotion || newBoard[startRow][startCol];
             newBoard[startRow][startCol] = null;
 
-            const moveData = {
-                startRow,
-                startCol,
-                endRow,
-                endCol,
-                piece: board[startRow][startCol],
-                promotion
+            const gameData = {
+                board: newBoard,
+                meta: {
+                    lastMove: {
+                        startRow,
+                        startCol,
+                        endRow,
+                        endCol,
+                        piece: board[startRow][startCol],
+                        promotion
+                    },
+                    pieceState: pieceState
+                }
             };
 
             const { error } = await this.supabase
                 .from('chess_games')
                 .update({
-                    board: newBoard,
+                    board: gameData,
                     current_player: this.playerColor === 'blue' ? 'red' : 'blue',
-                    last_move: moveData,
-                    piece_state: pieceState
+                    last_move: gameData.meta.lastMove
                 })
                 .eq('id', this.gameId);
 
