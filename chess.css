@@ -18,36 +18,39 @@
 }
 
 .wallet-btn {
-    background: linear-gradient(45deg, #9945FF, #14F195);
-    border: none;
-    padding: 12px 24px;
-    border-radius: 24px;
-    color: white;
-    font-family: Impact, sans-serif;
-    font-size: 1.1rem;
+    background: black;  /* Changed from gradient to match site theme */
+    border: 1px solid #FF0000;  /* Red border to match site links */
+    padding: 8px 16px;  /* Reduced padding to make button smaller */
+    border-radius: 4px;  /* Reduced border radius */
+    color: #FF0000;  /* Changed to red to match site theme */
+    font-family: Impact, sans-serif;  /* Matches site font */
+    font-size: 0.9rem;  /* Reduced font size */
     cursor: pointer;
     transition: all 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 1px;
-    margin: 10px 0;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin: 8px 0;  /* Reduced margin */
+    box-shadow: none;  /* Removed box shadow */
 }
 
 .wallet-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(153, 69, 255, 0.4);
+    transform: none;  /* Removed transform */
+    background: #FF0000;  /* Red background on hover */
+    color: white;  /* White text on hover */
+    box-shadow: none;  /* Removed hover shadow */
 }
 
 .wallet-address {
     font-family: monospace;
-    background: rgba(20, 241, 149, 0.1);
-    padding: 8px 16px;
-    border-radius: 8px;
-    margin: 10px 0;
+    background: rgba(0, 0, 0, 0.7);  /* Dark background */
+    padding: 6px 12px;  /* Reduced padding */
+    border-radius: 4px;
+    margin: 8px 0;  /* Reduced margin */
     word-break: break-all;
-    border: 1px solid rgba(20, 241, 149, 0.2);
-    color: #14F195;
-    text-shadow: 0 0 10px rgba(20, 241, 149, 0.3);
+    border: 1px solid #FF0000;  /* Red border */
+    color: #FF0000;  /* Red text */
+    text-shadow: none;  /* Removed text shadow */
+    font-size: 0.9rem;  /* Smaller font size */
 }
 
 .wallet-buttons {
