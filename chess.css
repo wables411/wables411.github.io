@@ -40,23 +40,21 @@
 }
 
 .wallet-btn:hover {
-    background: rgba(255, 0, 0, 0.2);
-    border-color: #FF0000;
-    box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
-    color: white;
+    opacity: 0.95;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
 }
 
 /* Specific button colors - made more transparent */
 .wallet-btn[onclick*="phantom" i] {
-    background: rgba(153, 69, 255, 0.2);
+    background: rgba(147, 112, 219, 0.1);  /* Almost fully transparent Phantom purple */
 }
 
 .wallet-btn[onclick*="solflare" i] {
-    background: rgba(255, 140, 0, 0.2);
+    background: rgba(247, 147, 26, 0.1);  /* Almost fully transparent Solflare orange */
 }
 
 .wallet-btn[onclick*="magic" i] {
-    background: rgba(255, 69, 129, 0.2);
+    background: rgba(237, 75, 158, 0.1);  /* Almost fully transparent Magic Eden pink */
 }
 
 /* Your other existing wallet styles */
