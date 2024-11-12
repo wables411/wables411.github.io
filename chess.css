@@ -43,6 +43,77 @@
     box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);  /* Subtle glow effect */
 }
 
+/* Your existing wallet button styles */
+.wallet-btn {
+    background: rgba(0, 0, 0, 0.7);  /* Dark semi-transparent background */
+    border: 1px solid #FF0000;  /* Keeping red border */
+    padding: 8px 16px;
+    border-radius: 4px;
+    color: #FF0000;  /* Keeping red text */
+    font-family: Impact, sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 5px 0;
+    max-width: 200px;
+    width: auto;
+    text-shadow: none;
+}
+
+.wallet-btn:hover {
+    background: rgba(255, 0, 0, 0.2);  /* Semi-transparent red on hover */
+    border-color: #FF0000;
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);  /* Red glow effect */
+    color: white;
+}
+
+/* Add these new wallet-specific styles right here */
+.wallet-btn[onclick*="phantom" i] {
+    background: linear-gradient(45deg, rgba(153, 69, 255, 0.3), rgba(153, 69, 255, 0.1));
+}
+
+.wallet-btn[onclick*="solflare" i] {
+    background: linear-gradient(45deg, rgba(255, 140, 0, 0.3), rgba(255, 140, 0, 0.1));
+}
+
+.wallet-btn[onclick*="magic" i] {
+    background: linear-gradient(45deg, rgba(255, 69, 129, 0.3), rgba(255, 69, 129, 0.1));
+}
+
+/* Your other existing wallet styles */
+.wallet-connection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin: 10px 0;
+}
+
+.wallet-address {
+    font-family: monospace;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 6px 12px;
+    border-radius: 4px;
+    margin: 8px 0;
+    word-break: break-all;
+    border: 1px solid #FF0000;
+    color: #FF0000;
+    text-shadow: none;
+    font-size: 0.9rem;
+}
+
+.wallet-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 20px 0;
+    width: 100%;
+    max-width: 300px;
+    align-items: center;
+}
+
 .wallet-connection {
     display: flex;
     flex-direction: column;
