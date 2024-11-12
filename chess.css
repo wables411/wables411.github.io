@@ -19,37 +19,11 @@
 
 /* Update these wallet button styles in chess.css */
 .wallet-btn {
-    background: rgba(0, 0, 0, 0.7);  /* Dark semi-transparent background */
-    border: 1px solid rgba(50, 205, 50, 0.3);  /* Green border to match game container */
-    padding: 8px 16px;  /* Smaller padding */
-    border-radius: 4px;  /* Smaller border radius */
-    color: white;
-    font-family: Impact, sans-serif;
-    font-size: 0.9rem;  /* Smaller font size */
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin: 5px 0;  /* Reduced margin */
-    max-width: 200px;  /* Limit maximum width */
-    width: auto;  /* Allow buttons to be narrower */
-    text-shadow: none;  /* Remove text shadow */
-}
-
-.wallet-btn:hover {
-    transform: translateY(-2px);
-    background: rgba(50, 205, 50, 0.2);  /* Slight green tint on hover */
-    border-color: rgba(50, 205, 50, 0.6);  /* Brighter border on hover */
-    box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);  /* Subtle glow effect */
-}
-
-/* Your existing wallet button styles */
-.wallet-btn {
-    background: rgba(0, 0, 0, 0.7);  /* Dark semi-transparent background */
-    border: 1px solid #FF0000;  /* Keeping red border */
+    background: rgba(0, 0, 0, 0.3);  /* More transparent background */
+    border: 1px solid #FF0000;
     padding: 8px 16px;
-    border-radius: 4px;
-    color: #FF0000;  /* Keeping red text */
+    border-radius: 24px;  /* Increased to match your image's rounded style */
+    color: #FF0000;
     font-family: Impact, sans-serif;
     font-size: 0.9rem;
     cursor: pointer;
@@ -57,29 +31,32 @@
     text-transform: uppercase;
     letter-spacing: 1px;
     margin: 5px 0;
-    max-width: 200px;
-    width: auto;
+    width: 180px;  /* Fixed width */
+    height: 40px;  /* Fixed height */
     text-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .wallet-btn:hover {
-    background: rgba(255, 0, 0, 0.2);  /* Semi-transparent red on hover */
+    background: rgba(255, 0, 0, 0.2);
     border-color: #FF0000;
-    box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);  /* Red glow effect */
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
     color: white;
 }
 
-/* Add these new wallet-specific styles right here */
+/* Specific button colors - made more transparent */
 .wallet-btn[onclick*="phantom" i] {
-    background: linear-gradient(45deg, rgba(153, 69, 255, 0.3), rgba(153, 69, 255, 0.1));
+    background: rgba(153, 69, 255, 0.2);
 }
 
 .wallet-btn[onclick*="solflare" i] {
-    background: linear-gradient(45deg, rgba(255, 140, 0, 0.3), rgba(255, 140, 0, 0.1));
+    background: rgba(255, 140, 0, 0.2);
 }
 
 .wallet-btn[onclick*="magic" i] {
-    background: linear-gradient(45deg, rgba(255, 69, 129, 0.3), rgba(255, 69, 129, 0.1));
+    background: rgba(255, 69, 129, 0.2);
 }
 
 /* Your other existing wallet styles */
