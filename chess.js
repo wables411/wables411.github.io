@@ -557,11 +557,17 @@ function makeAIMove() {
     const inCheck = isKingInCheck('red');
     debug(`AI thinking... (in check: ${inCheck}, difficulty: ${gameDifficulty})`);
     
+    // Add debug statement here
+    console.log("Making AI move attempt");
+    
     const move = selectBestMove();
     if (move) {
         setTimeout(() => {
             executeMove(move.startRow, move.startCol, move.endRow, move.endCol, move.promotionPiece);
         }, 500);
+    } else {
+        // Add debug statement here
+        console.log("No valid moves found for AI");
     }
 }
 
