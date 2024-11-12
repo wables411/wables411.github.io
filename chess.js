@@ -67,7 +67,7 @@ function isWalletConnected() {
 
 function checkGameAccess() {
     if (!isWalletConnected()) {
-        updateStatusDisplay("Connect Phantom Wallet to play");
+        updateStatusDisplay("Connect to play");  // Changed from "Connect Phantom Wallet to play"
         return false;
     }
     return true;
@@ -1306,7 +1306,7 @@ function resetGame() {
             lastPawnDoubleMove: null
         });
         
-        updateStatusDisplay("Connect Phantom Wallet to play");
+        updateStatusDisplay("Connect to play");  // Changed from "Connect Phantom Wallet to play"
         const moveHistoryElement = document.getElementById('move-history');
         if (moveHistoryElement) moveHistoryElement.innerHTML = '';
         
