@@ -91,23 +91,15 @@ class MultiplayerManager {
         try {
             console.log('Creating new game:', gameId);
 
-            // Create initial game state
-            const initialGameState = {
-                board: initialBoard,
-                metadata: {
-                    lastMove: null,
-                    pieceState: pieceState
-                }
-            };
-
             const { data, error } = await this.supabase
                 .from('chess_games')
                 .insert({
                     game_id: gameId,
                     blue_player: player,
+                    board: initialBoard,
+                    piece_state: pieceState,
                     game_state: 'waiting',
-                    current_player: 'blue',
-                    board: JSON.stringify(initialGameState)
+                    current_player: 'blue'
                 })
                 .select();
 
@@ -181,19 +173,20 @@ class MultiplayerManager {
         document.querySelector('.multiplayer-menu').style.display = 'none';
         document.getElementById('chess-game').style.display = 'block';
         
-        const chessboard = document.getElementById('chessboard');
-        if (chessboard) {
-            chessboard.style.pointerEvents = color === 'blue' ? 'auto' : 'none';
-        }
-        
         resetGame();
         isMultiplayerMode = true;
         playerColor = color;
-        currentPlayer = 'blue'; // Blue always starts
+        currentPlayer = 'blue'; // Game always starts with blue
+        board = JSON.parse(JSON.stringify(initialBoard));
         placePieces();
 
+        const chessboard = document.getElementById('chessboard');
+        if (chessboard) {
+            chessboard.style.pointerEvents = color === currentPlayer ? 'auto' : 'none';
+        }
+
         console.log(`Game started - Player: ${color}, Current turn: ${currentPlayer}`);
-        updateStatusDisplay(color === 'blue' ? "Your turn" : "Opponent's turn");
+        updateStatusDisplay(color === currentPlayer ? "Your turn" : "Opponent's turn");
     }
 
     subscribeToGame() {
@@ -224,18 +217,13 @@ class MultiplayerManager {
         try {
             console.log('Processing game update:', game);
 
+            // Update board state
             if (game.board) {
-                const gameState = JSON.parse(game.board);
-                if (gameState && gameState.board) {
-                    board = gameState.board;
-                    if (gameState.metadata && gameState.metadata.pieceState) {
-                        Object.assign(pieceState, gameState.metadata.pieceState);
-                    }
-                    placePieces();
-                    console.log('Board updated:', board);
-                }
+                board = game.board;
+                placePieces();
             }
 
+            // Update current turn
             if (game.current_player) {
                 currentPlayer = game.current_player;
                 const isMyTurn = currentPlayer === this.playerColor;
@@ -249,6 +237,7 @@ class MultiplayerManager {
                 updateStatusDisplay(isMyTurn ? "Your turn" : "Opponent's turn");
             }
 
+            // Handle game end
             if (game.game_state === 'ended') {
                 updateStatusDisplay(`Game Over - ${game.winner} wins!`);
                 const chessboard = document.getElementById('chessboard');
@@ -275,32 +264,31 @@ class MultiplayerManager {
             newBoard[endRow][endCol] = promotion || newBoard[startRow][startCol];
             newBoard[startRow][startCol] = null;
 
-            // Create game state
-            const gameState = {
-                board: newBoard,
-                metadata: {
-                    lastMove: {
-                        startRow,
-                        startCol,
-                        endRow,
-                        endCol,
-                        piece: board[startRow][startCol],
-                        promotion
-                    },
-                    pieceState: pieceState
-                }
+            const moveData = {
+                startRow,
+                startCol,
+                endRow,
+                endCol,
+                piece: board[startRow][startCol],
+                promotion
             };
 
             const { error } = await this.supabase
                 .from('chess_games')
                 .update({
-                    board: JSON.stringify(gameState),
-                    current_player: this.playerColor === 'blue' ? 'red' : 'blue'
+                    board: newBoard,
+                    current_player: this.playerColor === 'blue' ? 'red' : 'blue',
+                    last_move: moveData,
+                    piece_state: pieceState
                 })
                 .eq('id', this.gameId);
 
             if (error) throw error;
 
+            // Update local state
+            board = newBoard;
+            placePieces();
+            
             console.log('Move executed successfully');
             return true;
 
