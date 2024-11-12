@@ -255,7 +255,11 @@ class MultiplayerManager {
 
             // Handle game end
             if (game.game_state === 'ended') {
-                updateStatusDisplay(`Game Over - ${game.winner} wins!`);
+                const message = game.winner === 'draw' ? 
+                    'Game Over - Draw!' : 
+                    `Game Over - ${game.winner.charAt(0).toUpperCase() + game.winner.slice(1)} wins!`;
+                updateStatusDisplay(message);
+                
                 const chessboard = document.getElementById('chessboard');
                 if (chessboard) {
                     chessboard.style.pointerEvents = 'none';
@@ -281,26 +285,53 @@ class MultiplayerManager {
             newBoard[endRow][endCol] = promotion || newBoard[startRow][startCol];
             newBoard[startRow][startCol] = null;
 
+            // Check for game ending conditions
+            board = newBoard; // Temporarily update board to check game state
+            const nextPlayer = this.playerColor === 'blue' ? 'red' : 'blue';
+            let gameEndState = null;
+
+            if (isCheckmate(nextPlayer)) {
+                gameEndState = {
+                    game_state: 'ended',
+                    winner: this.playerColor
+                };
+                console.log('Checkmate detected!');
+            } else if (isStalemate(nextPlayer)) {
+                gameEndState = {
+                    game_state: 'ended',
+                    winner: 'draw'
+                };
+                console.log('Stalemate detected!');
+            }
+
             // Create the new board state
             const boardState = {
                 positions: newBoard,
                 pieceState: pieceState
             };
 
+            // Update game in database
+            const updateData = {
+                board: boardState,
+                current_player: nextPlayer,
+                last_move: {
+                    startRow,
+                    startCol,
+                    endRow,
+                    endCol,
+                    piece: board[startRow][startCol],
+                    promotion
+                }
+            };
+
+            // Add game end state if game is over
+            if (gameEndState) {
+                Object.assign(updateData, gameEndState);
+            }
+
             const { error } = await this.supabase
                 .from('chess_games')
-                .update({
-                    board: boardState,
-                    current_player: this.playerColor === 'blue' ? 'red' : 'blue',
-                    last_move: {
-                        startRow,
-                        startCol,
-                        endRow,
-                        endCol,
-                        piece: board[startRow][startCol],
-                        promotion
-                    }
-                })
+                .update(updateData)
                 .eq('id', this.gameId);
 
             if (error) throw error;
@@ -309,6 +340,18 @@ class MultiplayerManager {
             board = newBoard;
             placePieces();
             
+            if (gameEndState) {
+                if (gameEndState.winner === 'draw') {
+                    updateStatusDisplay('Game Over - Draw!');
+                } else {
+                    updateStatusDisplay(`Game Over - ${gameEndState.winner.charAt(0).toUpperCase() + gameEndState.winner.slice(1)} wins!`);
+                }
+                const chessboard = document.getElementById('chessboard');
+                if (chessboard) {
+                    chessboard.style.pointerEvents = 'none';
+                }
+            }
+
             console.log('Move executed successfully');
             return true;
 
