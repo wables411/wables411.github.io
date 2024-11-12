@@ -17,50 +17,51 @@
     margin: 20px 0;
 }
 
+/* Update these wallet button styles in chess.css */
 .wallet-btn {
-    background: black;  /* Changed from gradient to match site theme */
-    border: 1px solid #FF0000;  /* Red border to match site links */
-    padding: 8px 16px;  /* Reduced padding to make button smaller */
-    border-radius: 4px;  /* Reduced border radius */
-    color: #FF0000;  /* Changed to red to match site theme */
-    font-family: Impact, sans-serif;  /* Matches site font */
-    font-size: 0.9rem;  /* Reduced font size */
+    background: rgba(0, 0, 0, 0.7);  /* Dark semi-transparent background */
+    border: 1px solid rgba(50, 205, 50, 0.3);  /* Green border to match game container */
+    padding: 8px 16px;  /* Smaller padding */
+    border-radius: 4px;  /* Smaller border radius */
+    color: white;
+    font-family: Impact, sans-serif;
+    font-size: 0.9rem;  /* Smaller font size */
     cursor: pointer;
     transition: all 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 1px;
-    margin: 8px 0;  /* Reduced margin */
-    box-shadow: none;  /* Removed box shadow */
+    margin: 5px 0;  /* Reduced margin */
+    max-width: 200px;  /* Limit maximum width */
+    width: auto;  /* Allow buttons to be narrower */
+    text-shadow: none;  /* Remove text shadow */
 }
 
 .wallet-btn:hover {
-    transform: none;  /* Removed transform */
-    background: #FF0000;  /* Red background on hover */
-    color: white;  /* White text on hover */
-    box-shadow: none;  /* Removed hover shadow */
+    transform: translateY(-2px);
+    background: rgba(50, 205, 50, 0.2);  /* Slight green tint on hover */
+    border-color: rgba(50, 205, 50, 0.6);  /* Brighter border on hover */
+    box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);  /* Subtle glow effect */
 }
 
-.wallet-address {
-    font-family: monospace;
-    background: rgba(0, 0, 0, 0.7);  /* Dark background */
-    padding: 6px 12px;  /* Reduced padding */
-    border-radius: 4px;
-    margin: 8px 0;  /* Reduced margin */
-    word-break: break-all;
-    border: 1px solid #FF0000;  /* Red border */
-    color: #FF0000;  /* Red text */
-    text-shadow: none;  /* Removed text shadow */
-    font-size: 0.9rem;  /* Smaller font size */
-}
-
-.wallet-buttons {
+.wallet-connection {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin: 20px 0;
-    width: 100%;
-    max-width: 300px;
     align-items: center;
+    gap: 5px;  /* Reduced gap between buttons */
+    margin: 10px 0;  /* Reduced margin */
+}
+
+/* Specific colors for each wallet type */
+.wallet-btn.phantom {
+    background: linear-gradient(45deg, rgba(153, 69, 255, 0.3), rgba(153, 69, 255, 0.1));
+}
+
+.wallet-btn.solflare {
+    background: linear-gradient(45deg, rgba(255, 140, 0, 0.3), rgba(255, 140, 0, 0.1));
+}
+
+.wallet-btn.magic-eden {
+    background: linear-gradient(45deg, rgba(255, 69, 129, 0.3), rgba(255, 69, 129, 0.1));
 }
 
 /* Leaderboard Section */
