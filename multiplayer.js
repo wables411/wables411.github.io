@@ -5,19 +5,23 @@ class MultiplayerManager {
         this.playerColor = null;
         this.subscription = null;
         this.initializeEventListeners();
+        console.log('MultiplayerManager initialized'); // Debug log
     }
 
     initializeEventListeners() {
+        // Quick Match Button
         const quickMatchBtn = document.getElementById('quick-match');
         if (quickMatchBtn) {
             quickMatchBtn.onclick = () => this.findQuickMatch();
         }
 
+        // Create Game Button
         const createGameBtn = document.getElementById('create-game');
         if (createGameBtn) {
             createGameBtn.onclick = () => this.createPrivateGame();
         }
 
+        // Join Game Button
         const joinGameBtn = document.getElementById('join-game');
         if (joinGameBtn) {
             joinGameBtn.onclick = () => {
@@ -27,6 +31,7 @@ class MultiplayerManager {
             };
         }
 
+        // Cancel Button
         const cancelBtn = document.getElementById('cancel-matchmaking');
         if (cancelBtn) {
             cancelBtn.onclick = () => {
@@ -45,6 +50,8 @@ class MultiplayerManager {
                 return;
             }
 
+            console.log('Looking for quick match...'); // Debug log
+
             const { data } = await this.supabase
                 .from('chess_games')
                 .select()
@@ -53,6 +60,7 @@ class MultiplayerManager {
                 .single();
 
             if (data) {
+                console.log('Found existing game:', data); // Debug log
                 await this.joinGameByCode(data.game_id);
                 return;
             }
@@ -85,6 +93,8 @@ class MultiplayerManager {
 
     async createGame(gameId, player) {
         try {
+            console.log('Creating new game:', gameId); // Debug log
+
             const { data, error } = await this.supabase
                 .from('chess_games')
                 .insert({
@@ -99,11 +109,14 @@ class MultiplayerManager {
 
             if (error) throw error;
 
+            console.log('Game created successfully:', data[0]); // Debug log
+
             this.gameId = data[0].id;
             this.playerColor = 'blue';
             this.subscribeToGame();
             this.showGame('blue');
             alert(`Game code: ${gameId}`);
+
         } catch (error) {
             console.error('Error creating game:', error);
             throw error;
@@ -117,6 +130,8 @@ class MultiplayerManager {
                 alert('Connect wallet first');
                 return;
             }
+
+            console.log('Attempting to join game:', code); // Debug log
 
             const { data } = await this.supabase
                 .from('chess_games')
@@ -145,6 +160,8 @@ class MultiplayerManager {
 
             if (error) throw error;
 
+            console.log('Successfully joined game:', data.id); // Debug log
+
             this.gameId = data.id;
             this.playerColor = 'red';
             this.subscribeToGame();
@@ -168,13 +185,19 @@ class MultiplayerManager {
         resetGame();
         isMultiplayerMode = true;
         playerColor = color;
-        currentPlayer = 'blue';
+        currentPlayer = 'blue'; // Blue always starts
         placePieces();
+
+        console.log(`Game started - Player: ${color}, Current turn: ${currentPlayer}`); // Debug log
         updateStatusDisplay(color === 'blue' ? "Your turn" : "Opponent's turn");
     }
 
     subscribeToGame() {
-        if (this.subscription) this.subscription.unsubscribe();
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+        }
+
+        console.log(`Subscribing to game: ${this.gameId}`); // Debug log
 
         this.subscription = this.supabase
             .channel(`game_${this.gameId}`)
@@ -184,7 +207,10 @@ class MultiplayerManager {
                 table: 'chess_games',
                 filter: `id=eq.${this.gameId}`
             }, 
-            payload => this.handleUpdate(payload.new))
+            (payload) => {
+                console.log('Received game update:', payload); // Debug log
+                this.handleUpdate(payload.new);
+            })
             .subscribe();
     }
 
@@ -192,20 +218,27 @@ class MultiplayerManager {
         if (!game) return;
 
         try {
+            console.log('Processing game update:', game); // Debug log
+
             // Update board state
             if (game.board) {
                 const boardData = JSON.parse(game.board);
-                board = boardData;
-                placePieces();
+                if (Array.isArray(boardData)) {
+                    board = boardData;
+                    console.log('Updated board:', board); // Debug log
+                    placePieces();
+                }
             }
 
             // Update piece state
             if (game.piece_state) {
                 const newPieceState = JSON.parse(game.piece_state);
-                Object.assign(pieceState, newPieceState);
+                if (newPieceState) {
+                    Object.assign(pieceState, newPieceState);
+                }
             }
 
-            // Update player turn
+            // Update current turn
             if (game.current_player) {
                 currentPlayer = game.current_player;
                 const isMyTurn = currentPlayer === this.playerColor;
@@ -215,6 +248,7 @@ class MultiplayerManager {
                     chessboard.style.pointerEvents = isMyTurn ? 'auto' : 'none';
                 }
                 
+                console.log(`Turn updated - Current: ${currentPlayer}, My color: ${this.playerColor}`); // Debug log
                 updateStatusDisplay(isMyTurn ? "Your turn" : "Opponent's turn");
             }
 
@@ -226,49 +260,47 @@ class MultiplayerManager {
                     chessboard.style.pointerEvents = 'none';
                 }
             }
+
         } catch (error) {
             console.error('Update error:', error);
         }
     }
 
     async makeMove(startRow, startCol, endRow, endCol, promotion = null) {
-        if (!this.gameId || currentPlayer !== this.playerColor) return false;
+        if (!this.gameId || currentPlayer !== this.playerColor) {
+            console.log('Move rejected - Not player\'s turn'); // Debug log
+            return false;
+        }
 
         try {
-            // Make a deep copy of the current board
+            console.log('Attempting move:', {startRow, startCol, endRow, endCol}); // Debug log
+
             const newBoard = JSON.parse(JSON.stringify(board));
-            
-            // Execute the move
             newBoard[endRow][endCol] = promotion || newBoard[startRow][startCol];
             newBoard[startRow][startCol] = null;
 
-            const moveData = {
-                startRow,
-                startCol,
-                endRow,
-                endCol,
-                piece: board[startRow][startCol],
-                promotion
-            };
-
-            // Update the database
             const { error } = await this.supabase
                 .from('chess_games')
                 .update({
                     board: JSON.stringify(newBoard),
                     current_player: this.playerColor === 'blue' ? 'red' : 'blue',
                     piece_state: JSON.stringify(pieceState),
-                    last_move: JSON.stringify(moveData)
+                    last_move: JSON.stringify({
+                        startRow,
+                        startCol,
+                        endRow,
+                        endCol,
+                        piece: board[startRow][startCol],
+                        promotion
+                    })
                 })
                 .eq('id', this.gameId);
 
             if (error) throw error;
 
-            // Update local state
-            board = newBoard;
-            placePieces();
-            
+            console.log('Move executed successfully'); // Debug log
             return true;
+
         } catch (error) {
             console.error('Move error:', error);
             return false;
@@ -276,7 +308,9 @@ class MultiplayerManager {
     }
 
     async leaveGame() {
-        if (this.subscription) this.subscription.unsubscribe();
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+        }
 
         if (this.gameId) {
             try {
@@ -287,6 +321,8 @@ class MultiplayerManager {
                         winner: this.playerColor === 'blue' ? 'red' : 'blue'
                     })
                     .eq('id', this.gameId);
+
+                console.log('Left game successfully'); // Debug log
             } catch (error) {
                 console.error('Leave game error:', error);
             }
@@ -299,4 +335,5 @@ class MultiplayerManager {
     }
 }
 
+// Initialize the multiplayer manager
 window.multiplayerManager = new MultiplayerManager();
