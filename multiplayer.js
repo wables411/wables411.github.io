@@ -259,7 +259,21 @@ class MultiplayerManager {
                     'Game Over - Draw!' : 
                     `Game Over - ${game.winner.charAt(0).toUpperCase() + game.winner.slice(1)} wins!`;
                 updateStatusDisplay(message);
-                
+
+                // Update scores
+                if (window.updateGameResult) {
+                    if (game.winner === 'draw') {
+                        window.updateGameResult('draw');
+                    } else {
+                        window.updateGameResult(game.winner === this.playerColor ? 'win' : 'loss');
+                    }
+                }
+
+                // Refresh leaderboard
+                if (window.leaderboardManager) {
+                    window.leaderboardManager.loadLeaderboard();
+                }
+
                 const chessboard = document.getElementById('chessboard');
                 if (chessboard) {
                     chessboard.style.pointerEvents = 'none';
@@ -340,12 +354,25 @@ class MultiplayerManager {
             board = newBoard;
             placePieces();
             
+            // Handle game end
             if (gameEndState) {
                 if (gameEndState.winner === 'draw') {
                     updateStatusDisplay('Game Over - Draw!');
+                    if (window.updateGameResult) {
+                        window.updateGameResult('draw');
+                    }
                 } else {
                     updateStatusDisplay(`Game Over - ${gameEndState.winner.charAt(0).toUpperCase() + gameEndState.winner.slice(1)} wins!`);
+                    if (window.updateGameResult) {
+                        window.updateGameResult(this.playerColor === gameEndState.winner ? 'win' : 'loss');
+                    }
                 }
+
+                // Refresh leaderboard
+                if (window.leaderboardManager) {
+                    window.leaderboardManager.loadLeaderboard();
+                }
+
                 const chessboard = document.getElementById('chessboard');
                 if (chessboard) {
                     chessboard.style.pointerEvents = 'none';
@@ -375,6 +402,16 @@ class MultiplayerManager {
                         winner: this.playerColor === 'blue' ? 'red' : 'blue'
                     })
                     .eq('id', this.gameId);
+
+                // Update scores for forfeit
+                if (window.updateGameResult) {
+                    window.updateGameResult('loss');
+                }
+
+                // Refresh leaderboard
+                if (window.leaderboardManager) {
+                    window.leaderboardManager.loadLeaderboard();
+                }
 
                 console.log('Left game successfully');
             } catch (error) {
