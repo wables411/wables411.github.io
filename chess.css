@@ -46,15 +46,18 @@
 
 /* Specific button colors - made more transparent */
 .wallet-btn[onclick*="phantom" i] {
-    background: rgba(147, 112, 219, 0.1);  /* Almost fully transparent Phantom purple */
+    background: transparent;
+    border: 1px solid rgba(147, 112, 219, 0.2);  /* Optional: very faint border */
 }
 
 .wallet-btn[onclick*="solflare" i] {
-    background: rgba(247, 147, 26, 0.1);  /* Almost fully transparent Solflare orange */
+    background: transparent;
+    border: 1px solid rgba(247, 147, 26, 0.2);  /* Optional: very faint border */
 }
 
 .wallet-btn[onclick*="magic" i] {
-    background: rgba(237, 75, 158, 0.1);  /* Almost fully transparent Magic Eden pink */
+    background: transparent;
+    border: 1px solid rgba(237, 75, 158, 0.2);  /* Optional: very faint border */
 }
 
 /* Your other existing wallet styles */
