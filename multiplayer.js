@@ -91,12 +91,10 @@ class MultiplayerManager {
         try {
             console.log('Creating new game:', gameId);
 
-            const gameData = {
-                board: initialBoard,
-                meta: {
-                    lastMove: null,
-                    pieceState: pieceState
-                }
+            // Create initial game state
+            const boardState = {
+                positions: JSON.parse(JSON.stringify(initialBoard)),
+                pieceState: pieceState
             };
 
             const { data, error } = await this.supabase
@@ -104,7 +102,7 @@ class MultiplayerManager {
                 .insert({
                     game_id: gameId,
                     blue_player: player,
-                    board: gameData,
+                    board: boardState,
                     piece_state: pieceState,
                     game_state: 'waiting',
                     current_player: 'blue'
@@ -166,7 +164,7 @@ class MultiplayerManager {
 
             console.log('Successfully joined game:', data.id);
 
-            this.gameId = data[0].id;
+            this.gameId = data.id;
             this.playerColor = 'red';
             this.subscribeToGame();
             this.showGame('red');
@@ -186,7 +184,7 @@ class MultiplayerManager {
         playerColor = color;
         currentPlayer = 'blue'; // Game always starts with blue
         
-        // Set up initial board
+        // Initialize board with the initial state
         board = JSON.parse(JSON.stringify(initialBoard));
         placePieces();
 
@@ -228,13 +226,17 @@ class MultiplayerManager {
             console.log('Processing game update:', game);
 
             // Handle board update
-            if (game.board && game.board.board) {
-                board = game.board.board;
-                if (game.board.meta && game.board.meta.pieceState) {
-                    Object.assign(pieceState, game.board.meta.pieceState);
+            if (game.board && game.board.positions) {
+                console.log('Received board update:', game.board.positions);
+                board = JSON.parse(JSON.stringify(game.board.positions));
+                
+                if (game.board.pieceState) {
+                    Object.assign(pieceState, game.board.pieceState);
                 }
-                console.log('Updated board state:', board);
+                
+                // Force board redraw
                 placePieces();
+                console.log('Board updated:', board);
             }
 
             // Update current turn
@@ -274,31 +276,30 @@ class MultiplayerManager {
         try {
             console.log('Attempting move:', {startRow, startCol, endRow, endCol});
 
+            // Make a deep copy of the current board
             const newBoard = JSON.parse(JSON.stringify(board));
             newBoard[endRow][endCol] = promotion || newBoard[startRow][startCol];
             newBoard[startRow][startCol] = null;
 
-            const gameData = {
-                board: newBoard,
-                meta: {
-                    lastMove: {
+            // Create the new board state
+            const boardState = {
+                positions: newBoard,
+                pieceState: pieceState
+            };
+
+            const { error } = await this.supabase
+                .from('chess_games')
+                .update({
+                    board: boardState,
+                    current_player: this.playerColor === 'blue' ? 'red' : 'blue',
+                    last_move: {
                         startRow,
                         startCol,
                         endRow,
                         endCol,
                         piece: board[startRow][startCol],
                         promotion
-                    },
-                    pieceState: pieceState
-                }
-            };
-
-            const { error } = await this.supabase
-                .from('chess_games')
-                .update({
-                    board: gameData,
-                    current_player: this.playerColor === 'blue' ? 'red' : 'blue',
-                    last_move: gameData.meta.lastMove
+                    }
                 })
                 .eq('id', this.gameId);
 
