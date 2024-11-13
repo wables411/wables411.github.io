@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+        <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -36,6 +36,77 @@
         }
         .game-section {
             margin-top: 2rem;
+        }
+
+        /* Betting UI Styles */
+        .betting-container {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            color: white;
+            display: none; /* Initially hidden, shown only in multiplayer */
+        }
+
+        .betting-ui {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .bet-input {
+            margin: 15px 0;
+        }
+
+        .bet-input input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            color: white;
+            border-radius: 4px;
+        }
+
+        .fee-info {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        .bet-button {
+            background: linear-gradient(45deg, #FF0000, #CC0000);
+            border: none;
+            padding: 10px 20px;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .bet-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+        }
+
+        .bet-status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .bet-status.error {
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+        }
+
+        .bet-status.processing {
+            background: rgba(255, 255, 0, 0.2);
+            border: 1px solid rgba(255, 255, 0, 0.3);
+        }
+
+        .bet-status.success {
+            background: rgba(0, 255, 0, 0.2);
+            border: 1px solid rgba(0, 255, 0, 0.3);
         }
         /* Wallet Button Styles */
         .wallet-btn {
@@ -156,26 +227,6 @@
                 <p>Token Holders join <a href="https://discord.gg/p6uazQchjk" target="_blank">MiladyStation Discord</a> to access and utilize the low poly tech</p>
             </div>
 
-            <!-- Image Section -->
-            <div class="section-container image-section">
-                <img src="images/lawbstationgame.png" alt="LawbStation Player Select">
-                <p>choose your fighter. search lawbstation by number. right click save. create a meme. start a fight. this is memetic warfare.</p>
-            </div>
-
-            <!-- Search Section -->
-            <div class="section-container search-section">
-                <h2 class="section-title">Search Lawbstation</h2>
-                <div class="search-container">
-                    <input type="number" id="imageSearch" placeholder="Enter image number" min="0" max="419">
-                    <button id="enterButton" class="search-button">Enter</button>
-                    <button id="clearButton" class="search-button">Clear</button>
-                </div>
-                <div class="image-display-section">
-                    <div id="imageDisplay"></div>
-                    <div id="imageGallery" class="image-container"></div>
-                </div>
-            </div>
-
             <!-- Chess Game Section -->
             <div class="section-container game-section">
                 <h2 class="section-title">LAWB CHESS</h2>
@@ -209,6 +260,20 @@
                 </div>
                 
                 <div class="chess-container">
+                    <!-- Betting Container -->
+                    <div id="betting-container" class="betting-container">
+                        <div class="betting-ui">
+                            <h3>$LAWB Betting</h3>
+                            <div class="bet-input">
+                                <label>Bet Amount ($LAWB):</label>
+                                <input type="number" id="betAmount" min="100" max="100000" step="100" value="100">
+                                <p class="fee-info">House Fee (5%): <span id="feeAmount">5</span> $LAWB</p>
+                            </div>
+                            <button id="placeBet" class="bet-button">Place Bet</button>
+                            <div id="betStatus" class="bet-status"></div>
+                        </div>
+                    </div>
+
                     <!-- Difficulty Selection Screen -->
                     <div id="difficulty-screen" style="display: none;">
                         <h2>Select Difficulty</h2>
@@ -259,26 +324,13 @@
         </div>
     </div>
 
-    <!-- Audius player iframe -->
-    <iframe class="fixed-player"
-            src="https://audius.co/embed/track/2VAzEM0?flavor=tiny"
-            allowTransparency="true"
-            allow="encrypted-media"
-            frameborder="0">
-    </iframe>
-
-    <!-- Load Buffer polyfill first -->
+    <!-- Load Dependencies -->
     <script src="https://bundle.run/buffer@6.0.3"></script>
-
-    <!-- Core dependencies -->
-    <script>
-        // Initialize Buffer globally
-        window.Buffer = buffer.Buffer;
-    </script>
+    <script>window.Buffer = buffer.Buffer;</script>
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.0.12/lib/index.iife.min.js"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
+    
     <!-- Initialize Supabase -->
     <script>
         try {
@@ -293,10 +345,37 @@
         }
     </script>
 
-    <!-- Game scripts -->
+    <!-- Load Game Scripts -->
+    <script src="betting-config.js"></script>
+    <script src="chessBetting.js"></script>
     <script src="loadImages.js"></script>
     <script src="leaderboard.js"></script>
     <script src="multiplayer.js"></script>
     <script src="chess.js"></script>
+
+    <!-- Initialize Betting -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize betting system
+            const chessBetting = new ChessBetting();
+            
+            // Show betting UI only in multiplayer mode
+            const multiplayerBtn = document.getElementById('multiplayer-mode');
+            const bettingContainer = document.getElementById('betting-container');
+            
+            multiplayerBtn.addEventListener('click', function() {
+                if (bettingContainer) {
+                    bettingContainer.style.display = 'block';
+                }
+            });
+            
+            const aiModeBtn = document.getElementById('ai-mode');
+            aiModeBtn.addEventListener('click', function() {
+                if (bettingContainer) {
+                    bettingContainer.style.display = 'none';
+                }
+            });
+        });
+    </script>
 </body>
 </html>
