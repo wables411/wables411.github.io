@@ -14,11 +14,12 @@ const BETTING_CONFIG = {
     
     // Bet limits (in LAWB)
     MIN_BET: 100,
-    MAX_BET: 100000,
+    MAX_BET: 5000000, // Increased from 100000 to 5000000
     
     // Time limits
-    MATCH_TIMEOUT: 30 * 60, // 30 minutes in seconds
+    MATCH_TIMEOUT: 45 * 60, // 30 minutes in seconds
     BET_CONFIRMATION_TIMEOUT: 2 * 60 // 2 minutes in seconds
 };
 
-export default BETTING_CONFIG;
+// Make config available globally
+window.BETTING_CONFIG = BETTING_CONFIG;
