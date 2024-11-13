@@ -9,14 +9,9 @@ class MultiplayerManager {
     }
 
     initializeEventListeners() {
-        const quickMatchBtn = document.getElementById('quick-match');
-        if (quickMatchBtn) {
-            quickMatchBtn.onclick = () => this.findQuickMatch();
-        }
-
         const createGameBtn = document.getElementById('create-game');
         if (createGameBtn) {
-            createGameBtn.onclick = () => this.createPrivateGame();
+            createGameBtn.onclick = () => this.createGame();
         }
 
         const joinGameBtn = document.getElementById('join-game');
@@ -38,39 +33,7 @@ class MultiplayerManager {
         }
     }
 
-    async findQuickMatch() {
-        try {
-            const player = localStorage.getItem('currentPlayer');
-            if (!player) {
-                alert('Connect wallet first');
-                return;
-            }
-
-            console.log('Looking for quick match...');
-
-            const { data } = await this.supabase
-                .from('chess_games')
-                .select()
-                .eq('game_state', 'waiting')
-                .is('red_player', null)
-                .single();
-
-            if (data) {
-                console.log('Found existing game:', data);
-                await this.joinGameByCode(data.game_id);
-                return;
-            }
-
-            const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
-            await this.createGame(gameId, player);
-            
-        } catch (error) {
-            console.error('Quick match error:', error);
-            alert('Match creation failed');
-        }
-    }
-
-    async createPrivateGame() {
+    async createGame() {
         try {
             const player = localStorage.getItem('currentPlayer');
             if (!player) {
@@ -79,16 +42,6 @@ class MultiplayerManager {
             }
 
             const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
-            await this.createGame(gameId, player);
-            
-        } catch (error) {
-            console.error('Create game error:', error);
-            alert('Game creation failed');
-        }
-    }
-
-    async createGame(gameId, player) {
-        try {
             console.log('Creating new game:', gameId);
 
             // Create initial game state
@@ -121,7 +74,7 @@ class MultiplayerManager {
 
         } catch (error) {
             console.error('Error creating game:', error);
-            throw error;
+            alert('Game creation failed');
         }
     }
 
