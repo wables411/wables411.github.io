@@ -118,21 +118,6 @@
             color: white;
             font-family: monospace;
         }
-        .game-lobby {
-            margin-top: 10px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .lobby-game {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(50, 205, 50, 0.3);
-            border-radius: 4px;
-            margin: 5px 0;
-        }
         .cancel-btn {
             background: linear-gradient(45deg, #FF4136, #85144b);
         }
@@ -238,34 +223,15 @@
                     <div class="multiplayer-menu" style="display: none;">
                         <h2 class="section-title">PvP</h2>
                         
-                        <!-- Quick Match -->
-                        <div class="multiplayer-option">
-                            <button class="multiplayer-btn" id="quick-match">
-                                Quick Match
-                                <span class="btn-description">Find opponent automatically</span>
-                            </button>
-                        </div>
-
                         <!-- Create/Join Game -->
                         <div class="multiplayer-option">
                             <button class="multiplayer-btn" id="create-game">
-                                Create Private Game
-                                <span class="btn-description">Get a code to share</span>
+                                Create Game
+                                <span class="btn-description">Get a code to share with opponent</span>
                             </button>
                             <div class="join-game-container">
                                 <input type="text" id="game-code-input" placeholder="Enter game code">
                                 <button class="multiplayer-btn" id="join-game">Join Game</button>
-                            </div>
-                        </div>
-
-                        <!-- Game Lobby -->
-                        <div class="multiplayer-option">
-                            <button class="multiplayer-btn" id="open-lobby">
-                                Game Lobby
-                                <span class="btn-description">Browse open games</span>
-                            </button>
-                            <div class="game-lobby" style="display: none;">
-                                <div class="lobby-games"></div>
                             </div>
                         </div>
 
