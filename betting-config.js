@@ -1,7 +1,8 @@
 const BETTING_CONFIG = {
-    // Using Helius RPC with API key
-    NETWORK: 'https://mainnet.helius-rpc.com/?api-key=79326e78-9bd5-469c-9297-80feb7519584',
+    // Using Extrnode RPC with API key
+    NETWORK: 'https://solana-mainnet.rpc.extrnode.com/218119a6-454e-430e-b63c-f1ae113c7eed',
     
+    // Rest remains the same
     HOUSE_WALLET: '3NCvL5itgJVrwNZw8BNL8syP8Za5hAmhmApCDh4bdsTu',
     HOUSE_FEE_PERCENTAGE: 5,
     MIN_BET: 100,

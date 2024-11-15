@@ -245,52 +245,28 @@ class ChessBetting {
                 throw new Error('Wallet not connected');
             }
     
-            // Updated RPC endpoints with API keys
-            const rpcEndpoints = [
-                'https://mainnet.helius-rpc.com/?api-key=79326e78-9bd5-469c-9297-80feb7519584',
-                'https://rpc.helius.xyz/?api-key=79326e78-9bd5-469c-9297-80feb7519584',
-                'https://solana-mainnet.rpc.extrnode.com'
-            ];
-    
-            let lastError = null;
-            for (const endpoint of rpcEndpoints) {
-                try {
-                    console.log(`Trying RPC endpoint: ${endpoint}`);
-                    const connection = new solanaWeb3.Connection(endpoint, 'confirmed');
-                    
-                    console.log('Getting blockhash...');
-                    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-                    
-                    transaction.recentBlockhash = blockhash;
-                    transaction.feePayer = wallet.publicKey;
-    
-                    console.log('Requesting signature...');
-                    const signed = await wallet.signTransaction(transaction);
-                    
-                    console.log('Sending transaction...');
-                    const signature = await connection.sendRawTransaction(signed.serialize());
-                    
-                    // Wait for confirmation
-                    console.log('Awaiting confirmation...');
-                    const confirmation = await connection.confirmTransaction({
-                        signature,
-                        blockhash,
-                        lastValidBlockHeight
-                    });
-    
-                    if (confirmation.value.err) {
-                        throw new Error('Transaction failed: ' + confirmation.value.err);
-                    }
-    
-                    return signature;
-                } catch (error) {
-                    console.log(`Failed with endpoint ${endpoint}:`, error);
-                    lastError = error;
-                    continue;
+            const connection = new solanaWeb3.Connection(this.config.NETWORK, {
+                commitment: 'confirmed',
+                httpHeaders: {
+                    'Authorization': '218119a6-454e-430e-b63c-f1ae113c7eed'
                 }
-            }
+            });
+            
+            console.log('Getting blockhash...');
+            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+            
+            transaction.recentBlockhash = blockhash;
+            transaction.feePayer = wallet.publicKey;
     
-            throw lastError || new Error('All RPC endpoints failed');
+            console.log('Requesting signature...');
+            const signed = await wallet.signTransaction(transaction);
+            
+            console.log('Sending transaction...');
+            const signature = await connection.sendRawTransaction(signed.serialize());
+    
+            console.log('Transaction sent:', signature);
+            
+            return signature;
     
         } catch (error) {
             console.error('Send transaction error:', error);
