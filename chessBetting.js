@@ -211,40 +211,39 @@ class ChessBetting {
 
     async createBetTransaction(amount) {
         try {
-            // Import required Solana modules
-            const splToken = require('@solana/spl-token');
-    
+            // Access SPL Token functions from the loaded library
+            const { TOKEN_PROGRAM_ID } = window.splToken;
+            
             // Get token account
             const tokenMint = new solanaWeb3.PublicKey(this.config.LAWB_TOKEN_ADDRESS);
             const houseWallet = new solanaWeb3.PublicKey(this.config.HOUSE_WALLET);
             
-            // Get or create Associated Token Accounts
-            const playerTokenAccount = await splToken.getAssociatedTokenAddress(
-                tokenMint,
-                window.solana.publicKey
-            );
+            // Get Associated Token Account addresses
+            const playerTokenAccount = await window.splToken.getAssociatedTokenAddress({
+                mint: tokenMint,
+                owner: window.solana.publicKey
+            });
     
-            const houseTokenAccount = await splToken.getAssociatedTokenAddress(
-                tokenMint,
-                houseWallet
-            );
+            const houseTokenAccount = await window.splToken.getAssociatedTokenAddress({
+                mint: tokenMint,
+                owner: houseWallet
+            });
     
-            // Calculate amounts (LAWB has 9 decimals)
-            const betAmount = BigInt(amount * 1e9); 
-            const feeAmount = BigInt(Math.floor(Number(betAmount) * this.config.HOUSE_FEE_PERCENTAGE / 100));
-            const escrowAmount = betAmount - feeAmount;
-    
+            // Calculate amounts
+            const betAmount = BigInt(amount * 1e9);
+            
             // Create transaction
             const transaction = new solanaWeb3.Transaction();
             
             // Add transfer instruction
             transaction.add(
-                splToken.createTransferInstruction(
-                    playerTokenAccount,
-                    houseTokenAccount,
-                    window.solana.publicKey,
-                    betAmount
-                )
+                window.splToken.createTransferInstruction({
+                    source: playerTokenAccount,
+                    destination: houseTokenAccount,
+                    owner: window.solana.publicKey,
+                    amount: betAmount,
+                    program: TOKEN_PROGRAM_ID
+                })
             );
     
             return transaction;
@@ -254,7 +253,7 @@ class ChessBetting {
             throw error;
         }
     }
-
+    
     async sendTransaction(transaction) {
         const connection = new solanaWeb3.Connection(this.config.NETWORK);
         
