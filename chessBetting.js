@@ -211,85 +211,57 @@ class ChessBetting {
 
     async createBetTransaction(amount) {
         try {
-            console.log('Starting transaction creation...');
-            
-            // Create Token Program instructions for LAWB token
-            const tokenMint = new solanaWeb3.PublicKey(this.config.LAWB_TOKEN_ADDRESS);
+            console.log('Starting basic SOL transfer transaction...');
             const houseWallet = new solanaWeb3.PublicKey(this.config.HOUSE_WALLET);
             
-            console.log('Getting player token account...');
-            // Find the player's Associated Token Account (ATA)
-            const playerTokenAccount = await solanaWeb3.PublicKey.findProgramAddress(
-                [
-                    window.solana.publicKey.toBuffer(),
-                    solanaWeb3.TOKEN_PROGRAM_ID.toBuffer(),
-                    tokenMint.toBuffer(),
-                ],
-                solanaWeb3.SPL_ASSOCIATED_TOKEN_PROGRAM_ID
+            // Create simple SOL transfer
+            const transaction = new solanaWeb3.Transaction().add(
+                solanaWeb3.SystemProgram.transfer({
+                    fromPubkey: window.solana.publicKey,
+                    toPubkey: houseWallet,
+                    lamports: amount * solanaWeb3.LAMPORTS_PER_SOL / 100 // Convert to small amount of SOL
+                })
             );
     
-            console.log('Getting house token account...');
-            // Find the house's Associated Token Account (ATA)
-            const houseTokenAccount = await solanaWeb3.PublicKey.findProgramAddress(
-                [
-                    houseWallet.toBuffer(),
-                    solanaWeb3.TOKEN_PROGRAM_ID.toBuffer(),
-                    tokenMint.toBuffer(),
-                ],
-                solanaWeb3.SPL_ASSOCIATED_TOKEN_PROGRAM_ID
-            );
-    
-            console.log('Creating transaction...');
-            const transaction = new solanaWeb3.Transaction();
-    
-            // Add ATA creation instruction if needed
-            const createAtaInstruction = solanaWeb3.SystemProgram.createAccount({
-                fromPubkey: window.solana.publicKey,
-                newAccountPubkey: playerTokenAccount[0],
-                lamports: await this.connection.getMinimumBalanceForRentExemption(165),
-                space: 165,
-                programId: solanaWeb3.TOKEN_PROGRAM_ID,
-            });
-            transaction.add(createAtaInstruction);
-    
-            // Add token transfer instruction
-            const transferInstruction = solanaWeb3.Token.createTransferInstruction(
-                solanaWeb3.TOKEN_PROGRAM_ID,
-                playerTokenAccount[0],
-                houseTokenAccount[0],
-                window.solana.publicKey,
-                [],
-                amount * 1e9 // Convert to token units
-            );
-            transaction.add(transferInstruction);
-    
-            console.log('Transaction created successfully');
+            console.log('Basic transaction created');
             return transaction;
     
         } catch (error) {
-            console.error('Detailed transaction creation error:', error);
-            throw new Error(`Failed to create transaction: ${error.message}`);
+            console.error('Transaction creation error:', error);
+            this.updateBetStatus('Transaction creation failed: ' + error.message, 'error');
+            throw error;
         }
     }
     
     async sendTransaction(transaction) {
         try {
             console.log('Getting recent blockhash...');
-            const { blockhash } = await this.connection.getRecentBlockhash();
+            const connection = new solanaWeb3.Connection('https://api.mainnet-beta.solana.com');
+            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+            
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = window.solana.publicKey;
     
-            console.log('Requesting transaction signature...');
-            const signed = await window.solana.signTransaction(transaction);
-    
-            console.log('Sending transaction...');
-            const signature = await this.connection.sendRawTransaction(signed.serialize());
+            console.log('Requesting signature...');
+            const signedTx = await window.solana.signTransaction(transaction);
             
-            console.log('Transaction sent, signature:', signature);
+            console.log('Sending transaction...');
+            const signature = await connection.sendRawTransaction(signedTx.serialize());
+            
+            console.log('Confirming transaction...');
+            const confirmation = await connection.confirmTransaction({
+                signature,
+                blockhash,
+                lastValidBlockHeight
+            });
+    
+            console.log('Transaction confirmed:', confirmation);
             return signature;
+    
         } catch (error) {
-            console.error('Transaction send error:', error);
-            throw new Error(`Failed to send transaction: ${error.message}`);
+            console.error('Send transaction error:', error);
+            this.updateBetStatus('Transaction failed: ' + error.message, 'error');
+            throw error;
         }
     }
 

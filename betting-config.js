@@ -1,9 +1,5 @@
 const BETTING_CONFIG = {
-    // Using Solana's public devnet for testing
-    NETWORK: 'https://api.devnet.solana.com',
-    
-    // Rest of the config remains the same
-    LAWB_TOKEN_ADDRESS: '65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6',
+    NETWORK: 'https://api.mainnet-beta.solana.com',
     HOUSE_WALLET: '3NCvL5itgJVrwNZw8BNL8syP8Za5hAmhmApCDh4bdsTu',
     HOUSE_FEE_PERCENTAGE: 5,
     MIN_BET: 100,
