@@ -176,28 +176,30 @@ class ChessBetting {
         try {
             if (!this.validateBetAmount(amount)) return;
             
-            const wallet = window.solana;
-            if (!wallet) throw new Error('Wallet not connected');
-
+            const wallet = window.solflare.isConnected ? window.solflare : window.solana;
+            if (!wallet || !wallet.publicKey) {
+                throw new Error('Wallet not connected');
+            }
+    
             this.updateBetStatus('Creating transaction...', 'processing');
-
+    
             const transaction = await this.createBetTransaction(amount);
             const signature = await this.sendTransaction(transaction);
-
+    
             this.updateBetStatus('Confirming transaction...', 'processing');
             await this.confirmTransaction(signature);
-
+    
             this.currentBet = {
                 amount: amount,
-                bluePlayer: wallet.publicKey.toString(),
+                bluePlayer: wallet.publicKey.toBase58(), // Use toBase58() instead of toString()
                 redPlayer: null,
                 gameId: this.generateGameId(),
                 isActive: true
             };
-
+    
             this.updateBetStatus('Bet placed successfully! Waiting for opponent...', 'success');
             this.disableBetting();
-
+    
         } catch (error) {
             console.error('Bet processing error:', error);
             this.updateBetStatus('Failed to process bet: ' + error.message, 'error');
@@ -275,14 +277,24 @@ class ChessBetting {
     }
 
     async confirmTransaction(signature) {
-        const connection = new solanaWeb3.Connection(this.config.NETWORK);
-        
-        const confirmation = await connection.confirmTransaction(signature);
-        if (confirmation.value.err) {
-            throw new Error('Transaction failed to confirm');
+        try {
+            const connection = new solanaWeb3.Connection(this.config.NETWORK, {
+                commitment: 'confirmed',
+                httpHeaders: {
+                    'Authorization': '218119a6-454e-430e-b63c-f1ae113c7eed'
+                }
+            });
+            
+            const confirmation = await connection.confirmTransaction(signature);
+            if (confirmation.value.err) {
+                throw new Error('Transaction failed to confirm');
+            }
+            
+            return confirmation;
+        } catch (error) {
+            console.error('Confirmation error:', error);
+            throw error;
         }
-        
-        return confirmation;
     }
 
     async processWinner(winner) {
