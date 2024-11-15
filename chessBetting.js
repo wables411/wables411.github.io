@@ -170,7 +170,7 @@ class ChessBetting {
                     { pubkey: wallet.publicKey, isSigner: true, isWritable: false },
                 ],
                 programId: this.tokenProgram,
-                data: Buffer.from([3, ...new BN(tokenAmount).toArray('le', 8)])
+                data: Buffer.from([3, ...new window.BN(tokenAmount).toArray('le', 8)])
             });
 
             // Create transaction
@@ -348,7 +348,7 @@ class ChessBetting {
                     { pubkey: new solanaWeb3.PublicKey(this.config.HOUSE_WALLET), isSigner: true, isWritable: false },
                 ],
                 programId: this.tokenProgram,
-                data: Buffer.from([3, ...new BN(tokenAmount).toArray('le', 8)])
+                data: Buffer.from([3, ...new window.BN(tokenAmount).toArray('le', 8)])
             });
 
             return new solanaWeb3.Transaction().add(transferInstruction);

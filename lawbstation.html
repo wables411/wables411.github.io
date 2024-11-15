@@ -326,9 +326,10 @@
 
 <!-- Dependencies -->
 <script src="https://bundle.run/buffer@6.0.3"></script>
+<script src="https://cdn.jsdelivr.net/npm/bn.js@5.2.1/lib/bn.js"></script>
 <script>
     window.Buffer = buffer.Buffer;
-    const BN = window.buffer.BN;  // Initialize BN here
+    window.BN = BN;  // Make BN globally available
 </script>
 
 <!-- Other dependencies -->
