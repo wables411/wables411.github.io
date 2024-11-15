@@ -324,9 +324,14 @@
         </div>
     </div>
 
-   <!-- Load Dependencies -->
+<!-- Dependencies -->
 <script src="https://bundle.run/buffer@6.0.3"></script>
-<script>window.Buffer = buffer.Buffer;</script>
+<script>
+    window.Buffer = buffer.Buffer;
+    const BN = window.buffer.BN;  // Initialize BN here
+</script>
+
+<!-- Other dependencies -->
 <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
 <script src="https://unpkg.com/@solana/spl-token@0.3.8/lib/index.iife.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.0.12/lib/index.iife.min.js"></script>
@@ -346,21 +351,21 @@
     }
 </script>
 
-<!-- Initialize BN -->
-<script>
-    const BN = window.buffer.BN;
-</script>
-
-<!-- Load Game Scripts (order matters!) -->
+<!-- Game Scripts -->
 <script src="betting-config.js"></script>
 <script src="chessBetting.js"></script>
 <script src="multiplayer.js"></script>
 <script src="leaderboard.js"></script>
 <script src="chess.js"></script>
 
-    <!-- Initialize Betting -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
+   <!-- Initialize Betting -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            console.log('Initializing betting system...');
+            console.log('BETTING_CONFIG available:', !!window.BETTING_CONFIG);
+            console.log('ChessBetting available:', !!window.ChessBetting);
+            
             // Initialize betting system
             const chessBetting = new ChessBetting();
             
@@ -380,7 +385,10 @@
                     bettingContainer.style.display = 'none';
                 }
             });
-        });
-    </script>
+        } catch (error) {
+            console.error('Error initializing betting:', error);
+        }
+    });
+</script>
 </body>
 </html>
