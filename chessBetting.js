@@ -3,6 +3,9 @@ class ChessBetting {
     constructor() {
         this.config = BETTING_CONFIG;
         this.initializeBetting();
+        this.setupMultiplayerBetting();
+    }
+    async initializeBetting() {
     }
 
     async initializeBetting() {
@@ -382,6 +385,71 @@ class ChessBetting {
             isActive: false
         };
         this.enableBetting();
+    }
+
+    async setupMultiplayerBetting() {
+        const createGameBtn = document.querySelector('.multiplayer-btn');
+        if (createGameBtn) {
+            createGameBtn.addEventListener('click', async () => {
+                if (!this.currentBet.isActive) {
+                    this.updateBetStatus('Please place a bet first', 'error');
+                    return;
+                }
+                try {
+                    // Generate game code
+                    const gameCode = this.generateGameId();
+                    
+                    // Store bet information with game code
+                    const gameData = {
+                        gameCode,
+                        bet: this.currentBet.amount,
+                        player1: this.currentBet.bluePlayer,
+                        timeCreated: Date.now()
+                    };
+                    // Store in database or local storage
+                    localStorage.setItem(`game_${gameCode}`, JSON.stringify(gameData));
+                    // Update UI to show game code
+                    this.updateBetStatus(`Share this code with opponent: ${gameCode}`, 'success');
+                    
+                    // Trigger multiplayer game creation
+                    if (window.multiplayerManager) {
+                        window.multiplayerManager.createGame(gameCode);
+                    }
+                } catch (error) {
+                    console.error('Game creation error:', error);
+                    this.updateBetStatus('Failed to create game: ' + error.message, 'error');
+                }
+            });
+        }
+    
+        // Handle JOIN GAME button
+        const joinGameBtn = document.querySelector('.multiplayer-btn[id="join-game"]');
+        if (joinGameBtn) {
+            joinGameBtn.addEventListener('click', async () => {
+                const gameCodeInput = document.getElementById('game-code-input');
+                const gameCode = gameCodeInput?.value;
+                
+                if (!gameCode) {
+                    this.updateBetStatus('Please enter a game code', 'error');
+                    return;
+                }
+                // Get stored game data
+                const gameData = localStorage.getItem(`game_${gameCode}`);
+                if (!gameData) {
+                    this.updateBetStatus('Invalid game code', 'error');
+                    return;
+                }
+                const { bet } = JSON.parse(gameData);
+                
+                // Place matching bet
+                await this.processBet(bet);
+                
+                // Join multiplayer game
+                if (window.multiplayerManager) {
+                    window.multiplayerManager.joinGame(gameCode);
+                }
+            });
+        }
     }
 }
 
