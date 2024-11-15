@@ -211,49 +211,29 @@ class ChessBetting {
 
     async createBetTransaction(amount) {
         try {
-            // Access SPL Token functions from the loaded library
-            const { TOKEN_PROGRAM_ID } = window.splToken;
-            
-            // Get token account
+            // Use web3.js and window.solana directly
             const tokenMint = new solanaWeb3.PublicKey(this.config.LAWB_TOKEN_ADDRESS);
             const houseWallet = new solanaWeb3.PublicKey(this.config.HOUSE_WALLET);
             
-            // Get Associated Token Account addresses
-            const playerTokenAccount = await window.splToken.getAssociatedTokenAddress({
-                mint: tokenMint,
-                owner: window.solana.publicKey
-            });
-    
-            const houseTokenAccount = await window.splToken.getAssociatedTokenAddress({
-                mint: tokenMint,
-                owner: houseWallet
-            });
-    
-            // Calculate amounts
-            const betAmount = BigInt(amount * 1e9);
-            
-            // Create transaction
+            // Create transfer instruction using web3.js
             const transaction = new solanaWeb3.Transaction();
             
-            // Add transfer instruction
-            transaction.add(
-                window.splToken.createTransferInstruction({
-                    source: playerTokenAccount,
-                    destination: houseTokenAccount,
-                    owner: window.solana.publicKey,
-                    amount: betAmount,
-                    program: TOKEN_PROGRAM_ID
-                })
-            );
+            // Create token transfer instruction
+            const transferInstruction = solanaWeb3.SystemProgram.transfer({
+                fromPubkey: window.solana.publicKey,
+                toPubkey: houseWallet,
+                lamports: amount * 1e9 // Convert to lamports
+            });
     
+            transaction.add(transferInstruction);
+            
             return transaction;
-    
         } catch (error) {
             console.error('Error creating bet transaction:', error);
             throw error;
         }
     }
-    
+
     async sendTransaction(transaction) {
         const connection = new solanaWeb3.Connection(this.config.NETWORK);
         
