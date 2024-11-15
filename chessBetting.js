@@ -187,22 +187,38 @@ class ChessBetting {
             const signature = await this.sendTransaction(transaction);
     
             this.updateBetStatus('Confirming transaction...', 'processing');
-            await this.confirmTransaction(signature);
+            
+            // Wait for confirmation with timeout
+            let confirmationStatus;
+            try {
+                console.log('Waiting for confirmation of transaction:', signature);
+                confirmationStatus = await this.confirmTransaction(signature);
+                console.log('Transaction confirmed:', confirmationStatus);
+            } catch (error) {
+                console.error('Confirmation error:', error);
+                throw new Error('Transaction failed to confirm. Please check your wallet for status.');
+            }
+    
+            if (confirmationStatus?.value?.err) {
+                throw new Error('Transaction failed: ' + confirmationStatus.value.err);
+            }
     
             this.currentBet = {
                 amount: amount,
-                bluePlayer: wallet.publicKey.toBase58(), // Use toBase58() instead of toString()
+                bluePlayer: wallet.publicKey.toBase58(),
                 redPlayer: null,
                 gameId: this.generateGameId(),
                 isActive: true
             };
     
+            console.log('Bet state updated:', this.currentBet);
             this.updateBetStatus('Bet placed successfully! Waiting for opponent...', 'success');
             this.disableBetting();
     
         } catch (error) {
             console.error('Bet processing error:', error);
             this.updateBetStatus('Failed to process bet: ' + error.message, 'error');
+            this.enableBetting(); // Re-enable betting on error
         }
     }
 
@@ -276,7 +292,7 @@ class ChessBetting {
         }
     }
 
-    async confirmTransaction(signature) {
+    async confirmTransaction(signature, timeoutSeconds = 30) {
         try {
             const connection = new solanaWeb3.Connection(this.config.NETWORK, {
                 commitment: 'confirmed',
@@ -284,12 +300,17 @@ class ChessBetting {
                     'Authorization': '218119a6-454e-430e-b63c-f1ae113c7eed'
                 }
             });
+    
+            console.log('Starting confirmation check for:', signature);
             
-            const confirmation = await connection.confirmTransaction(signature);
-            if (confirmation.value.err) {
-                throw new Error('Transaction failed to confirm');
-            }
-            
+            const confirmationPromise = connection.confirmTransaction(signature);
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Transaction confirmation timeout')), timeoutSeconds * 1000)
+            );
+    
+            const confirmation = await Promise.race([confirmationPromise, timeoutPromise]);
+            console.log('Confirmation received:', confirmation);
+    
             return confirmation;
         } catch (error) {
             console.error('Confirmation error:', error);
