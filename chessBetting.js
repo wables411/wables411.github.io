@@ -210,43 +210,49 @@ class ChessBetting {
     }
 
     async createBetTransaction(amount) {
-        const { Token, TOKEN_PROGRAM_ID } = solanaWeb3;
-        
-        // Get token account
-        const tokenMint = new solanaWeb3.PublicKey(this.config.LAWB_TOKEN_ADDRESS);
-        const houseWallet = new solanaWeb3.PublicKey(this.config.HOUSE_WALLET);
-        
-        const playerTokenAccount = await Token.getAssociatedTokenAddress(
-            tokenMint,
-            window.solana.publicKey
-        );
-
-        const houseTokenAccount = await Token.getAssociatedTokenAddress(
-            tokenMint,
-            houseWallet
-        );
-
-        // Calculate amounts
-        const betAmount = amount * 1e9; // Convert to lamports (LAWB has 9 decimals)
-        const feeAmount = Math.floor(betAmount * this.config.HOUSE_FEE_PERCENTAGE / 100);
-        const escrowAmount = betAmount - feeAmount;
-
-        // Create transaction
-        const transaction = new solanaWeb3.Transaction();
-        
-        // Transfer bet amount to house wallet
-        transaction.add(
-            Token.createTransferInstruction(
-                TOKEN_PROGRAM_ID,
-                playerTokenAccount,
-                houseTokenAccount,
-                window.solana.publicKey,
-                [],
-                betAmount
-            )
-        );
-
-        return transaction;
+        try {
+            // Import required Solana modules
+            const splToken = require('@solana/spl-token');
+    
+            // Get token account
+            const tokenMint = new solanaWeb3.PublicKey(this.config.LAWB_TOKEN_ADDRESS);
+            const houseWallet = new solanaWeb3.PublicKey(this.config.HOUSE_WALLET);
+            
+            // Get or create Associated Token Accounts
+            const playerTokenAccount = await splToken.getAssociatedTokenAddress(
+                tokenMint,
+                window.solana.publicKey
+            );
+    
+            const houseTokenAccount = await splToken.getAssociatedTokenAddress(
+                tokenMint,
+                houseWallet
+            );
+    
+            // Calculate amounts (LAWB has 9 decimals)
+            const betAmount = BigInt(amount * 1e9); 
+            const feeAmount = BigInt(Math.floor(Number(betAmount) * this.config.HOUSE_FEE_PERCENTAGE / 100));
+            const escrowAmount = betAmount - feeAmount;
+    
+            // Create transaction
+            const transaction = new solanaWeb3.Transaction();
+            
+            // Add transfer instruction
+            transaction.add(
+                splToken.createTransferInstruction(
+                    playerTokenAccount,
+                    houseTokenAccount,
+                    window.solana.publicKey,
+                    betAmount
+                )
+            );
+    
+            return transaction;
+    
+        } catch (error) {
+            console.error('Error creating bet transaction:', error);
+            throw error;
+        }
     }
 
     async sendTransaction(transaction) {
