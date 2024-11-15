@@ -1,4 +1,5 @@
 // Chess betting integration
+const BN = window.buffer.BN;
 class ChessBetting {
     constructor() {
         this.config = BETTING_CONFIG;
