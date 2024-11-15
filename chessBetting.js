@@ -62,20 +62,27 @@ class ChessBetting {
 
     async handleBetPlacement() {
         try {
-            if (!window.solana?.isConnected) {
+            // Check both Phantom and Solflare wallet connections
+            const phantomConnected = window.solana?.isConnected;
+            const solflareConnected = window.solflare?.isConnected;
+            
+            if (!phantomConnected && !solflareConnected) {
                 this.updateBetStatus('Please connect your wallet first', 'error');
                 return;
             }
-
+    
+            // Get the active wallet
+            const wallet = phantomConnected ? window.solana : window.solflare;
+    
             const amount = Number(document.getElementById('betAmount').value);
             if (amount < this.config.MIN_BET || amount > this.config.MAX_BET) {
                 this.updateBetStatus(`Bet must be between ${this.config.MIN_BET} and ${this.config.MAX_BET} $LAWB`, 'error');
                 return;
             }
-
+    
             this.updateBetStatus('Processing bet...', 'processing');
             await this.processBet(amount);
-
+    
         } catch (error) {
             console.error('Bet placement error:', error);
             this.updateBetStatus('Failed to place bet: ' + error.message, 'error');
@@ -86,6 +93,10 @@ class ChessBetting {
         const statusElement = document.getElementById('betStatus');
         statusElement.textContent = message;
         statusElement.className = `bet-status ${type}`;
+    }
+
+    isWalletConnected() {
+        return window.solana?.isConnected || window.solflare?.isConnected;
     }
 
     static addStyles() {
