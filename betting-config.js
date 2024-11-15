@@ -1,5 +1,7 @@
 const BETTING_CONFIG = {
-    NETWORK: 'https://api.mainnet-beta.solana.com',
+    // Using GenesysGo's public RPC
+    NETWORK: 'https://ssc-dao.genesysgo.net/',
+    
     HOUSE_WALLET: '3NCvL5itgJVrwNZw8BNL8syP8Za5hAmhmApCDh4bdsTu',
     HOUSE_FEE_PERCENTAGE: 5,
     MIN_BET: 100,

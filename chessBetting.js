@@ -245,20 +245,40 @@ class ChessBetting {
                 throw new Error('Wallet not connected');
             }
     
-            const connection = new solanaWeb3.Connection(this.config.NETWORK);
-            console.log('Getting blockhash...');
-            const { blockhash } = await connection.getRecentBlockhash();
-            
-            transaction.recentBlockhash = blockhash;
-            transaction.feePayer = wallet.publicKey;
+            // Try multiple RPC endpoints if one fails
+            const rpcEndpoints = [
+                'https://ssc-dao.genesysgo.net/',
+                'https://solana-api.projectserum.com',
+                'https://api.mainnet-beta.solana.com'
+            ];
     
-            console.log('Requesting signature...');
-            const signed = await wallet.signTransaction(transaction);
-            
-            console.log('Sending transaction...');
-            const signature = await connection.sendRawTransaction(signed.serialize());
-            
-            return signature;
+            let lastError = null;
+            for (const endpoint of rpcEndpoints) {
+                try {
+                    console.log(`Trying RPC endpoint: ${endpoint}`);
+                    const connection = new solanaWeb3.Connection(endpoint);
+                    
+                    console.log('Getting blockhash...');
+                    const { blockhash } = await connection.getRecentBlockhash('confirmed');
+                    
+                    transaction.recentBlockhash = blockhash;
+                    transaction.feePayer = wallet.publicKey;
+    
+                    console.log('Requesting signature...');
+                    const signed = await wallet.signTransaction(transaction);
+                    
+                    console.log('Sending transaction...');
+                    const signature = await connection.sendRawTransaction(signed.serialize());
+                    
+                    return signature;
+                } catch (error) {
+                    console.log(`Failed with endpoint ${endpoint}:`, error);
+                    lastError = error;
+                    continue;
+                }
+            }
+    
+            throw lastError || new Error('All RPC endpoints failed');
     
         } catch (error) {
             console.error('Send transaction error:', error);
