@@ -388,7 +388,7 @@ class ChessBetting {
     }
 
     async setupMultiplayerBetting() {
-        const createGameBtn = document.querySelector('.multiplayer-btn');
+        const createGameBtn = document.querySelector('.multiplayer-btn[id="create-game"]'); // Add ID check
         if (createGameBtn) {
             createGameBtn.addEventListener('click', async () => {
                 if (!this.currentBet.isActive) {
