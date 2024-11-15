@@ -1,7 +1,7 @@
 // LAWB Token Betting Configuration
 const BETTING_CONFIG = {
-    // Network
-    NETWORK: 'https://api.mainnet-beta.solana.com',
+    // Network - using public RPC endpoint
+    NETWORK: 'https://solana-mainnet.rpc.extrnode.com',  // Changed from mainnet-beta
     
     // Token details
     LAWB_TOKEN_ADDRESS: '65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6',
@@ -14,12 +14,14 @@ const BETTING_CONFIG = {
     
     // Bet limits (in LAWB)
     MIN_BET: 100,
-    MAX_BET: 5000000, // Increased from 100000 to 5000000
+    MAX_BET: 5000000,
     
     // Time limits
-    MATCH_TIMEOUT: 45 * 60, // 30 minutes in seconds
+    MATCH_TIMEOUT: 30 * 60, // 30 minutes in seconds
     BET_CONFIRMATION_TIMEOUT: 2 * 60 // 2 minutes in seconds
 };
 
+// Make config available globally
+window.BETTING_CONFIG = BETTING_CONFIG;
 // Make config available globally
 window.BETTING_CONFIG = BETTING_CONFIG;
