@@ -62,17 +62,12 @@ class ChessBetting {
 
     async handleBetPlacement() {
         try {
-            // Check both Phantom and Solflare wallet connections
-            const phantomConnected = window.solana?.isConnected;
-            const solflareConnected = window.solflare?.isConnected;
-            
-            if (!phantomConnected && !solflareConnected) {
+            // Check wallet connection
+            const wallet = window.solflare.isConnected ? window.solflare : window.solana;
+            if (!wallet || !wallet.publicKey) {
                 this.updateBetStatus('Please connect your wallet first', 'error');
                 return;
             }
-    
-            // Get the active wallet
-            const wallet = phantomConnected ? window.solana : window.solflare;
     
             const amount = Number(document.getElementById('betAmount').value);
             if (amount < this.config.MIN_BET || amount > this.config.MAX_BET) {
@@ -211,56 +206,62 @@ class ChessBetting {
 
     async createBetTransaction(amount) {
         try {
-            console.log('Starting basic SOL transfer transaction...');
-            const houseWallet = new solanaWeb3.PublicKey(this.config.HOUSE_WALLET);
+            console.log('Starting transaction creation...');
             
-            // Create simple SOL transfer
-            const transaction = new solanaWeb3.Transaction().add(
-                solanaWeb3.SystemProgram.transfer({
-                    fromPubkey: window.solana.publicKey,
-                    toPubkey: houseWallet,
-                    lamports: amount * solanaWeb3.LAMPORTS_PER_SOL / 100 // Convert to small amount of SOL
-                })
-            );
+            // Check wallet connection
+            const wallet = window.solflare.isConnected ? window.solflare : window.solana;
+            if (!wallet || !wallet.publicKey) {
+                throw new Error('Wallet not connected properly');
+            }
     
-            console.log('Basic transaction created');
+            const houseWallet = new solanaWeb3.PublicKey(this.config.HOUSE_WALLET);
+            console.log('Creating SOL transfer...');
+    
+            // Create simple transfer instruction
+            const transferInstruction = solanaWeb3.SystemProgram.transfer({
+                fromPubkey: wallet.publicKey,
+                toPubkey: houseWallet,
+                lamports: solanaWeb3.LAMPORTS_PER_SOL / 100 // 0.01 SOL for testing
+            });
+    
+            // Create and return transaction
+            const transaction = new solanaWeb3.Transaction().add(transferInstruction);
+            
+            console.log('Transaction created successfully');
             return transaction;
     
         } catch (error) {
             console.error('Transaction creation error:', error);
-            this.updateBetStatus('Transaction creation failed: ' + error.message, 'error');
             throw error;
         }
     }
     
     async sendTransaction(transaction) {
         try {
-            console.log('Getting recent blockhash...');
-            const connection = new solanaWeb3.Connection('https://api.mainnet-beta.solana.com');
-            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+            console.log('Preparing to send transaction...');
+            const wallet = window.solflare.isConnected ? window.solflare : window.solana;
+            
+            if (!wallet || !wallet.publicKey) {
+                throw new Error('Wallet not connected');
+            }
+    
+            const connection = new solanaWeb3.Connection(this.config.NETWORK);
+            console.log('Getting blockhash...');
+            const { blockhash } = await connection.getRecentBlockhash();
             
             transaction.recentBlockhash = blockhash;
-            transaction.feePayer = window.solana.publicKey;
+            transaction.feePayer = wallet.publicKey;
     
             console.log('Requesting signature...');
-            const signedTx = await window.solana.signTransaction(transaction);
+            const signed = await wallet.signTransaction(transaction);
             
             console.log('Sending transaction...');
-            const signature = await connection.sendRawTransaction(signedTx.serialize());
+            const signature = await connection.sendRawTransaction(signed.serialize());
             
-            console.log('Confirming transaction...');
-            const confirmation = await connection.confirmTransaction({
-                signature,
-                blockhash,
-                lastValidBlockHeight
-            });
-    
-            console.log('Transaction confirmed:', confirmation);
             return signature;
     
         } catch (error) {
             console.error('Send transaction error:', error);
-            this.updateBetStatus('Transaction failed: ' + error.message, 'error');
             throw error;
         }
     }
