@@ -492,6 +492,11 @@ function endGame(winner) {
     if (typeof updateGameResult === 'function') {
         updateGameResult(winner);
     }
+
+    // Process winner payout if betting is active
+    if (typeof window.chessBetting !== 'undefined' && isMultiplayerMode) {
+        window.chessBetting.processWinner(winner);
+    }
     
     // Update online game status if in multiplayer mode
     if (isMultiplayerMode && multiplayerManager) {
