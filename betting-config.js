@@ -1,7 +1,7 @@
 // LAWB Token Betting Configuration
 const BETTING_CONFIG = {
-    // Network - using QuickNode's public RPC
-    NETWORK: 'https://api.quicknode.com/solana', // Changed to QuickNode
+    // Network - using public Solana RPC
+    NETWORK: 'https://solana-api.projectserum.com',  // Changed to Serum's public endpoint
     
     // Token details
     LAWB_TOKEN_ADDRESS: '65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6',
