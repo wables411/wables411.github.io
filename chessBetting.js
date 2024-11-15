@@ -235,18 +235,37 @@ class ChessBetting {
     }
 
     async sendTransaction(transaction) {
-        const connection = new solanaWeb3.Connection(this.config.NETWORK);
-        
-        // Get recent blockhash
-        const { blockhash } = await connection.getRecentBlockhash();
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = window.solana.publicKey;
-
-        // Sign and send transaction
-        const signed = await window.solana.signTransaction(transaction);
-        const signature = await connection.sendRawTransaction(signed.serialize());
-        
-        return signature;
+        try {
+            const connection = new solanaWeb3.Connection(this.config.NETWORK, 'confirmed');
+            
+            // Add retry logic for getting blockhash
+            let attempts = 3;
+            let blockhash;
+            while (attempts > 0) {
+                try {
+                    blockhash = await connection.getRecentBlockhash('finalized');
+                    break;
+                } catch (error) {
+                    attempts--;
+                    if (attempts === 0) throw error;
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+    
+            transaction.recentBlockhash = blockhash.blockhash;
+            transaction.feePayer = window.solana.publicKey;
+    
+            const signed = await window.solana.signTransaction(transaction);
+            const signature = await connection.sendRawTransaction(signed.serialize(), {
+                skipPreflight: false,
+                preflightCommitment: 'confirmed'
+            });
+            
+            return signature;
+        } catch (error) {
+            console.error('Transaction error:', error);
+            throw new Error('Failed to send transaction: ' + error.message);
+        }
     }
 
     async confirmTransaction(signature) {
