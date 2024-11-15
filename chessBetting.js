@@ -245,21 +245,21 @@ class ChessBetting {
                 throw new Error('Wallet not connected');
             }
     
-            // Try multiple RPC endpoints if one fails
+            // Updated RPC endpoints with API keys
             const rpcEndpoints = [
-                'https://ssc-dao.genesysgo.net/',
-                'https://solana-api.projectserum.com',
-                'https://api.mainnet-beta.solana.com'
+                'https://mainnet.helius-rpc.com/?api-key=79326e78-9bd5-469c-9297-80feb7519584',
+                'https://rpc.helius.xyz/?api-key=79326e78-9bd5-469c-9297-80feb7519584',
+                'https://solana-mainnet.rpc.extrnode.com'
             ];
     
             let lastError = null;
             for (const endpoint of rpcEndpoints) {
                 try {
                     console.log(`Trying RPC endpoint: ${endpoint}`);
-                    const connection = new solanaWeb3.Connection(endpoint);
+                    const connection = new solanaWeb3.Connection(endpoint, 'confirmed');
                     
                     console.log('Getting blockhash...');
-                    const { blockhash } = await connection.getRecentBlockhash('confirmed');
+                    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
                     
                     transaction.recentBlockhash = blockhash;
                     transaction.feePayer = wallet.publicKey;
@@ -270,6 +270,18 @@ class ChessBetting {
                     console.log('Sending transaction...');
                     const signature = await connection.sendRawTransaction(signed.serialize());
                     
+                    // Wait for confirmation
+                    console.log('Awaiting confirmation...');
+                    const confirmation = await connection.confirmTransaction({
+                        signature,
+                        blockhash,
+                        lastValidBlockHeight
+                    });
+    
+                    if (confirmation.value.err) {
+                        throw new Error('Transaction failed: ' + confirmation.value.err);
+                    }
+    
                     return signature;
                 } catch (error) {
                     console.log(`Failed with endpoint ${endpoint}:`, error);
