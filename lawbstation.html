@@ -324,72 +324,67 @@
         </div>
     </div>
 
-<!-- Dependencies -->
-<script src="https://bundle.run/buffer@6.0.3"></script>
-<script src="https://cdn.jsdelivr.net/npm/bn.js@5.2.1/lib/bn.js"></script>
-<script>
-    window.Buffer = buffer.Buffer;
-    window.BN = BN;  // Make BN globally available
-</script>
+ <!-- Load Dependencies First -->
+ <script src="https://bundle.run/buffer@6.0.3"></script>
+ <script>window.Buffer = buffer.Buffer;</script>
+ <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+ <script src="https://unpkg.com/@solana/spl-token@0.3.8/lib/index.iife.min.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.0.12/lib/index.iife.min.js"></script>
+ <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-<!-- Other dependencies -->
-<script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-<script src="https://unpkg.com/@solana/spl-token@0.3.8/lib/index.iife.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.0.12/lib/index.iife.min.js"></script>
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+ <!-- Initialize Supabase -->
+ <script>
+     try {
+         if (!window.gameDatabase) {
+             window.gameDatabase = window.supabase.createClient(
+                 'https://roxwocgknkiqnsgiojgz.supabase.co',
+                 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
+             );
+         }
+     } catch (error) {
+         console.error('Error initializing Supabase:', error);
+     }
+ </script>
 
-<!-- Initialize Supabase -->
-<script>
-    try {
-        if (!window.gameDatabase) {
-            window.gameDatabase = window.supabase.createClient(
-                'https://roxwocgknkiqnsgiojgz.supabase.co',
-                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
-            );
-        }
-    } catch (error) {
-        console.error('Error initializing Supabase:', error);
-    }
-</script>
+ <!-- Load Game Scripts in Order -->
+ <script src="betting-config.js"></script>
+ <script src="chessBetting.js"></script>
+ <script src="loadImages.js"></script>
+ <script src="leaderboard.js"></script>
+ <script src="multiplayer.js"></script>
+ <script src="chess.js"></script>
 
-<!-- Game Scripts -->
-<script src="betting-config.js"></script>
-<script src="chessBetting.js"></script>
-<script src="multiplayer.js"></script>
-<script src="leaderboard.js"></script>
-<script src="chess.js"></script>
-
-   <!-- Initialize Betting -->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        try {
-            console.log('Initializing betting system...');
-            console.log('BETTING_CONFIG available:', !!window.BETTING_CONFIG);
-            console.log('ChessBetting available:', !!window.ChessBetting);
-            
-            // Initialize betting system
-            const chessBetting = new ChessBetting();
-            
-            // Show betting UI only in multiplayer mode
-            const multiplayerBtn = document.getElementById('multiplayer-mode');
-            const bettingContainer = document.getElementById('betting-container');
-            
-            multiplayerBtn.addEventListener('click', function() {
-                if (bettingContainer) {
-                    bettingContainer.style.display = 'block';
-                }
-            });
-            
-            const aiModeBtn = document.getElementById('ai-mode');
-            aiModeBtn.addEventListener('click', function() {
-                if (bettingContainer) {
-                    bettingContainer.style.display = 'none';
-                }
-            });
-        } catch (error) {
-            console.error('Error initializing betting:', error);
-        }
-    });
-</script>
+ <!-- Initialize Betting -->
+ <script>
+     document.addEventListener('DOMContentLoaded', function() {
+         console.log('Initializing betting system...');
+         console.log('BETTING_CONFIG available:', !!window.BETTING_CONFIG);
+         console.log('ChessBetting available:', !!window.ChessBetting);
+         
+         try {
+             // Initialize betting system
+             const chessBetting = new ChessBetting();
+             
+             // Show betting UI only in multiplayer mode
+             const multiplayerBtn = document.getElementById('multiplayer-mode');
+             const bettingContainer = document.getElementById('betting-container');
+             
+             if (multiplayerBtn && bettingContainer) {
+                 multiplayerBtn.addEventListener('click', function() {
+                     bettingContainer.style.display = 'block';
+                 });
+             }
+             
+             const aiModeBtn = document.getElementById('ai-mode');
+             if (aiModeBtn && bettingContainer) {
+                 aiModeBtn.addEventListener('click', function() {
+                     bettingContainer.style.display = 'none';
+                 });
+             }
+         } catch (error) {
+             console.error('Error initializing betting system:', error);
+         }
+     });
+ </script>
 </body>
 </html>

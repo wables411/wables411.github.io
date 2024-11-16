@@ -494,7 +494,7 @@ function endGame(winner) {
     }
 
     // Process winner payout if betting is active
-    if (typeof window.chessBetting !== 'undefined' && isMultiplayerMode) {
+    if (window.chessBetting && isMultiplayerMode) {
         window.chessBetting.processWinner(winner);
     }
     
