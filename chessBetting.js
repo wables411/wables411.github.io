@@ -163,13 +163,13 @@ class ChessBetting {
             const tokenAmount = amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
     
             // Create transfer instruction using SPL Token Program
-            const transferInstruction = solanaWeb3.TokenProgram.createTransferInstruction(
+            const transferInstruction = solanaWeb3.SplToken.Token.createTransferInstruction(
+                this.tokenProgram,                    // SPL Token program account
                 playerTokenAccount,                    // source
-                houseTokenAccount,                     // destination
-                wallet.publicKey,                      // owner
-                tokenAmount,                           // amount
-                [],                                    // multiSigners
-                this.tokenProgram                      // programId
+                houseTokenAccount,                    // destination
+                wallet.publicKey,                     // owner of source account
+                [],                                   // signers
+                tokenAmount                           // amount
             );
     
             // Create transaction
@@ -340,13 +340,13 @@ class ChessBetting {
             const tokenAmount = amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
     
             // Create transfer instruction using SPL Token Program
-            const transferInstruction = solanaWeb3.TokenProgram.createTransferInstruction(
-                houseTokenAccount,                     // source
-                winnerTokenAccount,                    // destination
-                new solanaWeb3.PublicKey(this.config.HOUSE_WALLET), // owner
-                tokenAmount,                           // amount
-                [],                                    // multiSigners
-                this.tokenProgram                      // programId
+            const transferInstruction = solanaWeb3.SplToken.Token.createTransferInstruction(
+                this.tokenProgram,                    // SPL Token program account
+                houseTokenAccount,                    // source
+                winnerTokenAccount,                   // destination
+                new solanaWeb3.PublicKey(this.config.HOUSE_WALLET), // owner of source account
+                [],                                   // signers
+                tokenAmount                           // amount
             );
     
             return new solanaWeb3.Transaction().add(transferInstruction);
