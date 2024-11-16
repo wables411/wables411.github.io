@@ -162,15 +162,19 @@ class ChessBetting {
             // Convert amount to proper decimals
             const tokenAmount = amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
     
-            // Create transfer instruction using SPL Token Program
-            const transferInstruction = solanaWeb3.SplToken.Token.createTransferInstruction(
-                this.tokenProgram,                    // SPL Token program account
-                playerTokenAccount,                    // source
-                houseTokenAccount,                    // destination
-                wallet.publicKey,                     // owner of source account
-                [],                                   // signers
-                tokenAmount                           // amount
-            );
+            // Create transfer instruction
+            const transferInstruction = new solanaWeb3.TransactionInstruction({
+                programId: this.tokenProgram,
+                keys: [
+                    { pubkey: playerTokenAccount, isSigner: false, isWritable: true },
+                    { pubkey: houseTokenAccount, isSigner: false, isWritable: true },
+                    { pubkey: wallet.publicKey, isSigner: true, isWritable: false }
+                ],
+                data: Buffer.from([
+                    3, // Transfer instruction
+                    ...new window.BN(tokenAmount).toArray('le', 8)
+                ])
+            });
     
             // Create transaction
             const transaction = new solanaWeb3.Transaction().add(transferInstruction);
@@ -329,25 +333,28 @@ class ChessBetting {
         try {
             // Convert winner address to PublicKey
             const winnerPubkey = new solanaWeb3.PublicKey(winningPlayerAddress);
+            const housePubkey = new solanaWeb3.PublicKey(this.config.HOUSE_WALLET);
             
             // Get token accounts
-            const houseTokenAccount = await this.findAssociatedTokenAddress(
-                new solanaWeb3.PublicKey(this.config.HOUSE_WALLET)
-            );
+            const houseTokenAccount = await this.findAssociatedTokenAddress(housePubkey);
             const winnerTokenAccount = await this.findAssociatedTokenAddress(winnerPubkey);
     
             // Convert amount to proper decimals
             const tokenAmount = amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
     
-            // Create transfer instruction using SPL Token Program
-            const transferInstruction = solanaWeb3.SplToken.Token.createTransferInstruction(
-                this.tokenProgram,                    // SPL Token program account
-                houseTokenAccount,                    // source
-                winnerTokenAccount,                   // destination
-                new solanaWeb3.PublicKey(this.config.HOUSE_WALLET), // owner of source account
-                [],                                   // signers
-                tokenAmount                           // amount
-            );
+            // Create transfer instruction
+            const transferInstruction = new solanaWeb3.TransactionInstruction({
+                programId: this.tokenProgram,
+                keys: [
+                    { pubkey: houseTokenAccount, isSigner: false, isWritable: true },
+                    { pubkey: winnerTokenAccount, isSigner: false, isWritable: true },
+                    { pubkey: housePubkey, isSigner: true, isWritable: false }
+                ],
+                data: Buffer.from([
+                    3, // Transfer instruction
+                    ...new window.BN(tokenAmount).toArray('le', 8)
+                ])
+            });
     
             return new solanaWeb3.Transaction().add(transferInstruction);
     
