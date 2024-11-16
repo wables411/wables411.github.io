@@ -233,7 +233,7 @@ class ChessBetting {
             console.log('Escrow account:', escrowTokenAccount.toString());
     
             // Convert amount to proper decimals
-            const tokenAmount = amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
+            const tokenAmount = new BN(amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS));
             
             // Create transfer instruction to escrow
             const transferInstruction = new solanaWeb3.TransactionInstruction({
@@ -245,7 +245,7 @@ class ChessBetting {
                 ],
                 data: Buffer.from([
                     3, // Transfer instruction
-                    ...new Uint8Array(new window.BN(tokenAmount).toArray('le', 8))
+                    ...tokenAmount.toArray('le', 8)
                 ])
             });
     
