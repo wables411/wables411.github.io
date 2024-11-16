@@ -154,90 +154,31 @@ class ChessBetting {
                 throw new Error('Wallet not connected properly');
             }
     
-            // Debug wallet and token info
             console.log('Player wallet:', wallet.publicKey.toString());
     
-            // Get all token accounts for this wallet
-            const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(
-                wallet.publicKey,
-                { mint: this.lawbMint }
-            );
-            console.log('Existing LAWB token accounts:', tokenAccounts);
-    
             const transaction = new solanaWeb3.Transaction();
-            const associatedTokenProgram = new solanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
     
             // Get token accounts
             const playerTokenAccount = await this.findAssociatedTokenAddress(wallet.publicKey);
-            console.log('Expected player token account:', playerTokenAccount.toString());
-    
             const houseTokenAccount = await this.findAssociatedTokenAddress(
                 new solanaWeb3.PublicKey(this.config.HOUSE_WALLET)
             );
+
+            console.log('Player token account:', playerTokenAccount.toString());
             console.log('House token account:', houseTokenAccount.toString());
-    
-            // Create ATA for player if it doesn't exist
-            try {
-                await this.connection.getAccountInfo(playerTokenAccount);
-                console.log('Player token account exists');
-            } catch (e) {
-                console.log('Creating player token account');
-                const createATAInstruction = new solanaWeb3.TransactionInstruction({
-                    programId: associatedTokenProgram,
-                    keys: [
-                        { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
-                        { pubkey: playerTokenAccount, isSigner: false, isWritable: true },
-                        { pubkey: wallet.publicKey, isSigner: false, isWritable: false },
-                        { pubkey: this.lawbMint, isSigner: false, isWritable: false },
-                        { pubkey: solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
-                        { pubkey: this.tokenProgram, isSigner: false, isWritable: false },
-                        { pubkey: solanaWeb3.SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
-                    ],
-                    data: Buffer.from([])
-                });
-                transaction.add(createATAInstruction);
-            }
-    
-            // Create ATA for house if it doesn't exist
-            try {
-                await this.connection.getAccountInfo(houseTokenAccount);
-                console.log('House token account exists');
-            } catch (e) {
-                console.log('Creating house token account');
-                const createATAInstruction = new solanaWeb3.TransactionInstruction({
-                    programId: associatedTokenProgram,
-                    keys: [
-                        { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
-                        { pubkey: houseTokenAccount, isSigner: false, isWritable: true },
-                        { pubkey: new solanaWeb3.PublicKey(this.config.HOUSE_WALLET), isSigner: false, isWritable: false },
-                        { pubkey: this.lawbMint, isSigner: false, isWritable: false },
-                        { pubkey: solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
-                        { pubkey: this.tokenProgram, isSigner: false, isWritable: false },
-                        { pubkey: solanaWeb3.SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
-                    ],
-                    data: Buffer.from([])
-                });
-                transaction.add(createATAInstruction);
-            }
     
             // Convert amount to proper decimals
             const tokenAmount = amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
-            console.log('Token amount:', tokenAmount);
-    
-            // Create transfer instruction for LAWB tokens
-            const transferInstruction = new solanaWeb3.TransactionInstruction({
-                keys: [
-                    { pubkey: playerTokenAccount, isSigner: false, isWritable: true },
-                    { pubkey: houseTokenAccount, isSigner: false, isWritable: true },
-                    { pubkey: wallet.publicKey, isSigner: true, isWritable: false },
-                    { pubkey: this.lawbMint, isSigner: false, isWritable: false }
-                ],
-                programId: this.tokenProgram,
-                data: Buffer.from([
-                    3,  // Transfer instruction
-                    ...new window.BN(tokenAmount).toArray('le', 8)
-                ])
-            });
+            
+            // Create SPL Token transfer instruction
+            const transferInstruction = solanaWeb3.Token.createTransferInstruction(
+                this.tokenProgram, // Token program ID
+                playerTokenAccount, // Source
+                houseTokenAccount,  // Destination
+                wallet.publicKey,   // Owner of source account
+                [],                 // Additional signers
+                tokenAmount         // Amount
+            );
     
             transaction.add(transferInstruction);
             
