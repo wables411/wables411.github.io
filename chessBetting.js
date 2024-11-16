@@ -132,6 +132,7 @@ class ChessBetting {
             this.enableBetting();
         }
     }
+
     async findAssociatedTokenAddress(walletAddress) {
         const [associatedToken] = await solanaWeb3.PublicKey.findProgramAddress(
             [
@@ -229,7 +230,7 @@ class ChessBetting {
                     { pubkey: playerTokenAccount, isSigner: false, isWritable: true },
                     { pubkey: houseTokenAccount, isSigner: false, isWritable: true },
                     { pubkey: wallet.publicKey, isSigner: true, isWritable: false },
-                    { pubkey: this.lawbMint, isSigner: false, isWritable: false }  // Add this
+                    { pubkey: this.lawbMint, isSigner: false, isWritable: false }
                 ],
                 programId: this.tokenProgram,
                 data: Buffer.from([
@@ -257,35 +258,25 @@ class ChessBetting {
             if (!wallet || !wallet.publicKey) {
                 throw new Error('Wallet not connected');
             }
-
-            // Get recent blockhash with retry logic
-            let blockhash;
-            for (let attempt = 0; attempt < this.config.TRANSACTION_RETRY.MAX_ATTEMPTS; attempt++) {
-                try {
-                    const { blockhash: recentBlockhash } = await this.connection.getLatestBlockhash('confirmed');
-                    blockhash = recentBlockhash;
-                    break;
-                } catch (error) {
-                    if (attempt === this.config.TRANSACTION_RETRY.MAX_ATTEMPTS - 1) throw error;
-                    await new Promise(resolve => setTimeout(resolve, this.config.TRANSACTION_RETRY.BACKOFF_INTERVAL));
-                }
-            }
-            
+    
+            // Get latest blockhash IMMEDIATELY before sending
+            const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash('confirmed');
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = wallet.publicKey;
-
+    
             console.log('Requesting signature...');
             const signed = await wallet.signTransaction(transaction);
             
             console.log('Sending transaction...');
             const signature = await this.connection.sendRawTransaction(signed.serialize(), {
                 skipPreflight: false,
-                preflightCommitment: 'confirmed'
+                preflightCommitment: 'confirmed',
+                maxRetries: 3
             });
-
+    
             console.log('Transaction sent:', signature);
             return signature;
-
+    
         } catch (error) {
             console.error('Send transaction error:', error);
             throw error;
@@ -410,7 +401,7 @@ class ChessBetting {
                     { pubkey: houseTokenAccount, isSigner: false, isWritable: true },
                     { pubkey: winnerTokenAccount, isSigner: false, isWritable: true },
                     { pubkey: housePubkey, isSigner: true, isWritable: false },
-                    { pubkey: this.lawbMint, isSigner: false, isWritable: false }  // Add this
+                    { pubkey: this.lawbMint, isSigner: false, isWritable: false }
                 ],
                 data: Buffer.from([
                     3,
