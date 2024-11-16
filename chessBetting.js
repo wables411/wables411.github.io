@@ -223,17 +223,17 @@ class ChessBetting {
             const tokenAmount = amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
             console.log('Token amount:', tokenAmount);
     
-            // Create transfer instruction with corrected format
+            // Create transfer instruction for LAWB tokens
             const transferInstruction = new solanaWeb3.TransactionInstruction({
                 keys: [
                     { pubkey: playerTokenAccount, isSigner: false, isWritable: true },
                     { pubkey: houseTokenAccount, isSigner: false, isWritable: true },
                     { pubkey: wallet.publicKey, isSigner: true, isWritable: false },
-                    { pubkey: this.lawbMint, isSigner: false, isWritable: false }
+                    { pubkey: this.lawbMint, isSigner: false, isWritable: false }  // Add this
                 ],
                 programId: this.tokenProgram,
                 data: Buffer.from([
-                    2,  // Transfer instruction
+                    3,  // Transfer instruction
                     ...new window.BN(tokenAmount).toArray('le', 8)
                 ])
             });
@@ -248,7 +248,7 @@ class ChessBetting {
             throw error;
         }
     }
-    
+
     async sendTransaction(transaction) {
         try {
             console.log('Preparing to send transaction...');
@@ -409,10 +409,11 @@ class ChessBetting {
                 keys: [
                     { pubkey: houseTokenAccount, isSigner: false, isWritable: true },
                     { pubkey: winnerTokenAccount, isSigner: false, isWritable: true },
-                    { pubkey: housePubkey, isSigner: true, isWritable: false }
+                    { pubkey: housePubkey, isSigner: true, isWritable: false },
+                    { pubkey: this.lawbMint, isSigner: false, isWritable: false }  // Add this
                 ],
                 data: Buffer.from([
-                    3, // Transfer instruction
+                    3,
                     ...new window.BN(tokenAmount).toArray('le', 8)
                 ])
             });
