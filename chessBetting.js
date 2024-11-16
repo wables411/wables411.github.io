@@ -260,6 +260,60 @@ class ChessBetting {
         }
     }
 
+    async sendTransaction(transaction) {
+        try {
+            console.log('Preparing to send transaction...');
+            const wallet = window.solflare.isConnected ? window.solflare : window.solana;
+            
+            if (!wallet || !wallet.publicKey) {
+                throw new Error('Wallet not connected');
+            }
+    
+            // Get latest blockhash
+            const { blockhash } = await this.connection.getLatestBlockhash('confirmed');
+            transaction.recentBlockhash = blockhash;
+            transaction.feePayer = wallet.publicKey;
+    
+            console.log('Requesting signature...');
+            const signed = await wallet.signTransaction(transaction);
+            
+            console.log('Sending transaction...');
+            const signature = await this.connection.sendRawTransaction(signed.serialize(), {
+                skipPreflight: false,
+                preflightCommitment: 'confirmed',
+                maxRetries: 3
+            });
+    
+            console.log('Transaction sent:', signature);
+            return signature;
+    
+        } catch (error) {
+            console.error('Send transaction error:', error);
+            throw error;
+        }
+    }
+
+    async confirmTransaction(signature) {
+        try {
+            console.log('Starting confirmation check for:', signature);
+            
+            const latestBlockhash = await this.connection.getLatestBlockhash();
+            
+            const confirmation = await this.connection.confirmTransaction({
+                signature,
+                blockhash: latestBlockhash.blockhash,
+                lastValidBlockHeight: latestBlockhash.lastValidBlockHeight
+            }, 'confirmed');
+
+            console.log('Confirmation received:', confirmation);
+            return confirmation;
+            
+        } catch (error) {
+            console.error('Confirmation error:', error);
+            throw error;
+        }
+    }
+
     async processWinner(winner) {
         if (!this.currentBet.isActive || !this.currentBet.escrowAccount) {
             console.log('No active bet or escrow found');
