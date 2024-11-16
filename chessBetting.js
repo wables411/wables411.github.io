@@ -6,6 +6,27 @@ class ChessBetting {
         this.gameStates = new Map(); // Stores active game states
     }
 
+    async findAssociatedTokenAddress(walletAddress) {
+        try {
+            const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID = new solanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+            
+            const [associatedToken] = await solanaWeb3.PublicKey.findProgramAddress(
+                [
+                    walletAddress.toBuffer(),
+                    this.tokenProgram.toBuffer(),
+                    this.lawbMint.toBuffer(),
+                ],
+                SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID
+            );
+            
+            console.log('Found associated token address:', associatedToken.toString());
+            return associatedToken;
+        } catch (error) {
+            console.error('Error finding associated token address:', error);
+            throw error;
+        }
+    }
+
     async initializeBetting() {
         // Initialize Solana web3 connection with config
         this.connection = new solanaWeb3.Connection(
