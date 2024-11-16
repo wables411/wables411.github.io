@@ -152,33 +152,32 @@ class ChessBetting {
             if (!wallet || !wallet.publicKey) {
                 throw new Error('Wallet not connected properly');
             }
-
+    
             // Get token accounts
             const playerTokenAccount = await this.findAssociatedTokenAddress(wallet.publicKey);
             const houseTokenAccount = await this.findAssociatedTokenAddress(
                 new solanaWeb3.PublicKey(this.config.HOUSE_WALLET)
             );
-
+    
             // Convert amount to proper decimals
             const tokenAmount = amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
-
-            // Create transfer instruction for LAWB tokens
-            const transferInstruction = new solanaWeb3.TransactionInstruction({
-                keys: [
-                    { pubkey: playerTokenAccount, isSigner: false, isWritable: true },
-                    { pubkey: houseTokenAccount, isSigner: false, isWritable: true },
-                    { pubkey: wallet.publicKey, isSigner: true, isWritable: false },
-                ],
-                programId: this.tokenProgram,
-                data: Buffer.from([3, ...new window.BN(tokenAmount).toArray('le', 8)])
-            });
-
+    
+            // Create transfer instruction using SPL Token Program
+            const transferInstruction = solanaWeb3.TokenProgram.createTransferInstruction(
+                playerTokenAccount,                    // source
+                houseTokenAccount,                     // destination
+                wallet.publicKey,                      // owner
+                tokenAmount,                           // amount
+                [],                                    // multiSigners
+                this.tokenProgram                      // programId
+            );
+    
             // Create transaction
             const transaction = new solanaWeb3.Transaction().add(transferInstruction);
             
             console.log('Transaction created successfully');
             return transaction;
-
+    
         } catch (error) {
             console.error('Transaction creation error:', error);
             throw error;
@@ -336,23 +335,22 @@ class ChessBetting {
                 new solanaWeb3.PublicKey(this.config.HOUSE_WALLET)
             );
             const winnerTokenAccount = await this.findAssociatedTokenAddress(winnerPubkey);
-
+    
             // Convert amount to proper decimals
             const tokenAmount = amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
-
-            // Create transfer instruction for LAWB tokens
-            const transferInstruction = new solanaWeb3.TransactionInstruction({
-                keys: [
-                    { pubkey: houseTokenAccount, isSigner: false, isWritable: true },
-                    { pubkey: winnerTokenAccount, isSigner: false, isWritable: true },
-                    { pubkey: new solanaWeb3.PublicKey(this.config.HOUSE_WALLET), isSigner: true, isWritable: false },
-                ],
-                programId: this.tokenProgram,
-                data: Buffer.from([3, ...new window.BN(tokenAmount).toArray('le', 8)])
-            });
-
+    
+            // Create transfer instruction using SPL Token Program
+            const transferInstruction = solanaWeb3.TokenProgram.createTransferInstruction(
+                houseTokenAccount,                     // source
+                winnerTokenAccount,                    // destination
+                new solanaWeb3.PublicKey(this.config.HOUSE_WALLET), // owner
+                tokenAmount,                           // amount
+                [],                                    // multiSigners
+                this.tokenProgram                      // programId
+            );
+    
             return new solanaWeb3.Transaction().add(transferInstruction);
-
+    
         } catch (error) {
             console.error('Error creating payout transaction:', error);
             throw error;
