@@ -235,20 +235,25 @@ class ChessBetting {
             // Convert amount to proper decimals
             const tokenAmount = new BN(amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS));
             
-            // Create transfer instruction to escrow
-            const transferInstruction = new solanaWeb3.TransactionInstruction({
-                programId: this.tokenProgram,
-                keys: [
-                    { pubkey: playerTokenAccount, isSigner: false, isWritable: true },
-                    { pubkey: escrowTokenAccount, isSigner: false, isWritable: true },
-                    { pubkey: wallet.publicKey, isSigner: true, isWritable: false },
-                ],
-                data: Buffer.from([
-                    3, // Transfer instruction
-                    ...tokenAmount.toArray('le', 8)
-                ])
+            // Create transfer instruction to escrow using SPL Token program
+            const transferInstruction = solanaWeb3.SystemProgram.transfer({
+                fromPubkey: playerTokenAccount,
+                toPubkey: escrowTokenAccount,
+                lamports: tokenAmount,
             });
     
+            // Create account validation instruction
+            const accountValidationInstruction = new solanaWeb3.TransactionInstruction({
+                keys: [
+                    { pubkey: playerTokenAccount, isSigner: false, isWritable: true },
+                    { pubkey: wallet.publicKey, isSigner: true, isWritable: false },
+                    { pubkey: this.lawbMint, isSigner: false, isWritable: false },
+                ],
+                programId: this.tokenProgram,
+                data: Buffer.from([]),
+            });
+    
+            transaction.add(accountValidationInstruction);
             transaction.add(transferInstruction);
             
             console.log('Escrow transaction created successfully');
