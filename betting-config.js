@@ -1,10 +1,11 @@
 // betting-config.js
 const BETTING_CONFIG = {
     // Network configuration
-    NETWORK: 'https://solana-mainnet.rpc.extrnode.com',
+    NETWORK: 'https://api.mainnet-beta.solana.com',
     CONNECTION_CONFIG: {
         commitment: 'confirmed',
-        confirmTransactionInitialTimeout: 60000
+        confirmTransactionInitialTimeout: 60000,
+        wsEndpoint: 'wss://api.mainnet-beta.solana.com/'
     },
 
     // LAWB Token configuration
@@ -20,8 +21,12 @@ const BETTING_CONFIG = {
     MAX_BET: 100000,
     
     // Escrow configuration
-    HOUSE_WALLET: '3NCvL5itgJVrwNZw8BNL8syP8Za5hAmhmApCDh4bdsTu', // Your house wallet address
-    ESCROW_SEED: 'chess_escrow'
+    HOUSE_WALLET: '3NCvL5itgJVrwNZw8BNL8syP8Za5hAmhmApCDh4bdsTu',
+    ESCROW_SEED: 'chess_escrow',
+
+    // Additional Solana config
+    ASSOCIATED_TOKEN_PROGRAM_ID: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
+    SYSTEM_PROGRAM_ID: '11111111111111111111111111111111'
 };
 
 window.BETTING_CONFIG = BETTING_CONFIG;
