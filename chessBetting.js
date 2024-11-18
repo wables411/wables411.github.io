@@ -42,6 +42,85 @@ class ChessBetting {
         }
     }
 
+    // Add these to your ChessBetting class:
+
+addDiagnosticsButton() {
+    const gameInfo = document.getElementById('game-info');
+    if (!gameInfo) return;
+
+    const testButton = document.createElement('button');
+    testButton.textContent = 'Test Betting System';
+    testButton.className = 'difficulty-btn';
+    testButton.style.marginTop = '10px';
+    testButton.onclick = () => this.runDiagnostics();
+    
+    gameInfo.appendChild(testButton);
+}
+
+async handleBetPlacement() {
+    try {
+        const wallet = this.getConnectedWallet();
+        if (!wallet || !wallet.publicKey) {
+            this.updateBetStatus('Please connect your wallet first', 'error');
+            return;
+        }
+
+        const amount = Number(document.getElementById('betAmount')?.value);
+        if (!this.validateBetAmount(amount)) {
+            return;
+        }
+
+        this.updateBetStatus('Processing bet...', 'processing');
+        
+        // Generate unique game ID if not exists
+        const gameId = this.currentBet.gameId || this.generateGameId();
+        
+        try {
+            // Check token balance
+            const playerATA = await this.findAssociatedTokenAddress(wallet.publicKey);
+            const balance = await this.connection.getTokenAccountBalance(playerATA);
+            
+            if (Number(balance.value.amount) < amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS)) {
+                throw new Error('Insufficient $LAWB balance');
+            }
+
+            // Create escrow account
+            const escrowAccount = await this.createEscrowAccount(gameId, amount);
+
+            // Create bet record
+            await this.createBetRecord({
+                gameId,
+                amount,
+                bluePlayer: wallet.publicKey.toString(),
+                status: 'pending',
+                escrowAccount: escrowAccount.pubkey.toString()
+            });
+
+            // Update current bet state
+            this.currentBet = {
+                amount,
+                bluePlayer: wallet.publicKey.toString(),
+                gameId,
+                isActive: true,
+                escrowAccount
+            };
+
+            this.updateBetStatus('Bet placed successfully! Waiting for opponent...', 'success');
+            this.disableBetting();
+
+        } catch (error) {
+            console.error('Betting error:', error);
+            this.resetBetState();
+            throw error;
+        }
+
+    } catch (error) {
+        console.error('Bet placement error:', error);
+        this.updateBetStatus('Failed to place bet: ' + error.message, 'error');
+        this.enableBetting();
+    }
+}
+
     addBettingEventListeners() {
         const betAmountInput = document.getElementById('betAmount');
         const placeBetButton = document.getElementById('placeBet');
@@ -183,6 +262,48 @@ class ChessBetting {
             return associatedToken;
         } catch (error) {
             console.error('Error finding associated token address:', error);
+            throw error;
+        }
+    }
+
+    async createBetRecord(betDetails) {
+        try {
+            const { data, error } = await this.supabase
+                .from('chess_bets')
+                .insert([{
+                    game_id: betDetails.gameId,
+                    bet_amount: betDetails.amount,
+                    blue_player: betDetails.bluePlayer,
+                    red_player: betDetails.redPlayer,
+                    status: 'pending',
+                    escrow_account: betDetails.escrowAccount
+                }])
+                .select()
+                .single();
+
+            if (error) throw error;
+            console.log('Bet record created:', data);
+            return data;
+        } catch (error) {
+            console.error('Error creating bet record:', error);
+            throw error;
+        }
+    }
+
+    async updateBetRecord(gameId, updates) {
+        try {
+            const { data, error } = await this.supabase
+                .from('chess_bets')
+                .update(updates)
+                .eq('game_id', gameId)
+                .select()
+                .single();
+
+            if (error) throw error;
+            console.log('Bet record updated:', data);
+            return data;
+        } catch (error) {
+            console.error('Error updating bet record:', error);
             throw error;
         }
     }
@@ -382,6 +503,53 @@ class ChessBetting {
             throw new Error('Invalid player address');
         }
         return true;
+    }
+
+    async runDiagnostics() {
+        try {
+            console.group('🔍 Running Chess Betting Diagnostics');
+            
+            // Test database connection
+            console.log('\n📡 Testing Database Connection...');
+            const { data: testQuery, error: dbError } = await this.supabase
+                .from('chess_bets')
+                .select('id')
+                .limit(1);
+                
+            if (dbError) throw dbError;
+            console.log('✅ Database connection successful');
+
+            // Test Solana connection
+            console.log('\n🌐 Testing Solana Connection...');
+            const blockHeight = await this.connection.getBlockHeight();
+            console.log('✅ Solana connection successful. Block height:', blockHeight);
+
+            // Test wallet connection
+            console.log('\n👛 Testing Wallet Connection...');
+            const wallet = this.getConnectedWallet();
+            if (wallet) {
+                console.log('✅ Wallet detected:', wallet.publicKey.toString());
+            } else {
+                console.log('⚠️ No wallet connected');
+            }
+
+            console.log('\n✨ All diagnostics completed successfully!');
+            console.groupEnd();
+            return true;
+        } catch (error) {
+            console.error('❌ Diagnostic failed:', error);
+            console.groupEnd();
+            return {
+                success: false,
+                error: error.message,
+                details: error
+            };
+        }
+    }
+
+    getConnectedWallet() {
+        return window.solflare?.isConnected ? window.solflare : 
+               window.solana?.isConnected ? window.solana : null;
     }
 
     async processWinner(winner) {
