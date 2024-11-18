@@ -5,16 +5,59 @@ class ChessBetting {
         this.supabase = window.gameDatabase;
         this.connection = null;
         this.gameStates = new Map();
+
+        // Initialize UI first
+        this.initializeUI();
+        // Then start async initialization
         this.init();
+    }
+
+    initializeUI() {
+        this.setupBettingUI();
+        this.addDiagnosticsButton();
+        this.setupMultiplayerBetting();
+    }
+
+    setupBettingUI() {
+        const bettingContainer = document.createElement('div');
+        bettingContainer.className = 'betting-container';
+        bettingContainer.innerHTML = `
+            <div class="betting-ui">
+                <h3>$LAWB Betting</h3>
+                <div class="bet-input">
+                    <label>Bet Amount ($LAWB):</label>
+                    <input type="number" id="betAmount" min="${this.config.MIN_BET}" max="${this.config.MAX_BET}" step="100" value="${this.config.MIN_BET}">
+                    <p class="fee-info">House Fee (${this.config.HOUSE_FEE_PERCENTAGE}%): <span id="feeAmount">0</span> $LAWB</p>
+                    <p class="total-info">Total Potential Win: <span id="potentialWin">0</span> $LAWB</p>
+                </div>
+                <button id="placeBet" class="bet-button">Place Bet</button>
+                <div id="betStatus" class="bet-status"></div>
+            </div>
+        `;
+
+        const chessGame = document.getElementById('chess-game');
+        if (chessGame) {
+            chessGame.parentNode.insertBefore(bettingContainer, chessGame);
+            this.addBettingEventListeners();
+        }
+    }
+
+    updateBetStatus(message, type = 'info') {
+        const statusElement = document.getElementById('betStatus');
+        if (statusElement) {
+            statusElement.textContent = message;
+            statusElement.className = `bet-status ${type}`;
+        }
+        console.log(`Bet status: ${message}`);
     }
 
     async init() {
         try {
             await this.initializeBetting();
-            await this.setupMultiplayerBetting();
-            this.addDiagnosticsButton();
+            console.log('Initialization complete');
         } catch (error) {
             console.error('Failed to initialize ChessBetting:', error);
+            this.updateBetStatus('Failed to initialize betting system', 'error');
         }
     }
 
@@ -38,9 +81,6 @@ class ChessBetting {
                 isActive: false,
                 escrowAccount: null
             };
-            
-            // Set up UI
-            this.setupBettingUI();
             
             // Verify connection and token setup
             await this.verifySetup();
