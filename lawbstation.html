@@ -361,51 +361,29 @@
 
     // Initialize Solana Configuration
     window.SOLANA_CONFIG = {
-        CLUSTER: 'mainnet-beta',
-        ENDPOINTS: {
-            'mainnet-beta': [
-                'https://api.metaplex.solana.com/',
-                'https://solana-api.projectserum.com',
-                'https://api.mainnet-beta.solana.com'
-            ],
-            'devnet': 'https://api.devnet.solana.com',
-            'testnet': 'https://api.testnet.solana.com'
+    CLUSTER: 'mainnet-beta',
+    ENDPOINTS: {
+        'mainnet-beta': [
+            'https://solana-mainnet.rpc.extrnode.com/218119a6-454e-430e-b63c-f1ae113c7eed',  // Primary extrnode
+            'https://rpc.ankr.com/solana',  // backup
+            'https://solana-api.projectserum.com'  // backup
+        ],
+    },
+    CONNECTION_CONFIG: {
+        commitment: 'confirmed',
+        confirmTransactionInitialTimeout: 60000,
+        httpHeaders: {
+            'Authorization': 'Bearer 218119a6-454e-430e-b63c-f1ae113c7eed',
+            'Content-Type': 'application/json'
         },
-        CONNECTION_CONFIG: {
-            commitment: 'confirmed',
-            disableRetryOnRateLimit: false,
-            confirmTransactionInitialTimeout: 60000
-        },
-        PROGRAM_IDS: {
-            TOKEN: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
-            ASSOCIATED_TOKEN: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
-            SYSTEM: '11111111111111111111111111111111'
-        },
-        async getBestEndpoint() {
-            const endpoints = Array.isArray(this.ENDPOINTS[this.CLUSTER]) ? 
-                this.ENDPOINTS[this.CLUSTER] : 
-                [this.ENDPOINTS[this.CLUSTER]];
-
-            for (const endpoint of endpoints) {
-                try {
-                    const connection = new solanaWeb3.Connection(
-                        endpoint,
-                        this.CONNECTION_CONFIG
-                    );
-                    await connection.getSlot();
-                    console.log(`Connected to Solana endpoint: ${endpoint}`);
-                    return endpoint;
-                } catch (error) {
-                    console.warn(`Failed to connect to ${endpoint}, trying next...`);
-                }
-            }
-            throw new Error('Unable to connect to any Solana endpoint');
-        },
-        async createConnection() {
-            const endpoint = await this.getBestEndpoint();
-            return new solanaWeb3.Connection(endpoint, this.CONNECTION_CONFIG);
-        }
-    };
+        wsEndpoint: 'wss://solana-mainnet.rpc.extrnode.com/218119a6-454e-430e-b63c-f1ae113c7eed'
+    },
+    PROGRAM_IDS: {
+        TOKEN: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+        ASSOCIATED_TOKEN: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
+        SYSTEM: '11111111111111111111111111111111'
+    }
+};
 </script>
 
 <!-- Load Game Scripts in Order -->
