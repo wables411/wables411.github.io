@@ -42,6 +42,48 @@ class ChessBetting {
         }
     }
 
+    addBettingEventListeners() {
+        const betAmountInput = document.getElementById('betAmount');
+        const placeBetButton = document.getElementById('placeBet');
+        const feeAmountSpan = document.getElementById('feeAmount');
+        const potentialWinSpan = document.getElementById('potentialWin');
+
+        if (betAmountInput) {
+            betAmountInput.addEventListener('input', (e) => {
+                const amount = Number(e.target.value);
+                const fee = (amount * this.config.HOUSE_FEE_PERCENTAGE / 100);
+                const totalPot = amount * 2;
+                const potentialWin = totalPot - fee;
+                
+                if (feeAmountSpan) feeAmountSpan.textContent = fee.toFixed(2);
+                if (potentialWinSpan) potentialWinSpan.textContent = potentialWin.toFixed(2);
+            });
+        }
+
+        if (placeBetButton) {
+            placeBetButton.addEventListener('click', () => this.handleBetPlacement());
+            // Trigger initial fee calculation
+            betAmountInput?.dispatchEvent(new Event('input'));
+        }
+
+        // Show/hide betting UI based on game mode
+        const multiplayerBtn = document.getElementById('multiplayer-mode');
+        const aiModeBtn = document.getElementById('ai-mode');
+        const bettingContainer = document.getElementById('betting-container');
+        
+        if (multiplayerBtn && bettingContainer) {
+            multiplayerBtn.addEventListener('click', () => {
+                bettingContainer.style.display = 'block';
+            });
+        }
+        
+        if (aiModeBtn && bettingContainer) {
+            aiModeBtn.addEventListener('click', () => {
+                bettingContainer.style.display = 'none';
+            });
+        }
+    }
+
     updateBetStatus(message, type = 'info') {
         const statusElement = document.getElementById('betStatus');
         if (statusElement) {
