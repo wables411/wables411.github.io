@@ -326,18 +326,18 @@
     </div>
 
 <!-- Load Dependencies First -->
+<!-- Buffer and BN.js for Solana -->
+<script src="https://bundle.run/buffer@6.0.3"></script>
+<script src="https://cdn.jsdelivr.net/npm/bn.js@5.2.1/lib/bn.js"></script>
+<script>
+    window.Buffer = buffer.Buffer;
+    window.BN = window.BN || require('bn.js');
+</script>
+
 <!-- Solana Core Dependencies -->
 <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
 <script src="https://unpkg.com/@solana/spl-token@0.3.9/lib/index.iife.min.js"></script>
 <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser/anchor.min.js"></script>
-
-<!-- Buffer for Solana transactions -->
-<script src="https://bundle.run/buffer@6.0.3"></script>
-<script>window.Buffer = buffer.Buffer;</script>
-
-<!-- BigNumber for token calculations -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bn.js/5.2.1/bn.min.js"></script>
-<script>window.BN = BN;</script>
 
 <!-- Wallet Adapters -->
 <script src="https://unpkg.com/@solana/wallet-adapter-base@0.9.23/lib/index.iife.min.js"></script>
@@ -345,7 +345,6 @@
 
 <!-- Supabase -->
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
 <!-- Initialize Core Systems -->
 <script>
     // Initialize Supabase
@@ -364,13 +363,17 @@
     window.SOLANA_CONFIG = {
         CLUSTER: 'mainnet-beta',
         ENDPOINTS: {
-            'mainnet-beta': 'https://api.mainnet-beta.solana.com',
+            'mainnet-beta': [
+                'https://api.metaplex.solana.com/',
+                'https://solana-api.projectserum.com',
+                'https://api.mainnet-beta.solana.com'
+            ],
             'devnet': 'https://api.devnet.solana.com',
             'testnet': 'https://api.testnet.solana.com'
         },
         CONNECTION_CONFIG: {
             commitment: 'confirmed',
-            wsEndpoint: 'wss://api.mainnet-beta.solana.com/',
+            disableRetryOnRateLimit: false,
             confirmTransactionInitialTimeout: 60000
         },
         PROGRAM_IDS: {
@@ -378,11 +381,29 @@
             ASSOCIATED_TOKEN: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
             SYSTEM: '11111111111111111111111111111111'
         },
+        async getBestEndpoint() {
+            const endpoints = Array.isArray(this.ENDPOINTS[this.CLUSTER]) ? 
+                this.ENDPOINTS[this.CLUSTER] : 
+                [this.ENDPOINTS[this.CLUSTER]];
+
+            for (const endpoint of endpoints) {
+                try {
+                    const connection = new solanaWeb3.Connection(
+                        endpoint,
+                        this.CONNECTION_CONFIG
+                    );
+                    await connection.getSlot();
+                    console.log(`Connected to Solana endpoint: ${endpoint}`);
+                    return endpoint;
+                } catch (error) {
+                    console.warn(`Failed to connect to ${endpoint}, trying next...`);
+                }
+            }
+            throw new Error('Unable to connect to any Solana endpoint');
+        },
         async createConnection() {
-            return new solanaWeb3.Connection(
-                this.ENDPOINTS[this.CLUSTER],
-                this.CONNECTION_CONFIG
-            );
+            const endpoint = await this.getBestEndpoint();
+            return new solanaWeb3.Connection(endpoint, this.CONNECTION_CONFIG);
         }
     };
 </script>
@@ -401,49 +422,51 @@
     document.addEventListener('DOMContentLoaded', async function() {
         console.log('Initializing betting system...');
         
+        const delay = ms => new Promise(res => setTimeout(res, ms));
+        
         try {
-            // Initialize betting system with auto-reconnection
+            let connection;
             let attempts = 0;
             const maxAttempts = 3;
             
             while (attempts < maxAttempts) {
                 try {
-                    const connection = await SOLANA_CONFIG.createConnection();
-                    await connection.getVersion();
-                    console.log('Solana connection established');
-                    
-                    const chessBetting = new ChessBetting();
-                    window.chessBetting = chessBetting;
-                    
-                    // Set up UI visibility
-                    const multiplayerBtn = document.getElementById('multiplayer-mode');
-                    const bettingContainer = document.getElementById('betting-container');
-                    const aiModeBtn = document.getElementById('ai-mode');
-                    
-                    if (multiplayerBtn && bettingContainer) {
-                        multiplayerBtn.addEventListener('click', function() {
-                            bettingContainer.style.display = 'block';
-                        });
-                    }
-                    
-                    if (aiModeBtn && bettingContainer) {
-                        aiModeBtn.addEventListener('click', function() {
-                            bettingContainer.style.display = 'none';
-                        });
-                    }
-
-                    console.log('Betting system initialized successfully');
+                    connection = await SOLANA_CONFIG.createConnection();
+                    const version = await connection.getVersion();
+                    console.log('Solana connection established:', version);
                     break;
                 } catch (error) {
                     attempts++;
                     console.warn(`Connection attempt ${attempts} failed:`, error);
                     if (attempts === maxAttempts) throw error;
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await delay(1000);
                 }
             }
+            
+            // Initialize betting system
+            const chessBetting = new ChessBetting();
+            window.chessBetting = chessBetting;
+            
+            // Set up UI visibility
+            const multiplayerBtn = document.getElementById('multiplayer-mode');
+            const bettingContainer = document.getElementById('betting-container');
+            const aiModeBtn = document.getElementById('ai-mode');
+            
+            if (multiplayerBtn && bettingContainer) {
+                multiplayerBtn.addEventListener('click', function() {
+                    bettingContainer.style.display = 'block';
+                });
+            }
+            
+            if (aiModeBtn && bettingContainer) {
+                aiModeBtn.addEventListener('click', function() {
+                    bettingContainer.style.display = 'none';
+                });
+            }
+
+            console.log('Betting system initialized successfully');
         } catch (error) {
             console.error('Error initializing betting system:', error);
-            // Show error in UI
             const statusElement = document.getElementById('status');
             if (statusElement) {
                 statusElement.textContent = 'Error connecting to network';
