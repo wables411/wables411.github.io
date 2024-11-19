@@ -1,4 +1,4 @@
-        <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -7,195 +7,6 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="chess.css">
-    <style>
-        .section-container {
-            margin: 1rem 0;
-            padding: 1rem 0;
-        }
-        .header-section p {
-            margin: 0.5rem 0;
-        }
-        .image-section {
-            margin-top: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-        .search-section {
-            margin-top: 0.5rem;
-        }
-        .section-title {
-            margin-bottom: 0.5rem;
-            font-size: 1.5rem;
-            color: white;
-        }
-        .search-container {
-            margin: 0.5rem 0;
-            padding: 0.5rem 0;
-        }
-        .image-display-section {
-            margin: 1rem 0;
-        }
-        .game-section {
-            margin-top: 2rem;
-        }
-
-        /* Betting UI Styles */
-        .betting-container {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255, 0, 0, 0.3);
-            color: white;
-            display: none; /* Initially hidden, shown only in multiplayer */
-        }
-
-        .betting-ui {
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        .bet-input {
-            margin: 15px 0;
-        }
-
-        .bet-input input {
-            width: 100%;
-            padding: 8px;
-            margin: 5px 0;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 0, 0, 0.3);
-            color: white;
-            border-radius: 4px;
-        }
-
-        .fee-info {
-            font-size: 0.9em;
-            color: #aaa;
-        }
-
-        .bet-button {
-            background: linear-gradient(45deg, #FF0000, #CC0000);
-            border: none;
-            padding: 10px 20px;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .bet-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
-        }
-
-        .bet-status {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 4px;
-        }
-
-        .bet-status.error {
-            background: rgba(255, 0, 0, 0.2);
-            border: 1px solid rgba(255, 0, 0, 0.3);
-        }
-
-        .bet-status.processing {
-            background: rgba(255, 255, 0, 0.2);
-            border: 1px solid rgba(255, 255, 0, 0.3);
-        }
-
-        .bet-status.success {
-            background: rgba(0, 255, 0, 0.2);
-            border: 1px solid rgba(0, 255, 0, 0.3);
-        }
-        /* Wallet Button Styles */
-        .wallet-btn {
-            background: linear-gradient(45deg, #9945FF, #14F195);
-            border: none;
-            padding: 12px 24px;
-            border-radius: 24px;
-            color: white;
-            font-family: Impact, sans-serif;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin: 10px 0;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .wallet-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(153, 69, 255, 0.4);
-        }
-        .wallet-address {
-            font-family: monospace;
-            background: rgba(20, 241, 149, 0.1);
-            padding: 8px 16px;
-            border-radius: 8px;
-            margin: 10px 0;
-            word-break: break-all;
-            border: 1px solid rgba(20, 241, 149, 0.2);
-        }
-        /* Multiplayer Styles */
-        .multiplayer-menu {
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(50, 205, 50, 0.3);
-        }
-        .multiplayer-option {
-            margin: 15px 0;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .multiplayer-btn {
-            background: linear-gradient(45deg, #32CD32, #228B22);
-            border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            color: white;
-            font-family: Impact, sans-serif;
-            font-size: 1.2rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-transform: uppercase;
-        }
-        .multiplayer-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 15px rgba(50, 205, 50, 0.5);
-        }
-        .btn-description {
-            font-size: 0.8rem;
-            opacity: 0.8;
-            text-transform: none;
-        }
-        .join-game-container {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        #game-code-input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid rgba(50, 205, 50, 0.3);
-            border-radius: 4px;
-            background: rgba(0, 0, 0, 0.5);
-            color: white;
-            font-family: monospace;
-        }
-        .cancel-btn {
-            background: linear-gradient(45deg, #FF4136, #85144b);
-        }
-        .cancel-btn:hover {
-            box-shadow: 0 0 15px rgba(255, 65, 54, 0.5);
-        }
-    </style>
 </head>
 
 <body class="lawbstation-body">
@@ -218,16 +29,6 @@
     <div class="full-height-container">
         <!-- Main Content Container -->
         <div class="main-content">
-            <!-- Header Section -->
-            <div class="section-container header-section">
-                <h1>LAWBSTATION</h1>
-                <p>low poly Lawbsters viewed through various cathode-ray tubes</p>
-                <p>built on <a href="https://miladystation.net/" target="_blank">MiladyStation</a> technology</p>
-                <p>Brought to you in part by <a href="https://nouns.build/dao/ethereum/0x0c12aba58fc88f1267fa772012495b47aaf31cab/99" target="_blank">PortionClub</a> and MonyCorpGroup</p>
-                <p>Living on the Solana Blockchain. To do your part by helping in the preservation of Lawbstations today, click <a href="https://www.tensor.trade/trade/lawbstation" target="_blank">Here.</a></p>
-                <p>Token Holders join <a href="https://discord.gg/p6uazQchjk" target="_blank">MiladyStation Discord</a> to access and utilize the low poly tech</p>
-            </div>
-
             <!-- Chess Game Section -->
             <div class="section-container game-section">
                 <h2 class="section-title">LAWB CHESS</h2>
@@ -269,6 +70,7 @@
                                 <label>Bet Amount ($LAWB):</label>
                                 <input type="number" id="betAmount" min="100" max="100000" step="100" value="100">
                                 <p class="fee-info">House Fee (5%): <span id="feeAmount">5</span> $LAWB</p>
+                                <p class="total-info">Total Potential Win: <span id="potentialWin">200</span> $LAWB</p>
                             </div>
                             <button id="placeBet" class="bet-button">Place Bet</button>
                             <div id="betStatus" class="bet-status"></div>
