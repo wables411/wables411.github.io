@@ -228,14 +228,6 @@ async handleBetPlacement() {
             }
             console.log('LAWB token verified');
 
-            // Verify house wallet
-            const houseWallet = new solanaWeb3.PublicKey(this.config.HOUSE_WALLET);
-            const houseInfo = await this.connection.getAccountInfo(houseWallet);
-            if (!houseInfo) {
-                throw new Error('Failed to verify house wallet');
-            }
-            console.log('House wallet verified');
-
             return true;
         } catch (error) {
             console.error('Setup verification failed:', error);
@@ -550,6 +542,22 @@ async handleBetPlacement() {
     getConnectedWallet() {
         return window.solflare?.isConnected ? window.solflare : 
                window.solana?.isConnected ? window.solana : null;
+    }
+
+    validateBetAmount(amount) {
+        if (!amount || isNaN(amount)) {
+            this.updateBetStatus('Invalid bet amount', 'error');
+            return false;
+        }
+        if (amount < this.config.MIN_BET) {
+            this.updateBetStatus(`Minimum bet is ${this.config.MIN_BET} $LAWB`, 'error');
+            return false;
+        }
+        if (amount > this.config.MAX_BET) {
+            this.updateBetStatus(`Maximum bet is ${this.config.MAX_BET} $LAWB`, 'error');
+            return false;
+        }
+        return true;
     }
 
     async processWinner(winner) {
