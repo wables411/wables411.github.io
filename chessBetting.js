@@ -1,3 +1,5 @@
+/* global solanaWeb3, BN, Buffer */
+
 class ChessBetting {
     constructor() {
         this.config = window.BETTING_CONFIG;
@@ -5,11 +7,42 @@ class ChessBetting {
         this.supabase = window.gameDatabase;
         this.connection = null;
         this.gameStates = new Map();
+        
+        this.currentBet = {
+            amount: 0,
+            bluePlayer: null,
+            redPlayer: null,
+            gameId: null,
+            isActive: false,
+            escrowAccount: null
+        };
 
-        // Initialize UI first
         this.initializeUI();
-        // Then start async initialization
         this.init();
+    }
+
+    generateGameId() {
+        const timestamp = Date.now().toString(36);
+        const randomStr = Math.random().toString(36).substring(2, 8);
+        return `${timestamp}-${randomStr}`.toUpperCase();
+    }
+
+    async createEscrowAccount(gameId, amount) {
+        try {
+            const seed = Buffer.from(gameId + this.config.ESCROW_SEED);
+            const [escrowPubkey] = await solanaWeb3.PublicKey.findProgramAddress(
+                [seed],
+                new solanaWeb3.PublicKey(this.config.SYSTEM_PROGRAM_ID)
+            );
+    
+            return {
+                pubkey: escrowPubkey,
+                seed: seed
+            };
+        } catch (error) {
+            console.error('Error creating escrow account:', error);
+            throw error;
+        }
     }
 
     initializeUI() {
