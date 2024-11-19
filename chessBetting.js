@@ -109,6 +109,22 @@ async handleBetPlacement() {
         const gameId = this.currentBet.gameId || this.generateGameId();
         
         try {
+            // First create the game record
+            const { error: gameError } = await this.supabase
+                .from('chess_games')
+                .insert([{
+                    game_id: gameId,
+                    blue_player: wallet.publicKey.toString(),
+                    game_state: 'waiting',
+                    current_player: 'blue',
+                    board: {
+                        positions: board,
+                        pieceState: pieceState
+                    }
+                }]);
+
+            if (gameError) throw gameError;
+
             // Check token balance
             const playerATA = await this.findAssociatedTokenAddress(wallet.publicKey);
             const balance = await this.connection.getTokenAccountBalance(playerATA);
