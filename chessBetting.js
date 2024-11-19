@@ -341,6 +341,10 @@ class ChessBetting {
                 this.config.ASSOCIATED_TOKEN_PROGRAM_ID
             );
             
+            if (!walletAddress || !walletAddress.toBuffer) {
+                throw new Error('Invalid wallet address');
+            }
+            
             const [associatedToken] = await solanaWeb3.PublicKey.findProgramAddress(
                 [
                     walletAddress.toBuffer(),
