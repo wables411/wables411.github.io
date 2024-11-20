@@ -1,21 +1,17 @@
 window.SOLANA_CONFIG = {
     CLUSTER: 'mainnet-beta',
     ENDPOINTS: {
-        'mainnet-beta': ['https://rpc.ankr.com/solana']  // Just use Ankr
+        'mainnet-beta': ['https://solana-mainnet.rpc.extrnode.com/218119a6-454e-430e-b63c-f1ae113c7eed']
     },
     CONNECTION_CONFIG: {
         commitment: 'confirmed',
-        wsEndpoint: null,  // Explicitly disable websocket
-        confirmTransactionInitialTimeout: 60000
+        httpHeaders: {
+            'Authorization': 'Bearer 218119a6-454e-430e-b63c-f1ae113c7eed'
+        }
     },
     async createConnection() {
         const endpoint = this.ENDPOINTS[this.CLUSTER][0];
-        const connection = new solanaWeb3.Connection(
-            endpoint,
-            this.CONNECTION_CONFIG
-        );
-        await connection.getSlot(); // Test connection
-        console.log('Connected to Solana network:', endpoint);
+        const connection = new solanaWeb3.Connection(endpoint, this.CONNECTION_CONFIG);
         return connection;
     }
 };
