@@ -5,6 +5,10 @@ class ChessBetting {
         this.supabase = window.gameDatabase;
         this.connection = null;
         
+        // Initialize token program and mint
+        this.tokenProgram = new solanaWeb3.PublicKey(this.config.LAWB_TOKEN.PROGRAM_ID);
+        this.lawbMint = new solanaWeb3.PublicKey(this.config.LAWB_TOKEN.MINT);
+        
         this.currentBet = {
             amount: 0,
             bluePlayer: null,
@@ -14,7 +18,7 @@ class ChessBetting {
             escrowAccount: null,
             matched: false
         };
-
+    
         this.init();
         this.initializeUI();
     }
