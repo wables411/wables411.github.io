@@ -9,11 +9,19 @@ class MultiplayerManager {
     }
 
     initializeEventListeners() {
-        const createGameBtn = document.getElementById('create-game');
-        if (createGameBtn) {
-            createGameBtn.onclick = () => this.createGame();
+        // Create game with bet
+        const createGameWithBetBtn = document.getElementById('create-game-with-bet');
+        if (createGameWithBetBtn) {
+            createGameWithBetBtn.onclick = () => this.createGameWithBet();
         }
 
+        // Create game without bet
+        const createGameNoBetBtn = document.getElementById('create-game-no-bet');
+        if (createGameNoBetBtn) {
+            createGameNoBetBtn.onclick = () => this.createGame();
+        }
+
+        // Join game
         const joinGameBtn = document.getElementById('join-game');
         if (joinGameBtn) {
             joinGameBtn.onclick = () => {
@@ -30,6 +38,27 @@ class MultiplayerManager {
                 const status = document.getElementById('matchmaking-status');
                 if (status) status.style.display = 'none';
             };
+        }
+    }
+
+    async createGameWithBet() {
+        try {
+            const player = localStorage.getItem('currentPlayer');
+            if (!player) {
+                alert('Connect wallet first');
+                return;
+            }
+
+            // Let chessBetting handle the bet creation
+            if (window.chessBetting) {
+                await window.chessBetting.handleCreateGameWithBet();
+            } else {
+                alert('Betting system not initialized');
+            }
+
+        } catch (error) {
+            console.error('Error creating game with bet:', error);
+            alert('Failed to create game with bet');
         }
     }
 
@@ -58,7 +87,8 @@ class MultiplayerManager {
                     board: boardState,
                     piece_state: pieceState,
                     game_state: 'waiting',
-                    current_player: 'blue'
+                    current_player: 'blue',
+                    bet_amount: 0 // Explicitly set no bet
                 })
                 .select();
 
@@ -90,7 +120,7 @@ class MultiplayerManager {
 
             const { data } = await this.supabase
                 .from('chess_games')
-                .select()
+                .select('*')
                 .eq('game_id', code.toUpperCase())
                 .eq('game_state', 'waiting')
                 .single();
@@ -105,6 +135,18 @@ class MultiplayerManager {
                 return;
             }
 
+            // Check if this is a betting game
+            if (data.bet_amount > 0) {
+                if (window.chessBetting) {
+                    // Let chessBetting handle bet matching
+                    return await window.chessBetting.handleJoinGame();
+                } else {
+                    alert('Betting system not initialized');
+                    return;
+                }
+            }
+
+            // Handle non-betting game join
             const { error } = await this.supabase
                 .from('chess_games')
                 .update({
@@ -220,6 +262,11 @@ class MultiplayerManager {
                     } else {
                         window.updateGameResult(game.winner === this.playerColor ? 'win' : 'loss');
                     }
+                }
+
+                // Process bet winner if it was a betting game
+                if (window.chessBetting && game.bet_amount > 0) {
+                    window.chessBetting.processWinner(game.winner);
                 }
 
                 // Refresh leaderboard
