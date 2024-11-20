@@ -1,5 +1,12 @@
 class ChessBetting {
     constructor() {
+        // Wait for config to be available
+        if (!window.BETTING_CONFIG) {
+            console.log('Waiting for betting config to be available...');
+            setTimeout(() => new ChessBetting(), 100);
+            return;
+        }
+
         this.config = window.BETTING_CONFIG;
         this.solanaConfig = window.SOLANA_CONFIG;
         this.supabase = window.gameDatabase;
