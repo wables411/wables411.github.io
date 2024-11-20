@@ -158,13 +158,12 @@ class ChessBetting {
                 const createATAIx = new solanaWeb3.TransactionInstruction({
                     programId: this.config.ASSOCIATED_TOKEN_PROGRAM_ID,
                     keys: [
-                        { pubkey: playerPubKey, isSigner: true, isWritable: true }, // Payer
-                        { pubkey: escrowATA, isSigner: false, isWritable: true }, // New account
-                        { pubkey: escrowPDA, isSigner: false, isWritable: false }, // Owner
-                        { pubkey: this.lawbMint, isSigner: false, isWritable: false }, // Mint
+                        { pubkey: playerPubKey, isSigner: true, isWritable: true },
+                        { pubkey: escrowATA, isSigner: false, isWritable: true },
+                        { pubkey: escrowPDA, isSigner: false, isWritable: false },
+                        { pubkey: this.lawbMint, isSigner: false, isWritable: false },
                         { pubkey: solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
                         { pubkey: this.tokenProgram, isSigner: false, isWritable: false },
-                        { pubkey: solanaWeb3.SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
                     ],
                     data: Buffer.from([])
                 });
@@ -173,10 +172,9 @@ class ChessBetting {
                 const transferIx = new solanaWeb3.TransactionInstruction({
                     programId: this.tokenProgram,
                     keys: [
-                        { pubkey: playerATA, isSigner: false, isWritable: true }, // Source
-                        { pubkey: escrowATA, isSigner: false, isWritable: true }, // Destination
-                        { pubkey: playerPubKey, isSigner: true, isWritable: false }, // Authority
-                        { pubkey: solanaWeb3.SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+                        { pubkey: playerATA, isSigner: false, isWritable: true },
+                        { pubkey: escrowATA, isSigner: false, isWritable: true },
+                        { pubkey: playerPubKey, isSigner: true, isWritable: false }
                     ],
                     data: Buffer.from([
                         3, // Transfer instruction
@@ -187,14 +185,24 @@ class ChessBetting {
                 transaction.add(createATAIx);
                 transaction.add(transferIx);
     
-                // Sign and send
+                // Get recent blockhash properly
+                const { blockhash } = await this.connection.getRecentBlockhash('confirmed');
+                transaction.recentBlockhash = blockhash;
                 transaction.feePayer = playerPubKey;
-                transaction.recentBlockhash = (await this.connection.getLatestBlockhash()).blockhash;
     
+                // Sign and send
                 const signed = await wallet.signTransaction(transaction);
-                const signature = await this.connection.sendRawTransaction(signed.serialize());
+                const signature = await this.connection.sendRawTransaction(
+                    signed.serialize(),
+                    { preflightCommitment: 'confirmed' }
+                );
                 
-                await this.connection.confirmTransaction(signature);
+                // Wait for confirmation
+                await this.connection.confirmTransaction({
+                    signature,
+                    blockhash,
+                    lastValidBlockHeight: await this.connection.getBlockHeight()
+                });
     
                 // Create game record
                 await this.createGameRecord(gameId, wallet.publicKey.toString(), amount, escrowPDA.toString());
