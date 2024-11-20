@@ -134,6 +134,7 @@
 
 <!-- Solana Core Dependencies -->
 <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
+<script src="https://unpkg.com/@solana/spl-token@0.3.9/lib/index.iife.js"></script>
 
 <!-- Wallet Adapters -->
 <script src="https://unpkg.com/@solana/wallet-adapter-base@0.9.23/lib/index.iife.min.js"></script>
@@ -161,9 +162,7 @@
         CLUSTER: 'mainnet-beta',
         ENDPOINTS: {
             'mainnet-beta': [
-                'https://solana-mainnet.rpc.extrnode.com/218119a6-454e-430e-b63c-f1ae113c7eed',
-                'https://rpc.ankr.com/solana',
-                'https://solana-api.projectserum.com'
+                'https://solana-mainnet.rpc.extrnode.com/218119a6-454e-430e-b63c-f1ae113c7eed'
             ]
         },
         CONNECTION_CONFIG: {
@@ -172,7 +171,7 @@
             httpHeaders: {
                 'Authorization': 'Bearer 218119a6-454e-430e-b63c-f1ae113c7eed',
                 'Content-Type': 'application/json'
-            },
+            }
         }
     };
 </script>
