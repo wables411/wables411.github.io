@@ -7,8 +7,218 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="chess.css">
-</head>
+    <style>
+        /* Enhanced Betting Styles */
+        .betting-container {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 0, 0, 0.3);
+        }
 
+        .betting-ui {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .betting-ui h3 {
+            font-family: Impact, sans-serif;
+            color: #FF0000;
+            text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+            margin-bottom: 15px;
+        }
+
+        .bet-input {
+            margin: 15px 0;
+        }
+
+        .bet-input label {
+            display: block;
+            margin-bottom: 8px;
+            color: white;
+        }
+
+        .bet-input input {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            color: white;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .fee-info, .total-info {
+            font-size: 0.9em;
+            color: #aaa;
+            margin: 5px 0;
+            font-family: monospace;
+        }
+
+        .bet-button {
+            background: linear-gradient(45deg, #FF0000, #CC0000);
+            border: none;
+            padding: 10px 20px;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: Impact, sans-serif;
+            width: 100%;
+            margin: 5px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .bet-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+        }
+
+        .bet-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .multiplayer-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .bet-status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            font-family: monospace;
+        }
+
+        .bet-status.error {
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            color: #ff6b6b;
+        }
+
+        .bet-status.success {
+            background: rgba(0, 255, 0, 0.2);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            color: #32CD32;
+        }
+
+        .bet-status.processing {
+            background: rgba(255, 255, 0, 0.2);
+            border: 1px solid rgba(255, 255, 0, 0.3);
+            color: #ffd700;
+        }
+
+        .join-game-container {
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .join-game-container input {
+            width: 200px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(50, 205, 50, 0.3);
+            color: white;
+            border-radius: 4px;
+            font-family: monospace;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .multiplayer-btn {
+            background: rgba(50, 205, 50, 0.2);
+            border: 2px solid rgba(50, 205, 50, 0.3);
+            padding: 10px 20px;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: Impact, sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-width: 200px;
+        }
+
+        .multiplayer-btn:hover:not(:disabled) {
+            background: rgba(50, 205, 50, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
+        }
+
+        .cancel-btn {
+            background: rgba(255, 0, 0, 0.2);
+            border-color: rgba(255, 0, 0, 0.3);
+        }
+
+        .cancel-btn:hover {
+            background: rgba(255, 0, 0, 0.3);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+        }
+
+        #matchmaking-status {
+            margin: 15px 0;
+            padding: 15px;
+            border: 1px solid rgba(50, 205, 50, 0.3);
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .status-text {
+            margin-bottom: 10px;
+            color: #32CD32;
+            font-family: monospace;
+        }
+
+        .game-code-display {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(50, 205, 50, 0.3);
+            border-radius: 5px;
+            display: none;
+        }
+
+        .game-code-display h4 {
+            color: #32CD32;
+            margin: 0 0 10px 0;
+        }
+
+        .game-code {
+            font-family: monospace;
+            font-size: 24px;
+            color: white;
+            letter-spacing: 2px;
+            cursor: pointer;
+        }
+
+        .game-code:hover {
+            color: #32CD32;
+        }
+
+        .copy-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(50, 205, 50, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: none;
+            z-index: 1000;
+            font-family: Impact, sans-serif;
+        }
+    </style>
+</head>
 <body class="lawbstation-body">
     <!-- Navigation Menu -->
     <nav>
@@ -76,15 +286,23 @@
                     <div class="multiplayer-menu" style="display: none;">
                         <h2 class="section-title">PvP</h2>
                         
-                        <!-- Betting Container (Only shown in multiplayer) -->
+                        <!-- Betting Container -->
                         <div id="betting-container" class="betting-container" style="display: none;">
                             <div class="betting-ui">
-                                <h3>$LAWB Betting</h3>
+                                <h3>$LAWB BETTING</h3>
                                 <div class="bet-input">
                                     <label>Bet Amount ($LAWB):</label>
-                                    <input type="number" id="betAmount" min="100" max="5000000" step="100" value="100">
+                                    <input 
+                                        type="number" 
+                                        id="betAmount" 
+                                        min="100" 
+                                        max="5000000" 
+                                        step="100" 
+                                        value="100"
+                                        placeholder="Enter bet amount"
+                                    >
                                     <p class="fee-info">House Fee (5%): <span id="feeAmount">5</span> $LAWB</p>
-                                    <p class="total-info">Total Potential Win: <span id="potentialWin">195</span> $LAWB</p>
+                                    <p class="total-info">Potential Win: <span id="potentialWin">195</span> $LAWB</p>
                                 </div>
                                 <div class="multiplayer-options">
                                     <button id="create-game-with-bet" class="bet-button">Create Game with Bet</button>
@@ -92,10 +310,23 @@
                                 </div>
                                 <div id="betStatus" class="bet-status"></div>
                             </div>
+                            
+                            <!-- Game Code Display -->
+                            <div id="gameCodeDisplay" class="game-code-display">
+                                <h4>Share this code with opponent:</h4>
+                                <div class="game-code" id="gameCode"></div>
+                            </div>
                         </div>
 
+                        <!-- Join Game Container -->
                         <div class="join-game-container">
-                            <input type="text" id="game-code-input" placeholder="Enter game code">
+                            <input 
+                                type="text" 
+                                id="game-code-input" 
+                                placeholder="Enter game code"
+                                maxlength="6"
+                                autocomplete="off"
+                            >
                             <button class="multiplayer-btn" id="join-game">Join Game</button>
                         </div>
 
@@ -123,107 +354,121 @@
         </div>
     </div>
 
-<!-- Load Dependencies First -->
-<!-- Buffer and BN.js for Solana -->
-<script src="https://bundle.run/buffer@6.0.3"></script>
-<script src="https://cdn.jsdelivr.net/npm/bn.js@5.2.1/lib/bn.js"></script>
-<script>
-    window.Buffer = buffer.Buffer;
-    window.BN = window.BN || require('bn.js');
-</script>
+    <!-- Copy Notification -->
+    <div id="copyNotification" class="copy-notification">
+        Code copied to clipboard!
+    </div>
 
-<!-- Solana Core Dependencies -->
-<script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
-<script src="https://unpkg.com/@solana/spl-token@0.3.9/lib/index.iife.js"></script>
+    <!-- Load Dependencies First -->
+    <!-- Buffer and BN.js for Solana -->
+    <script src="https://bundle.run/buffer@6.0.3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bn.js@5.2.1/lib/bn.js"></script>
+    <script>
+        window.Buffer = buffer.Buffer;
+        window.BN = window.BN || require('bn.js');
+    </script>
 
-<!-- Wallet Adapters -->
-<script src="https://unpkg.com/@solana/wallet-adapter-base@0.9.23/lib/index.iife.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.1.1/lib/index.iife.min.js"></script>
+    <!-- Solana Core Dependencies -->
+    <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@solana/spl-token@0.3.9/lib/index.iife.js"></script>
 
-<!-- Supabase -->
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- Wallet Adapters -->
+    <script src="https://unpkg.com/@solana/wallet-adapter-base@0.9.23/lib/index.iife.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.1.1/lib/index.iife.min.js"></script>
 
-<!-- Initialize Core Systems -->
-<script>
-    // Initialize Supabase
-    try {
-        if (!window.gameDatabase) {
-            window.gameDatabase = window.supabase.createClient(
-                'https://roxwocgknkiqnsgiojgz.supabase.co',
-                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
-            );
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+    <!-- Initialize Core Systems -->
+    <script>
+        // Initialize Supabase
+        try {
+            if (!window.gameDatabase) {
+                window.gameDatabase = window.supabase.createClient(
+                    'https://roxwocgknkiqnsgiojgz.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
+                );
+            }
+        } catch (error) {
+            console.error('Error initializing Supabase:', error);
         }
-    } catch (error) {
-        console.error('Error initializing Supabase:', error);
-    }
+    </script>
 
-    // Initialize Solana Configuration
-    window.SOLANA_CONFIG = {
-        CLUSTER: 'mainnet-beta',
-        ENDPOINTS: {
-            'mainnet-beta': [
-                'https://solana-mainnet.rpc.extrnode.com/218119a6-454e-430e-b63c-f1ae113c7eed'
-            ]
-        },
-        CONNECTION_CONFIG: {
-            commitment: 'confirmed',
-            confirmTransactionInitialTimeout: 60000,
-            httpHeaders: {
-                'Authorization': 'Bearer 218119a6-454e-430e-b63c-f1ae113c7eed',
-                'Content-Type': 'application/json'
+    <!-- Load Game Scripts in Order -->
+    <script src="solana-config.js"></script>
+    <script src="betting-config.js"></script>
+    <script src="chessBetting.js"></script>
+    <script src="loadImages.js"></script>
+    <script src="leaderboard.js"></script>
+    <script src="multiplayer.js"></script>
+    <script src="chess.js"></script>
+
+    <!-- Initialize Betting System -->
+    <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log('Initializing betting system...');
+        
+        try {
+            // Initialize connection
+            const connection = await window.SOLANA_CONFIG.createConnection();
+            console.log('Solana connection established:', await connection.getVersion());
+            
+            // Initialize betting system
+            const chessBetting = new ChessBetting();
+            window.chessBetting = chessBetting;
+            
+            // Set up bet amount input handler
+            const betInput = document.getElementById('betAmount');
+            if (betInput) {
+                betInput.addEventListener('input', function() {
+                    const amount = Number(this.value);
+                    const fee = (amount * 0.05); // 5% fee
+                    const potentialWin = (amount * 2) - (amount * 2 * 0.05);
+                    
+                    document.getElementById('feeAmount').textContent = fee.toFixed(2);
+                    document.getElementById('potentialWin').textContent = potentialWin.toFixed(2);
+                });
+            }
+            
+            // Set up game code copy functionality
+            const gameCodeDisplay = document.getElementById('gameCode');
+            if (gameCodeDisplay) {
+                gameCodeDisplay.addEventListener('click', function() {
+                    navigator.clipboard.writeText(this.textContent).then(() => {
+                        const notification = document.getElementById('copyNotification');
+                        notification.style.display = 'block';
+                        setTimeout(() => {
+                            notification.style.display = 'none';
+                        }, 2000);
+                    });
+                });
+            }
+            
+            // Set up mode-specific UI visibility
+            const multiplayerBtn = document.getElementById('multiplayer-mode');
+            const bettingContainer = document.getElementById('betting-container');
+            const aiModeBtn = document.getElementById('ai-mode');
+            
+            if (multiplayerBtn && bettingContainer) {
+                multiplayerBtn.addEventListener('click', () => {
+                    bettingContainer.style.display = 'block';
+                });
+            }
+            
+            if (aiModeBtn && bettingContainer) {
+                aiModeBtn.addEventListener('click', () => {
+                    bettingContainer.style.display = 'none';
+                });
+            }
+
+        } catch (error) {
+            console.error('Error initializing betting system:', error);
+            const statusElement = document.getElementById('status');
+            if (statusElement) {
+                statusElement.textContent = 'Error connecting to network';
             }
         }
-    };
-</script>
-
-<!-- Load Game Scripts in Order -->
-<script src="solana-config.js"></script>
-<script src="betting-config.js"></script>
-<script src="chessBetting.js"></script>
-<script src="loadImages.js"></script>
-<script src="leaderboard.js"></script>
-<script src="multiplayer.js"></script>
-<script src="chess.js"></script>
-
-<!-- Initialize Betting System -->
-<script>
-document.addEventListener('DOMContentLoaded', async function() {
-    console.log('Initializing betting system...');
-    
-    try {
-        // Initialize connection
-        const connection = await SOLANA_CONFIG.createConnection();
-        console.log('Solana connection established:', await connection.getVersion());
-        
-        // Initialize betting system
-        const chessBetting = new ChessBetting();
-        window.chessBetting = chessBetting;
-        
-        // Set up mode-specific UI visibility
-        const multiplayerBtn = document.getElementById('multiplayer-mode');
-        const bettingContainer = document.getElementById('betting-container');
-        const aiModeBtn = document.getElementById('ai-mode');
-        
-        if (multiplayerBtn && bettingContainer) {
-            multiplayerBtn.addEventListener('click', () => {
-                bettingContainer.style.display = 'block';
-            });
-        }
-        
-        if (aiModeBtn && bettingContainer) {
-            aiModeBtn.addEventListener('click', () => {
-                bettingContainer.style.display = 'none';
-            });
-        }
-
-    } catch (error) {
-        console.error('Error initializing betting system:', error);
-        const statusElement = document.getElementById('status');
-        if (statusElement) {
-            statusElement.textContent = 'Error connecting to network';
-        }
-    }
-});
-</script>
+    });
+    </script>
 </body>
 </html>
