@@ -213,22 +213,15 @@ class ChessBetting {
         }
     }
 
-    async findAssociatedTokenAccount(walletAddress) {
+    async findAssociatedTokenAccount(owner) {
         try {
-            if (!walletAddress || typeof walletAddress === 'string') {
-                walletAddress = new solanaWeb3.PublicKey(walletAddress);
-            }
-
-            const [associatedToken] = await solanaWeb3.PublicKey.findProgramAddress(
-                [
-                    walletAddress.toBuffer(),
-                    this.tokenProgram.toBuffer(),
-                    this.lawbMint.toBuffer(),
-                ],
-                new solanaWeb3.PublicKey(this.config.ASSOCIATED_TOKEN_PROGRAM_ID)
+            return await splToken.getAssociatedTokenAddress(
+                this.lawbMint,
+                new solanaWeb3.PublicKey(owner),
+                false,
+                splToken.TOKEN_PROGRAM_ID,
+                splToken.ASSOCIATED_TOKEN_PROGRAM_ID
             );
-            
-            return associatedToken;
         } catch (error) {
             console.error('Error finding associated token account:', error);
             throw error;
@@ -241,7 +234,7 @@ class ChessBetting {
             
             // Get player's token account
             const playerATA = await this.findAssociatedTokenAccount(playerPublicKey);
-            const escrowATA = escrowData.tokenAccount;
+            const escrowATA = await this.findAssociatedTokenAccount(escrowData.pubkey);
             
             // Check balance
             const balance = await this.connection.getTokenAccountBalance(playerATA);
@@ -254,20 +247,22 @@ class ChessBetting {
             // Create escrow ATA if needed
             const escrowAccountInfo = await this.connection.getAccountInfo(escrowATA);
             if (!escrowAccountInfo) {
-                transaction.add(this.createATAInstruction(
+                const createAtaIx = this.createAssociatedTokenAccountInstruction(
                     playerPublicKey,
-                    escrowATA,
-                    escrowData.pubkey
-                ));
+                    escrowData.pubkey,
+                    this.lawbMint
+                );
+                transaction.add(createAtaIx);
             }
     
             // Add transfer instruction
-            transaction.add(this.createTransferInstruction(
+            const transferIx = this.createTransferInstruction(
                 playerATA,
                 escrowATA,
                 playerPublicKey,
-                amount
-            ));
+                new BN(requiredAmount)
+            );
+            transaction.add(transferIx);
     
             return transaction;
         } catch (error) {
@@ -276,35 +271,24 @@ class ChessBetting {
         }
     }
 
-    createATAInstruction(payer, ata, owner) {
-        return new solanaWeb3.TransactionInstruction({
-            programId: new solanaWeb3.PublicKey(this.config.ASSOCIATED_TOKEN_PROGRAM_ID),
-            keys: [
-                { pubkey: payer, isSigner: true, isWritable: true },
-                { pubkey: ata, isSigner: false, isWritable: true },
-                { pubkey: owner, isSigner: false, isWritable: false },
-                { pubkey: this.lawbMint, isSigner: false, isWritable: false },
-                { pubkey: solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
-                { pubkey: this.tokenProgram, isSigner: false, isWritable: false }
-            ],
-            data: Buffer.from([])
-        });
+    createAssociatedTokenAccountInstruction(payer, owner, mint) {
+        return splToken.createAssociatedTokenAccountInstruction(
+            payer,                // payer
+            new solanaWeb3.PublicKey(owner),  // associated token account
+            new solanaWeb3.PublicKey(owner),  // owner
+            mint                  // mint
+        );
     }
 
-    createTransferInstruction(from, to, authority, amount) {
-        const tokenAmount = new BN(amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS));
-        return new solanaWeb3.TransactionInstruction({
-            programId: this.tokenProgram,
-            keys: [
-                { pubkey: from, isSigner: false, isWritable: true },
-                { pubkey: to, isSigner: false, isWritable: true },
-                { pubkey: authority, isSigner: true, isWritable: false }
-            ],
-            data: Buffer.from([
-                0x02, // Transfer instruction
-                ...tokenAmount.toArray('le', 8)
-            ])
-        });
+    createTransferInstruction(source, destination, owner, amount) {
+        return splToken.createTransferInstruction(
+            source,              // source
+            destination,         // destination
+            owner,              // owner
+            amount.toNumber(),   // amount
+            [],                 // multiSigners
+            splToken.TOKEN_PROGRAM_ID
+        );
     }
 
     async sendAndConfirmTransaction(transaction) {

@@ -5,9 +5,9 @@ const BETTING_CONFIG = {
 
     // LAWB Token configuration
     LAWB_TOKEN: {
-        MINT: '65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6',
+        MINT: new solanaWeb3.PublicKey('65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6'),
         DECIMALS: 9,
-        PROGRAM_ID: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
+        PROGRAM_ID: splToken.TOKEN_PROGRAM_ID
     },
 
     // Betting parameters
@@ -16,23 +16,23 @@ const BETTING_CONFIG = {
     MAX_BET: 5000000,
     
     // Escrow configuration
-    HOUSE_WALLET: '3NCvL5itgJVrwNZw8BNL8syP8Za5hAmhmApCDh4bdsTu',
+    HOUSE_WALLET: new solanaWeb3.PublicKey('3NCvL5itgJVrwNZw8BNL8syP8Za5hAmhmApCDh4bdsTu'),
     ESCROW: {
         SEED: 'lawb_chess_escrow_v1',
         AUTHORITY_SEED: 'lawb_chess_authority_v1',
         FEE_SEED: 'lawb_chess_fee_v1',
-        PROGRAM_ID: new solanaWeb3.PublicKey('11111111111111111111111111111111'),
+        PROGRAM_ID: splToken.TOKEN_PROGRAM_ID,
         SEED_PREFIX: 'lawb-chess-v1',
         GAME_SEED: 'game',
         BET_SEED: 'bet',
         ESCROW_SEED: 'escrow'
     },
 
-    // Program IDs
-    ASSOCIATED_TOKEN_PROGRAM_ID: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
-    SYSTEM_PROGRAM_ID: '11111111111111111111111111111111',
+    // Program IDs (using SPL Token constants)
+    ASSOCIATED_TOKEN_PROGRAM_ID: splToken.ASSOCIATED_TOKEN_PROGRAM_ID,
+    TOKEN_PROGRAM_ID: splToken.TOKEN_PROGRAM_ID,
+    SYSTEM_PROGRAM_ID: solanaWeb3.SystemProgram.programId,
 
-    // Helper methods
     async findEscrowPDA(gameId) {
         try {
             const seeds = [
@@ -43,7 +43,7 @@ const BETTING_CONFIG = {
             
             const [pda] = await solanaWeb3.PublicKey.findProgramAddress(
                 seeds,
-                new solanaWeb3.PublicKey(this.ESCROW.PROGRAM_ID)
+                this.ESCROW.PROGRAM_ID
             );
             return pda;
         } catch (error) {
@@ -62,7 +62,7 @@ const BETTING_CONFIG = {
             
             const [pda] = await solanaWeb3.PublicKey.findProgramAddress(
                 seeds,
-                new solanaWeb3.PublicKey(this.ESCROW.PROGRAM_ID)
+                this.ESCROW.PROGRAM_ID
             );
             return pda;
         } catch (error) {
