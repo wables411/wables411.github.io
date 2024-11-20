@@ -1,12 +1,9 @@
-/* global solanaWeb3, BN, Buffer */
-
 class ChessBetting {
     constructor() {
         this.config = window.BETTING_CONFIG;
         this.solanaConfig = window.SOLANA_CONFIG;
         this.supabase = window.gameDatabase;
         this.connection = null;
-        this.gameStates = new Map();
         
         this.currentBet = {
             amount: 0,
@@ -14,303 +11,30 @@ class ChessBetting {
             redPlayer: null,
             gameId: null,
             isActive: false,
-            escrowAccount: null
+            escrowAccount: null,
+            matched: false
         };
 
-        this.initializeUI();
         this.init();
-    }
-
-    generateGameId() {
-        const timestamp = Date.now().toString(36);
-        const randomStr = Math.random().toString(36).substring(2, 8);
-        return `${timestamp}-${randomStr}`.toUpperCase();
-    }
-
-    async createEscrowAccount(gameId, amount) {
-        try {
-            // Find PDA for this game
-            const escrowPDA = await this.config.findEscrowPDA(gameId);
-            
-            // Find token account for escrow
-            const escrowATA = await this.findAssociatedTokenAddress(escrowPDA);
-            
-            // Create unique seed for this escrow
-            const seed = Buffer.from(gameId + this.config.ESCROW.SEED);
-            
-            console.log('Created escrow account:', {
-                escrowPDA: escrowPDA.toString(),
-                escrowATA: escrowATA.toString()
-            });
-    
-            return {
-                pubkey: escrowPDA,
-                tokenAccount: escrowATA,
-                seed: seed
-            };
-        } catch (error) {
-            console.error('Error creating escrow account:', error);
-            throw error;
-        }
-    }
-
-    async createBetTransaction(playerPublicKey, amount, escrowData) {
-        try {
-            console.log('Creating bet transaction...');
-            
-            const transaction = new solanaWeb3.Transaction();
-            
-            // Get player's token account
-            const playerATA = await this.findAssociatedTokenAddress(playerPublicKey);
-            
-            // Get escrow token account
-            const escrowATA = escrowData.tokenAccount;
-            
-            // Check player balance
-            const balance = await this.connection.getTokenAccountBalance(playerATA);
-            const requiredAmount = amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
-            
-            if (Number(balance.value.amount) < requiredAmount) {
-                throw new Error(`Insufficient $LAWB balance. Required: ${amount}, Available: ${Number(balance.value.amount) / Math.pow(10, this.config.LAWB_TOKEN.DECIMALS)}`);
-            }
-    
-            // Create escrow ATA if it doesn't exist
-            const escrowAccountInfo = await this.connection.getAccountInfo(escrowATA);
-            if (!escrowAccountInfo) {
-                console.log('Creating escrow token account...');
-                const createATAIx = this.createATAInstruction(
-                    playerPublicKey,
-                    escrowATA,
-                    escrowData.pubkey
-                );
-                transaction.add(createATAIx);
-            }
-    
-            // Create transfer instruction
-            const transferIx = this.createTransferInstruction(
-                playerATA,
-                escrowATA,
-                playerPublicKey,
-                amount
-            );
-            transaction.add(transferIx);
-    
-            console.log('Bet transaction created successfully');
-            return transaction;
-    
-        } catch (error) {
-            console.error('Error creating bet transaction:', error);
-            throw error;
-        }
-    }
-
-    async handleBetPlacement() {
-        try {
-            const wallet = this.getConnectedWallet();
-            if (!wallet || !wallet.publicKey) {
-                this.updateBetStatus('Please connect your wallet first', 'error');
-                return;
-            }
-
-            const amount = Number(document.getElementById('betAmount')?.value);
-            if (!this.validateBetAmount(amount)) {
-                return;
-            }
-
-            this.updateBetStatus('Processing bet...', 'processing');
-            
-            // Generate unique game ID if not exists
-            const gameId = this.currentBet.gameId || this.generateGameId();
-            
-            try {
-                // First create the game record
-                const { error: gameError } = await this.supabase
-                    .from('chess_games')
-                    .insert([{
-                        game_id: gameId,
-                        blue_player: wallet.publicKey.toString(),
-                        game_state: 'waiting',
-                        current_player: 'blue',
-                        board: {
-                            positions: board,
-                            pieceState: pieceState
-                        }
-                    }]);
-
-                if (gameError) throw gameError;
-
-                // Create escrow account
-                const escrowAccount = await this.createEscrowAccount(gameId, amount);
-                console.log('Created escrow account:', escrowAccount);
-
-                // Create and send bet transaction
-                const betTx = await this.createBetTransaction(
-                    wallet.publicKey,
-                    amount,
-                    escrowAccount
-                );
-
-                // Sign and send transaction
-                const signature = await this.sendAndConfirmTransaction(betTx);
-                console.log('Bet transaction confirmed:', signature);
-
-                // Create bet record
-                await this.createBetRecord({
-                    gameId,
-                    amount,
-                    bluePlayer: wallet.publicKey.toString(),
-                    status: 'pending',
-                    escrowAccount: escrowAccount.pubkey.toString()
-                });
-
-                // Update current bet state
-                this.currentBet = {
-                    amount,
-                    bluePlayer: wallet.publicKey.toString(),
-                    gameId,
-                    isActive: true,
-                    escrowAccount
-                };
-
-                this.updateBetStatus('Bet placed successfully! Waiting for opponent...', 'success');
-                this.disableBetting();
-
-            } catch (error) {
-                console.error('Betting error:', error);
-                this.resetBetState();
-                throw error;
-            }
-
-        } catch (error) {
-            console.error('Bet placement error:', error);
-            this.updateBetStatus('Failed to place bet: ' + error.message, 'error');
-            this.enableBetting();
-        }
-    }
-
-    initializeUI() {
-        this.setupBettingUI();
-        this.addDiagnosticsButton();
-        this.setupMultiplayerBetting();
-    }
-
-    setupBettingUI() {
-        const bettingContainer = document.createElement('div');
-        bettingContainer.className = 'betting-container';
-        bettingContainer.innerHTML = `
-            <div class="betting-ui">
-                <h3>$LAWB Betting</h3>
-                <div class="bet-input">
-                    <label>Bet Amount ($LAWB):</label>
-                    <input type="number" id="betAmount" min="${this.config.MIN_BET}" max="${this.config.MAX_BET}" step="100" value="${this.config.MIN_BET}">
-                    <p class="fee-info">House Fee (${this.config.HOUSE_FEE_PERCENTAGE}%): <span id="feeAmount">0</span> $LAWB</p>
-                    <p class="total-info">Total Potential Win: <span id="potentialWin">0</span> $LAWB</p>
-                </div>
-                <button id="placeBet" class="bet-button">Place Bet</button>
-                <div id="betStatus" class="bet-status"></div>
-            </div>
-        `;
-
-        const chessGame = document.getElementById('chess-game');
-        if (chessGame) {
-            chessGame.parentNode.insertBefore(bettingContainer, chessGame);
-            this.addBettingEventListeners();
-        }
-    }
-
-    addDiagnosticsButton() {
-        const gameInfo = document.getElementById('game-info');
-        if (!gameInfo) return;
-
-        const testButton = document.createElement('button');
-        testButton.textContent = 'Test Betting System';
-        testButton.className = 'difficulty-btn';
-        testButton.style.marginTop = '10px';
-        testButton.onclick = () => this.runDiagnostics();
-        
-        gameInfo.appendChild(testButton);
-    }
-
-    addBettingEventListeners() {
-        const betAmountInput = document.getElementById('betAmount');
-        const placeBetButton = document.getElementById('placeBet');
-        const feeAmountSpan = document.getElementById('feeAmount');
-        const potentialWinSpan = document.getElementById('potentialWin');
-
-        if (betAmountInput) {
-            betAmountInput.addEventListener('input', (e) => {
-                const amount = Number(e.target.value);
-                const fee = (amount * this.config.HOUSE_FEE_PERCENTAGE / 100);
-                const totalPot = amount * 2;
-                const potentialWin = totalPot - fee;
-                
-                if (feeAmountSpan) feeAmountSpan.textContent = fee.toFixed(2);
-                if (potentialWinSpan) potentialWinSpan.textContent = potentialWin.toFixed(2);
-            });
-        }
-
-        if (placeBetButton) {
-            placeBetButton.addEventListener('click', () => this.handleBetPlacement());
-            // Trigger initial fee calculation
-            betAmountInput?.dispatchEvent(new Event('input'));
-        }
-
-        // Show/hide betting UI based on game mode
-        const multiplayerBtn = document.getElementById('multiplayer-mode');
-        const aiModeBtn = document.getElementById('ai-mode');
-        const bettingContainer = document.getElementById('betting-container');
-        
-        if (multiplayerBtn && bettingContainer) {
-            multiplayerBtn.addEventListener('click', () => {
-                bettingContainer.style.display = 'block';
-            });
-        }
-        
-        if (aiModeBtn && bettingContainer) {
-            aiModeBtn.addEventListener('click', () => {
-                bettingContainer.style.display = 'none';
-            });
-        }
-    }
-
-    updateBetStatus(message, type = 'info') {
-        const statusElement = document.getElementById('betStatus');
-        if (statusElement) {
-            statusElement.textContent = message;
-            statusElement.className = `bet-status ${type}`;
-        }
-        console.log(`Bet status: ${message}`);
+        this.initializeUI();
     }
 
     async init() {
         try {
-            await this.initializeBetting();
-            console.log('Initialization complete');
-        } catch (error) {
-            console.error('Failed to initialize ChessBetting:', error);
-            this.updateBetStatus('Failed to initialize betting system', 'error');
-        }
-    }
-
-    async initializeBetting() {
-        try {
             console.log('Initializing betting system...');
-            
-            // Get best Solana endpoint and create connection
             this.connection = await this.solanaConfig.createConnection();
             
-            // Initialize LAWB token
+            // Initialize token program details
             this.lawbMint = new solanaWeb3.PublicKey(this.config.LAWB_TOKEN.MINT);
             this.tokenProgram = new solanaWeb3.PublicKey(this.config.LAWB_TOKEN.PROGRAM_ID);
             
-            // Verify connection and token setup
+            // Verify setup
             await this.verifySetup();
-            
             console.log('Betting system initialized successfully');
             return true;
         } catch (error) {
             console.error('Failed to initialize betting system:', error);
-            this.updateBetStatus('Failed to initialize betting system. Please try again.', 'error');
+            this.updateBetStatus('Failed to initialize betting system', 'error');
             return false;
         }
     }
@@ -335,71 +59,219 @@ class ChessBetting {
         }
     }
 
-    async findAssociatedTokenAddress(walletAddress) {
+    initializeUI() {
+        // Set up bet amount input handler
+        const betAmountInput = document.getElementById('betAmount');
+        if (betAmountInput) {
+            betAmountInput.addEventListener('input', () => this.updateBetCalculations());
+        }
+
+        // Set up create game with bet button
+        const createGameWithBetBtn = document.getElementById('create-game-with-bet');
+        if (createGameWithBetBtn) {
+            createGameWithBetBtn.addEventListener('click', () => this.handleCreateGameWithBet());
+        }
+
+        // Initialize join game button handler
+        const joinGameBtn = document.getElementById('join-game');
+        if (joinGameBtn) {
+            joinGameBtn.addEventListener('click', () => this.handleJoinGame());
+        }
+    }
+
+    updateBetCalculations() {
+        const betAmount = Number(document.getElementById('betAmount')?.value || 0);
+        const fee = (betAmount * this.config.HOUSE_FEE_PERCENTAGE / 100);
+        const totalPot = betAmount * 2;
+        const potentialWin = totalPot - (totalPot * this.config.HOUSE_FEE_PERCENTAGE / 100);
+        
+        const feeAmountSpan = document.getElementById('feeAmount');
+        const potentialWinSpan = document.getElementById('potentialWin');
+        
+        if (feeAmountSpan) feeAmountSpan.textContent = fee.toFixed(2);
+        if (potentialWinSpan) potentialWinSpan.textContent = potentialWin.toFixed(2);
+    }
+
+    async handleCreateGameWithBet() {
         try {
-            const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID = new solanaWeb3.PublicKey(
-                this.config.ASSOCIATED_TOKEN_PROGRAM_ID
-            );
-            
-            if (!walletAddress || !walletAddress.toBuffer) {
-                throw new Error('Invalid wallet address');
+            const wallet = this.getConnectedWallet();
+            if (!wallet || !wallet.publicKey) {
+                this.updateBetStatus('Please connect your wallet first', 'error');
+                return;
             }
+
+            const amount = Number(document.getElementById('betAmount')?.value);
+            if (!this.validateBetAmount(amount)) {
+                return;
+            }
+
+            this.updateBetStatus('Processing bet...', 'processing');
             
+            // Create escrow account
+            const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const escrowAccount = await this.createEscrowAccount(gameId);
+            
+            // Create bet transaction
+            const betTx = await this.createBetTransaction(
+                wallet.publicKey,
+                amount,
+                escrowAccount
+            );
+
+            // Sign and send transaction
+            const signature = await this.sendAndConfirmTransaction(betTx);
+            console.log('Bet transaction confirmed:', signature);
+
+            // Create game record
+            const gameData = await this.createGameRecord(gameId, wallet.publicKey.toString(), amount, escrowAccount);
+
+            this.currentBet = {
+                amount,
+                bluePlayer: wallet.publicKey.toString(),
+                gameId: gameId,
+                isActive: true,
+                escrowAccount,
+                matched: false
+            };
+
+            this.updateBetStatus(`Game created! Share code: ${gameId}`, 'success');
+            this.disableBetting();
+
+        } catch (error) {
+            console.error('Error creating game with bet:', error);
+            this.updateBetStatus('Failed to create game: ' + error.message, 'error');
+            this.resetBetState();
+        }
+    }
+
+    async handleJoinGame() {
+        const gameCode = document.getElementById('game-code-input')?.value?.trim();
+        if (!gameCode) {
+            this.updateBetStatus('Please enter a game code', 'error');
+            return;
+        }
+
+        try {
+            const wallet = this.getConnectedWallet();
+            if (!wallet || !wallet.publicKey) {
+                this.updateBetStatus('Please connect your wallet first', 'error');
+                return;
+            }
+
+            // Get game details
+            const { data: game } = await this.supabase
+                .from('chess_games')
+                .select('*')
+                .eq('game_id', gameCode)
+                .single();
+
+            if (!game) {
+                this.updateBetStatus('Game not found', 'error');
+                return;
+            }
+
+            if (game.bet_amount > 0) {
+                // Handle joining a game with a bet
+                const betTx = await this.createMatchingBetTransaction(
+                    wallet.publicKey,
+                    game.bet_amount,
+                    game.escrow_account
+                );
+
+                const signature = await this.sendAndConfirmTransaction(betTx);
+                console.log('Matching bet transaction confirmed:', signature);
+            }
+
+            // Update game record
+            await this.updateGameRecord(gameCode, wallet.publicKey.toString());
+            this.updateBetStatus('Successfully joined game!', 'success');
+
+        } catch (error) {
+            console.error('Error joining game:', error);
+            this.updateBetStatus('Failed to join game: ' + error.message, 'error');
+        }
+    }
+
+    async createEscrowAccount(gameId) {
+        try {
+            const escrowPDA = await this.config.findEscrowPDA(gameId);
+            const escrowATA = await this.findAssociatedTokenAccount(escrowPDA);
+            
+            console.log('Created escrow account:', {
+                pubkey: escrowPDA.toString(),
+                tokenAccount: escrowATA.toString()
+            });
+    
+            return {
+                pubkey: escrowPDA,
+                tokenAccount: escrowATA,
+                seed: Buffer.from(gameId)
+            };
+        } catch (error) {
+            console.error('Error creating escrow account:', error);
+            throw error;
+        }
+    }
+
+    async findAssociatedTokenAccount(walletAddress) {
+        try {
+            if (!walletAddress || typeof walletAddress === 'string') {
+                walletAddress = new solanaWeb3.PublicKey(walletAddress);
+            }
+
             const [associatedToken] = await solanaWeb3.PublicKey.findProgramAddress(
                 [
                     walletAddress.toBuffer(),
                     this.tokenProgram.toBuffer(),
                     this.lawbMint.toBuffer(),
                 ],
-                SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID
+                new solanaWeb3.PublicKey(this.config.ASSOCIATED_TOKEN_PROGRAM_ID)
             );
             
-            console.log('Found associated token address:', associatedToken.toString());
             return associatedToken;
         } catch (error) {
-            console.error('Error finding associated token address:', error);
+            console.error('Error finding associated token account:', error);
             throw error;
         }
     }
 
-    async createBetRecord(betDetails) {
+    async createBetTransaction(playerPublicKey, amount, escrowData) {
         try {
-            const { data, error } = await this.supabase
-                .from('chess_bets')
-                .insert([{
-                    game_id: betDetails.gameId,
-                    bet_amount: betDetails.amount,
-                    blue_player: betDetails.bluePlayer,
-                    red_player: betDetails.redPlayer,
-                    status: 'pending',
-                    escrow_account: betDetails.escrowAccount
-                }])
-                .select()
-                .single();
-
-            if (error) throw error;
-            console.log('Bet record created:', data);
-            return data;
+            const transaction = new solanaWeb3.Transaction();
+            
+            // Get player's token account
+            const playerATA = await this.findAssociatedTokenAccount(playerPublicKey);
+            const escrowATA = escrowData.tokenAccount;
+            
+            // Check balance
+            const balance = await this.connection.getTokenAccountBalance(playerATA);
+            const requiredAmount = amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
+            
+            if (Number(balance.value.amount) < requiredAmount) {
+                throw new Error(`Insufficient $LAWB balance`);
+            }
+    
+            // Create escrow ATA if needed
+            const escrowAccountInfo = await this.connection.getAccountInfo(escrowATA);
+            if (!escrowAccountInfo) {
+                transaction.add(this.createATAInstruction(
+                    playerPublicKey,
+                    escrowATA,
+                    escrowData.pubkey
+                ));
+            }
+    
+            // Add transfer instruction
+            transaction.add(this.createTransferInstruction(
+                playerATA,
+                escrowATA,
+                playerPublicKey,
+                amount
+            ));
+    
+            return transaction;
         } catch (error) {
-            console.error('Error creating bet record:', error);
-            throw error;
-        }
-    }
-
-    async updateBetRecord(gameId, updates) {
-        try {
-            const { data, error } = await this.supabase
-                .from('chess_bets')
-                .update(updates)
-                .eq('game_id', gameId)
-                .select()
-                .single();
-
-            if (error) throw error;
-            console.log('Bet record updated:', data);
-            return data;
-        } catch (error) {
-            console.error('Error updating bet record:', error);
+            console.error('Error creating bet transaction:', error);
             throw error;
         }
     }
@@ -426,8 +298,7 @@ class ChessBetting {
             keys: [
                 { pubkey: from, isSigner: false, isWritable: true },
                 { pubkey: to, isSigner: false, isWritable: true },
-                { pubkey: authority, isSigner: true, isWritable: false },
-                { pubkey: this.lawbMint, isSigner: false, isWritable: false }
+                { pubkey: authority, isSigner: true, isWritable: false }
             ],
             data: Buffer.from([
                 0x02, // Transfer instruction
@@ -438,103 +309,117 @@ class ChessBetting {
 
     async sendAndConfirmTransaction(transaction) {
         try {
-            console.log('Sending transaction...');
-            
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
 
-            // Get latest blockhash and add to transaction
-            const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash('finalized');
+            const { blockhash, lastValidBlockHeight } = 
+                await this.connection.getLatestBlockhash('finalized');
+            
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = wallet.publicKey;
 
-            // Sign transaction
             const signed = await wallet.signTransaction(transaction);
-            
-            // Send transaction
-            const signature = await this.connection.sendRawTransaction(signed.serialize(), {
-                skipPreflight: false,
-                preflightCommitment: 'finalized',
-                maxRetries: 3
-            });
+            const signature = await this.connection.sendRawTransaction(
+                signed.serialize(),
+                { skipPreflight: false, preflightCommitment: 'finalized' }
+            );
 
-            console.log('Transaction sent:', signature);
-
-            // Confirm transaction
-            const confirmation = await this.connection.confirmTransaction({
+            await this.connection.confirmTransaction({
                 signature,
                 blockhash,
                 lastValidBlockHeight
-            }, 'finalized');
+            });
 
-            if (confirmation.value.err) {
-                throw new Error('Transaction failed: ' + confirmation.value.err);
-            }
-
-            console.log('Transaction confirmed:', signature);
             return signature;
-
         } catch (error) {
             console.error('Transaction error:', error);
             throw error;
         }
     }
 
-    async createPayoutTransaction(winner, amount) {
+    async createGameRecord(gameId, playerAddress, betAmount, escrowAccount) {
         try {
-            console.log('Creating payout transaction...');
-            
-            const transaction = new solanaWeb3.Transaction();
-            const winnerPubkey = new solanaWeb3.PublicKey(winner);
-            const housePubkey = new solanaWeb3.PublicKey(this.config.HOUSE_WALLET);
-            
-            // Calculate amounts
-            const houseFee = Math.floor(amount * 2 * (this.config.HOUSE_FEE_PERCENTAGE / 100));
-            const winnerAmount = (amount * 2) - houseFee;
-            
-            // Get token accounts
-            const escrowATA = this.currentBet.escrowAccount.tokenAccount;
-            const winnerATA = await this.findAssociatedTokenAddress(winnerPubkey);
-            const houseATA = await this.findAssociatedTokenAddress(housePubkey);
-            
-            // Create winner payout instruction
-            const winnerPayoutIx = new solanaWeb3.TransactionInstruction({
-                programId: this.tokenProgram,
-                keys: [
-                    { pubkey: escrowATA, isSigner: false, isWritable: true },
-                    { pubkey: winnerATA, isSigner: false, isWritable: true },
-                    { pubkey: this.currentBet.escrowAccount.pubkey, isSigner: true, isWritable: false }
-                ],
-                data: Buffer.from([
-                    3, // Transfer instruction
-                    ...new BN(winnerAmount).toArray('le', 8)
-                ])
-            });
-            
-            // Create house fee instruction
-            const houseFeeIx = new solanaWeb3.TransactionInstruction({
-                programId: this.tokenProgram,
-                keys: [
-                    { pubkey: escrowATA, isSigner: false, isWritable: true },
-                    { pubkey: houseATA, isSigner: false, isWritable: true },
-                    { pubkey: this.currentBet.escrowAccount.pubkey, isSigner: true, isWritable: false }
-                ],
-                data: Buffer.from([
-                    3, // Transfer instruction
-                    ...new BN(houseFee).toArray('le', 8)
-                ])
-            });
-            
-            transaction.add(winnerPayoutIx);
-            transaction.add(houseFeeIx);
-            
-            console.log('Payout transaction created successfully');
-            return transaction;
+            const { data, error } = await this.supabase
+                .from('chess_games')
+                .insert([{
+                    game_id: gameId,
+                    blue_player: playerAddress,
+                    bet_amount: betAmount,
+                    escrow_account: escrowAccount.pubkey.toString(),
+                    game_state: 'waiting'
+                }])
+                .select()
+                .single();
 
+            if (error) throw error;
+            return data;
         } catch (error) {
-            console.error('Error creating payout transaction:', error);
+            console.error('Error creating game record:', error);
             throw error;
         }
+    }
+
+    async updateGameRecord(gameId, redPlayer) {
+        try {
+            const { data, error } = await this.supabase
+                .from('chess_games')
+                .update({
+                    red_player: redPlayer,
+                    game_state: 'active'
+                })
+                .eq('game_id', gameId)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error updating game record:', error);
+            throw error;
+        }
+    }
+
+    async processWinner(winner) {
+        if (!this.currentBet.isActive) return;
+
+        try {
+            const winnerAddress = winner === 'draw' ? null :
+                winner === 'blue' ? this.currentBet.bluePlayer : this.currentBet.redPlayer;
+
+            if (winner === 'draw') {
+                await this.processDraw();
+            } else {
+                await this.processWinnerPayout(winnerAddress);
+            }
+
+            this.resetBetState();
+        } catch (error) {
+            console.error('Error processing winner:', error);
+            this.updateBetStatus('Error processing payout: ' + error.message, 'error');
+        }
+    }
+
+    async processDraw() {
+        // Return funds minus 2.5% fee to each player
+        const feePercentage = this.config.HOUSE_FEE_PERCENTAGE / 2; // 2.5% each
+        const refundAmount = this.currentBet.amount * (1 - feePercentage / 100);
+
+        const tx = await this.createDrawPayoutTransaction(
+            this.currentBet.bluePlayer,
+            this.currentBet.redPlayer,
+            refundAmount
+        );
+
+        await this.sendAndConfirmTransaction(tx);
+    }
+
+    async processWinnerPayout(winnerAddress) {
+        const tx = await this.createWinnerPayoutTransaction(
+            winnerAddress,
+            this.currentBet.amount * 2
+        );
+
+        await this.sendAndConfirmTransaction(tx);
     }
 
     validateBetAmount(amount) {
@@ -553,6 +438,15 @@ class ChessBetting {
         return true;
     }
 
+    updateBetStatus(message, type = 'info') {
+        const statusElement = document.getElementById('betStatus');
+        if (statusElement) {
+            statusElement.textContent = message;
+            statusElement.className = `bet-status ${type}`;
+        }
+        console.log(`Bet status: ${message}`);
+    }
+
     getConnectedWallet() {
         return window.solflare?.isConnected ? window.solflare : 
                window.solana?.isConnected ? window.solana : null;
@@ -565,23 +459,108 @@ class ChessBetting {
             redPlayer: null,
             gameId: null,
             isActive: false,
-            escrowAccount: null
+            escrowAccount: null,
+            matched: false
         };
         this.enableBetting();
     }
 
     disableBetting() {
-        const betButton = document.getElementById('placeBet');
+        const createGameWithBetBtn = document.getElementById('create-game-with-bet');
         const betInput = document.getElementById('betAmount');
-        if (betButton) betButton.disabled = true;
+        if (createGameWithBetBtn) createGameWithBetBtn.disabled = true;
         if (betInput) betInput.disabled = true;
     }
 
     enableBetting() {
-        const betButton = document.getElementById('placeBet');
+        const createGameWithBetBtn = document.getElementById('create-game-with-bet');
         const betInput = document.getElementById('betAmount');
-        if (betButton) betButton.disabled = false;
+        if (createGameWithBetBtn) createGameWithBetBtn.disabled = false;
         if (betInput) betInput.disabled = false;
+    }
+
+    async createWinnerPayoutTransaction(winnerAddress, totalAmount) {
+        try {
+            const transaction = new solanaWeb3.Transaction();
+            const winnerPubkey = new solanaWeb3.PublicKey(winnerAddress);
+            const housePubkey = new solanaWeb3.PublicKey(this.config.HOUSE_WALLET);
+            
+            // Calculate amounts
+            const houseFee = Math.floor(totalAmount * (this.config.HOUSE_FEE_PERCENTAGE / 100));
+            const winnerAmount = totalAmount - houseFee;
+            
+            // Get token accounts
+            const escrowATA = this.currentBet.escrowAccount.tokenAccount;
+            const winnerATA = await this.findAssociatedTokenAccount(winnerPubkey);
+            const houseATA = await this.findAssociatedTokenAccount(housePubkey);
+            
+            // Create winner payout instruction
+            transaction.add(this.createTransferInstruction(
+                escrowATA,
+                winnerATA,
+                this.currentBet.escrowAccount.pubkey,
+                winnerAmount
+            ));
+            
+            // Create house fee instruction
+            transaction.add(this.createTransferInstruction(
+                escrowATA,
+                houseATA,
+                this.currentBet.escrowAccount.pubkey,
+                houseFee
+            ));
+            
+            return transaction;
+        } catch (error) {
+            console.error('Error creating winner payout transaction:', error);
+            throw error;
+        }
+    }
+
+    async createDrawPayoutTransaction(player1Address, player2Address, refundAmount) {
+        try {
+            const transaction = new solanaWeb3.Transaction();
+            const player1Pubkey = new solanaWeb3.PublicKey(player1Address);
+            const player2Pubkey = new solanaWeb3.PublicKey(player2Address);
+            const housePubkey = new solanaWeb3.PublicKey(this.config.HOUSE_WALLET);
+            
+            // Calculate house fee (5% total, split between players)
+            const houseFee = Math.floor(this.currentBet.amount * this.config.HOUSE_FEE_PERCENTAGE / 100);
+            
+            // Get token accounts
+            const escrowATA = this.currentBet.escrowAccount.tokenAccount;
+            const player1ATA = await this.findAssociatedTokenAccount(player1Pubkey);
+            const player2ATA = await this.findAssociatedTokenAccount(player2Pubkey);
+            const houseATA = await this.findAssociatedTokenAccount(housePubkey);
+            
+            // Add refund instructions
+            transaction.add(this.createTransferInstruction(
+                escrowATA,
+                player1ATA,
+                this.currentBet.escrowAccount.pubkey,
+                refundAmount
+            ));
+            
+            transaction.add(this.createTransferInstruction(
+                escrowATA,
+                player2ATA,
+                this.currentBet.escrowAccount.pubkey,
+                refundAmount
+            ));
+            
+            // Add house fee instruction
+            transaction.add(this.createTransferInstruction(
+                escrowATA,
+                houseATA,
+                this.currentBet.escrowAccount.pubkey,
+                houseFee * 2 // Total house fee from both players
+            ));
+            
+            return transaction;
+        } catch (error) {
+            console.error('Error creating draw payout transaction:', error);
+            throw error;
+        }
     }
 
     static addStyles() {
@@ -627,6 +606,8 @@ class ChessBetting {
                 border-radius: 5px;
                 cursor: pointer;
                 transition: all 0.3s ease;
+                margin: 5px;
+                width: 100%;
             }
 
             .bet-button:hover:not(:disabled) {
@@ -639,10 +620,18 @@ class ChessBetting {
                 cursor: not-allowed;
             }
 
+            .multiplayer-options {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                margin: 15px 0;
+            }
+
             .bet-status {
                 margin-top: 10px;
                 padding: 10px;
                 border-radius: 4px;
+                text-align: center;
             }
 
             .bet-status.error {

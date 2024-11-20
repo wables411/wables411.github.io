@@ -13,7 +13,7 @@ const BETTING_CONFIG = {
     // Betting parameters
     HOUSE_FEE_PERCENTAGE: 5,
     MIN_BET: 100,
-    MAX_BET: 100000,
+    MAX_BET: 5000000,
     
     // Escrow configuration
     HOUSE_WALLET: '3NCvL5itgJVrwNZw8BNL8syP8Za5hAmhmApCDh4bdsTu',
@@ -21,11 +21,8 @@ const BETTING_CONFIG = {
         SEED: 'lawb_chess_escrow_v1',
         AUTHORITY_SEED: 'lawb_chess_authority_v1',
         FEE_SEED: 'lawb_chess_fee_v1',
-        // Program that will control escrow accounts
-        PROGRAM_ID: new solanaWeb3.PublicKey('11111111111111111111111111111111'), // System Program as temporary authority
-        // Base58 encoded seed for PDAs
+        PROGRAM_ID: new solanaWeb3.PublicKey('11111111111111111111111111111111'),
         SEED_PREFIX: 'lawb-chess-v1',
-        // Game state seeds
         GAME_SEED: 'game',
         BET_SEED: 'bet',
         ESCROW_SEED: 'escrow'
@@ -36,75 +33,41 @@ const BETTING_CONFIG = {
     SYSTEM_PROGRAM_ID: '11111111111111111111111111111111',
 
     // Helper methods
-    async getConnection() {
-        return window.SOLANA_CONFIG.createConnection();
-    },
-
     async findEscrowPDA(gameId) {
-        const seeds = [
-            Buffer.from(this.ESCROW.SEED_PREFIX),
-            Buffer.from(this.ESCROW.ESCROW_SEED),
-            Buffer.from(gameId)
-        ];
-        
-        const [pda] = await solanaWeb3.PublicKey.findProgramAddress(
-            seeds,
-            this.ESCROW.PROGRAM_ID
-        );
-        return pda;
+        try {
+            const seeds = [
+                Buffer.from(this.ESCROW.SEED_PREFIX),
+                Buffer.from(this.ESCROW.ESCROW_SEED),
+                Buffer.from(gameId)
+            ];
+            
+            const [pda] = await solanaWeb3.PublicKey.findProgramAddress(
+                seeds,
+                new solanaWeb3.PublicKey(this.ESCROW.PROGRAM_ID)
+            );
+            return pda;
+        } catch (error) {
+            console.error('Error finding escrow PDA:', error);
+            throw error;
+        }
     },
 
     async findGamePDA(gameId) {
-        const seeds = [
-            Buffer.from(this.ESCROW.SEED_PREFIX),
-            Buffer.from(this.ESCROW.GAME_SEED),
-            Buffer.from(gameId)
-        ];
-        
-        const [pda] = await solanaWeb3.PublicKey.findProgramAddress(
-            seeds,
-            this.ESCROW.PROGRAM_ID
-        );
-        return pda;
-    },
-
-    async findBetPDA(gameId) {
-        const seeds = [
-            Buffer.from(this.ESCROW.SEED_PREFIX),
-            Buffer.from(this.ESCROW.BET_SEED),
-            Buffer.from(gameId)
-        ];
-        
-        const [pda] = await solanaWeb3.PublicKey.findProgramAddress(
-            seeds,
-            this.ESCROW.PROGRAM_ID
-        );
-        return pda;
-    },
-
-    async findEscrowAuthority(gameId) {
-        const seeds = [
-            Buffer.from(this.ESCROW.SEED_PREFIX),
-            Buffer.from(this.ESCROW.AUTHORITY_SEED),
-            Buffer.from(gameId)
-        ];
-        
-        const [authority] = await solanaWeb3.PublicKey.findProgramAddress(
-            seeds,
-            this.ESCROW.PROGRAM_ID
-        );
-        return authority;
-    },
-
-    async validateConnection() {
         try {
-            const connection = await this.getConnection();
-            const version = await connection.getVersion();
-            console.log('Solana connection validated:', version);
-            return true;
+            const seeds = [
+                Buffer.from(this.ESCROW.SEED_PREFIX),
+                Buffer.from(this.ESCROW.GAME_SEED),
+                Buffer.from(gameId)
+            ];
+            
+            const [pda] = await solanaWeb3.PublicKey.findProgramAddress(
+                seeds,
+                new solanaWeb3.PublicKey(this.ESCROW.PROGRAM_ID)
+            );
+            return pda;
         } catch (error) {
-            console.error('Failed to validate Solana connection:', error);
-            return false;
+            console.error('Error finding game PDA:', error);
+            throw error;
         }
     }
 };
