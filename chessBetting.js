@@ -113,12 +113,11 @@ class ChessBetting {
     
             this.updateBetStatus('Processing bet...', 'processing');
             
-            // Generate game ID and get player's public key
             const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
             const playerPubKey = new solanaWeb3.PublicKey(wallet.publicKey);
             
             try {
-                // Find player's associated token account
+                // Find player's ATA
                 const [playerATA] = await solanaWeb3.PublicKey.findProgramAddress(
                     [
                         playerPubKey.toBuffer(),
@@ -142,7 +141,7 @@ class ChessBetting {
                     this.tokenProgram
                 );
     
-                // Find escrow's associated token account
+                // Find escrow's ATA
                 const [escrowATA] = await solanaWeb3.PublicKey.findProgramAddress(
                     [
                         escrowPDA.toBuffer(),
@@ -155,13 +154,29 @@ class ChessBetting {
                 // Create transaction
                 const transaction = new solanaWeb3.Transaction();
                 
-                // Create transfer instruction
+                // First create the escrow's token account
+                const createATAIx = new solanaWeb3.TransactionInstruction({
+                    programId: this.config.ASSOCIATED_TOKEN_PROGRAM_ID,
+                    keys: [
+                        { pubkey: playerPubKey, isSigner: true, isWritable: true }, // Payer
+                        { pubkey: escrowATA, isSigner: false, isWritable: true }, // New account
+                        { pubkey: escrowPDA, isSigner: false, isWritable: false }, // Owner
+                        { pubkey: this.lawbMint, isSigner: false, isWritable: false }, // Mint
+                        { pubkey: solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
+                        { pubkey: this.tokenProgram, isSigner: false, isWritable: false },
+                        { pubkey: solanaWeb3.SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+                    ],
+                    data: Buffer.from([])
+                });
+    
+                // Then create transfer instruction
                 const transferIx = new solanaWeb3.TransactionInstruction({
                     programId: this.tokenProgram,
                     keys: [
-                        { pubkey: playerATA, isSigner: false, isWritable: true },
-                        { pubkey: escrowATA, isSigner: false, isWritable: true },
-                        { pubkey: playerPubKey, isSigner: true, isWritable: false }
+                        { pubkey: playerATA, isSigner: false, isWritable: true }, // Source
+                        { pubkey: escrowATA, isSigner: false, isWritable: true }, // Destination
+                        { pubkey: playerPubKey, isSigner: true, isWritable: false }, // Authority
+                        { pubkey: solanaWeb3.SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
                     ],
                     data: Buffer.from([
                         3, // Transfer instruction
@@ -169,6 +184,7 @@ class ChessBetting {
                     ])
                 });
     
+                transaction.add(createATAIx);
                 transaction.add(transferIx);
     
                 // Sign and send
@@ -178,7 +194,6 @@ class ChessBetting {
                 const signed = await wallet.signTransaction(transaction);
                 const signature = await this.connection.sendRawTransaction(signed.serialize());
                 
-                // Wait for confirmation
                 await this.connection.confirmTransaction(signature);
     
                 // Create game record
