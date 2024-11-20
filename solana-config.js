@@ -2,9 +2,9 @@ window.SOLANA_CONFIG = {
     CLUSTER: 'mainnet-beta',
     ENDPOINTS: {
         'mainnet-beta': [
-            'https://solana-mainnet.rpc.extrnode.com/218119a6-454e-430e-b63c-f1ae113c7eed',  // Primary endpoint
-            'https://rpc.ankr.com/solana',  // Backup
-            'https://solana-api.projectserum.com'  // Another backup
+            'https://rpc.ankr.com/solana',  // Move Ankr to first position
+            'https://solana-api.projectserum.com',
+            'https://solana-mainnet.rpc.extrnode.com/218119a6-454e-430e-b63c-f1ae113c7eed'
         ]
     },
     CONNECTION_CONFIG: {
