@@ -121,6 +121,31 @@ class ChessBetting {
         }
     }
 
+    async verifySetup() {
+        try {
+            console.log('Verifying setup...');
+            
+            // Basic connection test
+            const version = await this.connection.getVersion();
+            console.log('Solana connection verified, version:', version);
+
+            // Verify LAWB token existence
+            const tokenInfo = await this.connection.getParsedAccountInfo(this.lawbMint);
+            if (!tokenInfo.value) {
+                console.warn('Could not verify LAWB token, but continuing...');
+            } else {
+                console.log('LAWB token verified');
+            }
+
+            await this.initializeSubscriptions();
+            return true;
+        } catch (error) {
+            console.warn('Setup verification warning:', error);
+            // Continue anyway since we have fallback connections
+            return true;
+        }
+    }
+
     async initializeSubscriptions() {
         try {
             // Subscribe to bet updates
@@ -356,34 +381,373 @@ class ChessBetting {
         }
     }
 
-    async transferToEscrow(playerPubKey, escrowPDA, escrowATA, amount) {
+    async checkAndCreateTokenAccount(ownerPubKey) {
         try {
-            // Get player's token account
-            const playerATA = await this.config.findAssociatedTokenAddress(
-                playerPubKey,
+            // Get the ATA address
+            const ata = await this.config.findAssociatedTokenAddress(
+                ownerPubKey,
                 this.lawbMint
             );
 
-            // Check balance
-            const balance = await this.connection.getTokenAccountBalance(playerATA);
-            const requiredAmount = amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
-            
-            if (Number(balance.value.amount) < requiredAmount) {
-                throw new Error(`Insufficient $LAWB balance`);
+            try {
+                // Check if account exists
+                const account = await this.connection.getAccountInfo(ata);
+                if (account) {
+                    console.log('Token account exists');
+                    return ata;
+                }
+            } catch (e) {
+                console.log('Token account does not exist, creating...');
             }
 
-            // Create and execute transfer transaction
+            // Create ATA instruction
+            const createAtaInstruction = 
+                splToken.createAssociatedTokenAccountInstruction(
+                    ownerPubKey, // payer
+                    ata, // ata
+                    ownerPubKey, // owner
+                    this.lawbMint // mint
+                );
+
+            const transaction = new solanaWeb3.Transaction().add(createAtaInstruction);
+            
+            // Send and confirm transaction
+            await this.sendAndConfirmTransaction(transaction);
+            console.log('Token account created');
+            
+            return ata;
+        } catch (error) {
+            console.error('Error checking/creating token account:', error);
+            throw error;
+        }
+    }
+
+    async sendAndConfirmTransaction(transaction) {
+        try {
+            const wallet = this.getConnectedWallet();
+            if (!wallet) throw new Error('No wallet connected');
+
+            console.log('Getting latest blockhash...');
+            const { blockhash, lastValidBlockHeight } = 
+                await this.connection.getLatestBlockhash('confirmed');
+            
+            transaction.recentBlockhash = blockhash;
+            transaction.feePayer = wallet.publicKey;
+
+            console.log('Signing transaction...');
+            const signed = await wallet.signTransaction(transaction);
+            
+            console.log('Sending transaction...');
+            const signature = await this.connection.sendRawTransaction(
+                signed.serialize(),
+                this.transactionOptions
+            );
+
+            console.log('Confirming transaction...');
+            const confirmation = await this.connection.confirmTransaction({
+                signature,
+                blockhash,
+                lastValidBlockHeight
+            });
+
+            if (confirmation.value.err) {
+                throw new Error('Transaction failed to confirm');
+            }
+
+            console.log('Transaction confirmed:', signature);
+            return signature;
+        } catch (error) {
+            console.error('Transaction failed:', error);
+            throw error;
+        }
+    }
+
+    async createTokenAccountInstructions(owner, mint) {
+        try {
+            const ata = await this.config.findAssociatedTokenAddress(owner, mint);
+            
+            // Get minimum lamports needed for account rent exemption
+            const rent = await this.connection.getMinimumBalanceForRentExemption(
+                splToken.AccountLayout.span
+            );
+
+            // Create instructions
+            const createAcctInstruction = splToken.createAssociatedTokenAccountInstruction(
+                owner, // payer
+                ata,  // associatedToken
+                owner, // owner
+                mint  // mint
+            );
+
+            return {
+                ata,
+                instructions: [createAcctInstruction],
+                rent
+            };
+        } catch (error) {
+            console.error('Error creating token account instructions:', error);
+            throw error;
+        }
+    }
+
+    async initializeBalanceChecking() {
+        try {
+            const wallet = this.getConnectedWallet();
+            if (wallet?.publicKey) {
+                // Get or create the token account
+                await this.checkAndCreateTokenAccount(wallet.publicKey);
+                
+                // Set up subscription for balance changes
+                const ata = await this.config.findAssociatedTokenAddress(
+                    wallet.publicKey,
+                    this.lawbMint
+                );
+
+                this.subscriptions.balance = this.connection.onAccountChange(
+                    ata,
+                    (accountInfo) => {
+                        this.handleBalanceUpdate(accountInfo);
+                    },
+                    'confirmed'
+                );
+            }
+        } catch (error) {
+            console.error('Failed to initialize balance checking:', error);
+        }
+    }
+
+    async handleBalanceUpdate(accountInfo) {
+        try {
+            const wallet = this.getConnectedWallet();
+            if (!wallet?.publicKey) return;
+
+            const balance = accountInfo.lamports / Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
+            
+            // Update UI based on balance
+            const betInput = document.getElementById('betAmount');
+            const createGameBtn = document.getElementById('create-game-with-bet');
+            
+            if (betInput && createGameBtn) {
+                const currentBet = Number(betInput.value);
+                createGameBtn.disabled = balance < currentBet;
+                
+                if (balance < currentBet) {
+                    this.updateBetStatus(`Insufficient balance: ${balance.toFixed(2)} $LAWB`, 'error');
+                }
+            }
+        } catch (error) {
+            console.error('Error handling balance update:', error);
+        }
+    }
+
+    async ensureAssociatedTokenAccount(owner, mint) {
+        try {
+            const ata = await this.config.findAssociatedTokenAddress(owner, mint);
+            
+            // Check if account exists
+            const account = await this.connection.getAccountInfo(ata);
+            
+            if (!account) {
+                console.log('Creating new ATA for owner:', owner.toString());
+                
+                const transaction = new solanaWeb3.Transaction().add(
+                    splToken.createAssociatedTokenAccountInstruction(
+                        owner,                // payer
+                        ata,                  // ata
+                        owner,                // owner
+                        mint,                 // mint
+                        splToken.TOKEN_PROGRAM_ID,
+                        splToken.ASSOCIATED_TOKEN_PROGRAM_ID
+                    )
+                );
+
+                await this.sendAndConfirmTransaction(transaction);
+                console.log('ATA created:', ata.toString());
+            } else {
+                console.log('ATA already exists:', ata.toString());
+            }
+
+            return ata;
+        } catch (error) {
+            console.error('Error ensuring ATA:', error);
+            throw error;
+        }
+    }
+
+    async ensureEscrowAccount(gameId) {
+        try {
+            const escrowPDA = await this.config.findEscrowPDA(gameId);
+            console.log('Ensuring escrow account for game:', gameId);
+            
+            // Create escrow token account if it doesn't exist
+            const escrowATA = await this.ensureAssociatedTokenAccount(
+                escrowPDA,
+                this.lawbMint
+            );
+
+            return { escrowPDA, escrowATA };
+        } catch (error) {
+            console.error('Error ensuring escrow account:', error);
+            throw error;
+        }
+    }
+
+    async getOrCreateTokenAccount(owner) {
+        try {
+            console.log('Getting or creating token account for:', owner.toString());
+            
+            // First try to find existing account
+            const ata = await this.config.findAssociatedTokenAddress(
+                owner,
+                this.lawbMint
+            );
+
+            try {
+                const accountInfo = await this.connection.getAccountInfo(ata);
+                if (accountInfo) {
+                    console.log('Found existing token account');
+                    return ata;
+                }
+            } catch (e) {
+                console.log('Token account not found, creating new one');
+            }
+
+            // Create new account if not found
+            await this.ensureAssociatedTokenAccount(owner, this.lawbMint);
+            return ata;
+        } catch (error) {
+            console.error('Error in getOrCreateTokenAccount:', error);
+            throw error;
+        }
+    }
+
+    async createEscrowInstructions(gameId, amount) {
+        try {
+            const wallet = this.getConnectedWallet();
+            if (!wallet?.publicKey) throw new Error('Wallet not connected');
+
+            // Generate escrow PDA
+            const escrowPDA = await this.config.findEscrowPDA(gameId);
+            console.log('Escrow PDA:', escrowPDA.toString());
+
+            // Create instructions for token accounts
+            const playerTokenAccount = await this.checkAndCreateTokenAccount(wallet.publicKey);
+            const escrowTokenAccount = await this.checkAndCreateTokenAccount(escrowPDA);
+
+            // Create transfer instruction
+            const transferInstruction = this.config.createTransferInstruction(
+                playerTokenAccount,
+                escrowTokenAccount,
+                wallet.publicKey,
+                amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS)
+            );
+
+            return {
+                escrowPDA,
+                escrowTokenAccount,
+                instructions: [transferInstruction]
+            };
+        } catch (error) {
+            console.error('Error creating escrow instructions:', error);
+            throw error;
+        }
+    }
+
+    async setupEscrowForGame(gameId, amount) {
+        try {
+            console.log('Setting up escrow for game:', gameId);
+            
+            // Get escrow instructions
+            const { escrowPDA, escrowTokenAccount, instructions } = 
+                await this.createEscrowInstructions(gameId, amount);
+
+            // Create and send transaction
+            const transaction = new solanaWeb3.Transaction();
+            instructions.forEach(ix => transaction.add(ix));
+
+            const signature = await this.sendAndConfirmTransaction(transaction);
+            console.log('Escrow setup complete, signature:', signature);
+
+            return {
+                escrowPDA,
+                escrowTokenAccount,
+                signature
+            };
+        } catch (error) {
+            console.error('Error setting up escrow:', error);
+            throw error;
+        }
+    }
+
+    async initiateEscrowRefund(escrowPDA, amount) {
+        try {
+            const wallet = this.getConnectedWallet();
+            if (!wallet?.publicKey) throw new Error('Wallet not connected');
+
+            const playerTokenAccount = await this.checkAndCreateTokenAccount(wallet.publicKey);
+            const escrowTokenAccount = await this.checkAndCreateTokenAccount(escrowPDA);
+
             const transaction = new solanaWeb3.Transaction();
             transaction.add(
                 this.config.createTransferInstruction(
-                    playerATA,
-                    escrowATA,
-                    playerPubKey,
-                    requiredAmount
+                    escrowTokenAccount,
+                    playerTokenAccount,
+                    escrowPDA,
+                    amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS)
                 )
             );
 
-            await this.sendAndConfirmTransaction(transaction);
+            return await this.sendAndConfirmTransaction(transaction);
+        } catch (error) {
+            console.error('Error initiating escrow refund:', error);
+            throw error;
+        }
+    }
+
+    async transferToEscrow(playerPubKey, escrowPDA, escrowATA, amount) {
+        try {
+            // Get or create player's token account
+            console.log('Checking/creating player token account...');
+            const playerATA = await this.checkAndCreateTokenAccount(playerPubKey);
+            
+            // Create escrow token account if it doesn't exist
+            console.log('Checking/creating escrow token account...');
+            const escrowTokenAccount = await this.checkAndCreateTokenAccount(escrowPDA);
+
+            // Check balance
+            console.log('Checking player balance...');
+            try {
+                const balance = await this.connection.getTokenAccountBalance(playerATA);
+                const requiredAmount = amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
+                
+                if (Number(balance.value.amount) < requiredAmount) {
+                    throw new Error(`Insufficient $LAWB balance. Required: ${requiredAmount / Math.pow(10, this.config.LAWB_TOKEN.DECIMALS)} $LAWB`);
+                }
+                
+                console.log(`Player balance: ${balance.value.amount}, Required: ${requiredAmount}`);
+
+                // Create and execute transfer transaction
+                console.log('Creating transfer transaction...');
+                const transaction = new solanaWeb3.Transaction();
+                transaction.add(
+                    this.config.createTransferInstruction(
+                        playerATA,
+                        escrowTokenAccount,
+                        playerPubKey,
+                        requiredAmount
+                    )
+                );
+
+                console.log('Sending transfer transaction...');
+                await this.sendAndConfirmTransaction(transaction);
+                console.log('Transfer completed successfully');
+
+            } catch (balanceError) {
+                if (balanceError.message.includes('could not find account')) {
+                    throw new Error('No $LAWB tokens found in wallet');
+                }
+                throw balanceError;
+            }
         } catch (error) {
             console.error('Error transferring to escrow:', error);
             throw error;
