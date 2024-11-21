@@ -359,49 +359,54 @@
         Code copied to clipboard!
     </div>
 
-    <!-- Load Dependencies First -->
-    <!-- Buffer and BN.js for Solana -->
-    <script src="https://bundle.run/buffer@6.0.3"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bn.js@5.2.1/lib/bn.js"></script>
-    <script>
-        window.Buffer = buffer.Buffer;
-        window.BN = window.BN || require('bn.js');
-    </script>
+<!-- Load Dependencies First -->
+<!-- Buffer and BN.js for Solana -->
+<script src="https://bundle.run/buffer@6.0.3"></script>
+<script src="https://cdn.jsdelivr.net/npm/bn.js@5.2.1/lib/bn.js"></script>
+<script>
+    window.Buffer = buffer.Buffer;
+    window.BN = window.BN || require('bn.js');
+</script>
 
-    <!-- Solana Core Dependencies -->
-    <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@solana/spl-token@0.3.9/lib/index.iife.js"></script>
+<!-- Solana Core Dependencies -->
+<script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
+<script src="https://unpkg.com/@solana/spl-token@0.3.9/lib/index.iife.min.js"></script>
+<script>
+    window.TokenProgram = window.SplToken.TOKEN_PROGRAM;
+    window.AssociatedTokenProgram = window.SplToken.ASSOCIATED_TOKEN_PROGRAM_ID;
+    window.createAssociatedTokenAccountInstruction = window.SplToken.createAssociatedTokenAccountInstruction;
+</script>
 
-    <!-- Wallet Adapters -->
-    <script src="https://unpkg.com/@solana/wallet-adapter-base@0.9.23/lib/index.iife.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.1.1/lib/index.iife.min.js"></script>
+<!-- Wallet Adapters -->
+<script src="https://unpkg.com/@solana/wallet-adapter-base@0.9.23/lib/index.iife.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.1.1/lib/index.iife.min.js"></script>
 
-    <!-- Supabase -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<!-- Supabase -->
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-    <!-- Initialize Core Systems -->
-    <script>
-        // Initialize Supabase
-        try {
-            if (!window.gameDatabase) {
-                window.gameDatabase = window.supabase.createClient(
-                    'https://roxwocgknkiqnsgiojgz.supabase.co',
-                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
-                );
-            }
-        } catch (error) {
-            console.error('Error initializing Supabase:', error);
+<!-- Initialize Core Systems -->
+<script>
+    // Initialize Supabase
+    try {
+        if (!window.gameDatabase) {
+            window.gameDatabase = window.supabase.createClient(
+                'https://roxwocgknkiqnsgiojgz.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
+            );
         }
-    </script>
+    } catch (error) {
+        console.error('Error initializing Supabase:', error);
+    }
+</script>
 
-    <!-- Load Game Scripts in Order -->
-    <script src="solana-config.js"></script>
-    <script src="betting-config.js"></script>
-    <script src="chessBetting.js"></script>
-    <script src="loadImages.js"></script>
-    <script src="leaderboard.js"></script>
-    <script src="multiplayer.js"></script>
-    <script src="chess.js"></script>
+<!-- Load Game Scripts in Order -->
+<script src="solana-config.js"></script>
+<script src="betting-config.js"></script>
+<script src="chessBetting.js"></script>
+<script src="loadImages.js"></script>
+<script src="leaderboard.js"></script>
+<script src="multiplayer.js"></script>
+<script src="chess.js"></script>
 
     <!-- Initialize Betting System -->
     <script>

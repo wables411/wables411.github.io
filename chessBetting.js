@@ -6,8 +6,9 @@ class ChessBetting {
         this.connection = null;
         
         // Initialize token program and mint correctly
-        this.tokenProgram = this.config.TOKEN_PROGRAM_ID;
-        this.lawbMint = this.config.LAWB_TOKEN.MINT;
+        this.tokenProgram = window.TokenProgram;
+        this.associatedTokenProgram = window.AssociatedTokenProgram;
+        this.lawbMint = new solanaWeb3.PublicKey('65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6');
         
         this.currentBet = {
             amount: 0,
@@ -368,11 +369,21 @@ class ChessBetting {
 
     async createEscrowAccounts(gameId) {
         try {
+            console.log('Creating escrow accounts for game:', gameId);
+            
+            // Generate escrow PDA
             const escrowPDA = await this.config.findEscrowPDA(gameId);
-            const escrowATA = await this.config.findAssociatedTokenAddress(
+            console.log('Escrow PDA:', escrowPDA.toString());
+
+            // Get escrow token account
+            const escrowATA = await window.SplToken.getAssociatedTokenAddress(
+                this.lawbMint,
                 escrowPDA,
-                this.lawbMint
+                false,
+                this.tokenProgram,
+                this.associatedTokenProgram
             );
+            console.log('Escrow ATA:', escrowATA.toString());
 
             return { escrowPDA, escrowATA };
         } catch (error) {
@@ -383,17 +394,22 @@ class ChessBetting {
 
     async checkAndCreateTokenAccount(ownerPubKey) {
         try {
+            console.log('Creating token account for:', ownerPubKey.toString());
+            
             // Get the ATA address
-            const ata = await this.config.findAssociatedTokenAddress(
-                ownerPubKey,
-                this.lawbMint
+            const ata = await window.SplToken.getAssociatedTokenAddress(
+                this.lawbMint,             // mint
+                ownerPubKey,               // owner
+                false,                     // allowOwnerOffCurve
+                this.tokenProgram,         // programId
+                this.associatedTokenProgram // associatedTokenProgramId
             );
 
             try {
                 // Check if account exists
                 const account = await this.connection.getAccountInfo(ata);
                 if (account) {
-                    console.log('Token account exists');
+                    console.log('Token account exists:', ata.toString());
                     return ata;
                 }
             } catch (e) {
@@ -401,19 +417,18 @@ class ChessBetting {
             }
 
             // Create ATA instruction
-            const createAtaInstruction = 
-                splToken.createAssociatedTokenAccountInstruction(
-                    ownerPubKey, // payer
-                    ata, // ata
-                    ownerPubKey, // owner
-                    this.lawbMint // mint
-                );
+            const instruction = window.createAssociatedTokenAccountInstruction(
+                ownerPubKey,                // payer
+                ata,                        // ata
+                ownerPubKey,                // owner
+                this.lawbMint,              // mint
+                this.tokenProgram,          // programId
+                this.associatedTokenProgram // associatedTokenProgramId
+            );
 
-            const transaction = new solanaWeb3.Transaction().add(createAtaInstruction);
-            
-            // Send and confirm transaction
+            const transaction = new solanaWeb3.Transaction().add(instruction);
             await this.sendAndConfirmTransaction(transaction);
-            console.log('Token account created');
+            console.log('Token account created:', ata.toString());
             
             return ata;
         } catch (error) {
@@ -540,83 +555,17 @@ class ChessBetting {
         }
     }
 
-    async ensureAssociatedTokenAccount(owner, mint) {
-        try {
-            const ata = await this.config.findAssociatedTokenAddress(owner, mint);
-            
-            // Check if account exists
-            const account = await this.connection.getAccountInfo(ata);
-            
-            if (!account) {
-                console.log('Creating new ATA for owner:', owner.toString());
-                
-                const transaction = new solanaWeb3.Transaction().add(
-                    splToken.createAssociatedTokenAccountInstruction(
-                        owner,                // payer
-                        ata,                  // ata
-                        owner,                // owner
-                        mint,                 // mint
-                        splToken.TOKEN_PROGRAM_ID,
-                        splToken.ASSOCIATED_TOKEN_PROGRAM_ID
-                    )
-                );
-
-                await this.sendAndConfirmTransaction(transaction);
-                console.log('ATA created:', ata.toString());
-            } else {
-                console.log('ATA already exists:', ata.toString());
-            }
-
-            return ata;
-        } catch (error) {
-            console.error('Error ensuring ATA:', error);
-            throw error;
-        }
-    }
-
     async ensureEscrowAccount(gameId) {
         try {
             const escrowPDA = await this.config.findEscrowPDA(gameId);
             console.log('Ensuring escrow account for game:', gameId);
             
             // Create escrow token account if it doesn't exist
-            const escrowATA = await this.ensureAssociatedTokenAccount(
-                escrowPDA,
-                this.lawbMint
-            );
-
+            const escrowATA = await this.checkAndCreateTokenAccount(escrowPDA);
+    
             return { escrowPDA, escrowATA };
         } catch (error) {
             console.error('Error ensuring escrow account:', error);
-            throw error;
-        }
-    }
-
-    async getOrCreateTokenAccount(owner) {
-        try {
-            console.log('Getting or creating token account for:', owner.toString());
-            
-            // First try to find existing account
-            const ata = await this.config.findAssociatedTokenAddress(
-                owner,
-                this.lawbMint
-            );
-
-            try {
-                const accountInfo = await this.connection.getAccountInfo(ata);
-                if (accountInfo) {
-                    console.log('Found existing token account');
-                    return ata;
-                }
-            } catch (e) {
-                console.log('Token account not found, creating new one');
-            }
-
-            // Create new account if not found
-            await this.ensureAssociatedTokenAccount(owner, this.lawbMint);
-            return ata;
-        } catch (error) {
-            console.error('Error in getOrCreateTokenAccount:', error);
             throw error;
         }
     }
@@ -712,7 +661,7 @@ class ChessBetting {
             
             // Create escrow token account if it doesn't exist
             console.log('Checking/creating escrow token account...');
-            const escrowTokenAccount = await this.checkAndCreateTokenAccount(escrowPDA);
+            await this.checkAndCreateTokenAccount(escrowPDA);
 
             // Check balance
             console.log('Checking player balance...');
@@ -721,23 +670,23 @@ class ChessBetting {
                 const requiredAmount = amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
                 
                 if (Number(balance.value.amount) < requiredAmount) {
-                    throw new Error(`Insufficient $LAWB balance. Required: ${requiredAmount / Math.pow(10, this.config.LAWB_TOKEN.DECIMALS)} $LAWB`);
+                    throw new Error(`Insufficient $LAWB balance. Required: ${amount} $LAWB`);
                 }
                 
                 console.log(`Player balance: ${balance.value.amount}, Required: ${requiredAmount}`);
 
-                // Create and execute transfer transaction
-                console.log('Creating transfer transaction...');
-                const transaction = new solanaWeb3.Transaction();
-                transaction.add(
-                    this.config.createTransferInstruction(
-                        playerATA,
-                        escrowTokenAccount,
-                        playerPubKey,
-                        requiredAmount
-                    )
+                // Create transfer instruction
+                const transferInstruction = window.SplToken.createTransferInstruction(
+                    playerATA,              // source
+                    escrowATA,              // destination
+                    playerPubKey,           // owner
+                    requiredAmount,         // amount
+                    [],                     // multiSigners
+                    this.tokenProgram       // programId
                 );
 
+                const transaction = new solanaWeb3.Transaction().add(transferInstruction);
+                
                 console.log('Sending transfer transaction...');
                 await this.sendAndConfirmTransaction(transaction);
                 console.log('Transfer completed successfully');
@@ -859,39 +808,40 @@ class ChessBetting {
 
     async handleBetJoin(game, bet, playerPubKey) {
         try {
+            // Get or create player's token account
+            console.log('Checking/creating player token account...');
+            const playerATA = await this.checkAndCreateTokenAccount(playerPubKey);
+    
+            // Get escrow token account
+            console.log('Getting escrow token account...');
+            const escrowPDA = new solanaWeb3.PublicKey(bet.escrow_account);
+            const escrowATA = await this.checkAndCreateTokenAccount(escrowPDA);
+    
             // Verify player has enough tokens
-            const playerATA = await this.config.findAssociatedTokenAddress(
-                playerPubKey,
-                this.lawbMint
-            );
-
+            console.log('Checking player balance...');
             const balance = await this.connection.getTokenAccountBalance(playerATA);
             const requiredAmount = game.bet_amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
             
             if (Number(balance.value.amount) < requiredAmount) {
                 throw new Error(`Insufficient $LAWB balance`);
             }
-
-            // Get escrow accounts
-            const escrowPDA = new solanaWeb3.PublicKey(bet.escrow_account);
-            const escrowATA = await this.config.findAssociatedTokenAddress(
-                escrowPDA,
-                this.lawbMint
-            );
-
+    
             // Create and execute transfer transaction
             const transaction = new solanaWeb3.Transaction();
             transaction.add(
-                this.config.createTransferInstruction(
-                    playerATA,
-                    escrowATA,
-                    playerPubKey,
-                    requiredAmount
+                window.SplToken.createTransferInstruction(
+                    playerATA,              // source
+                    escrowATA,              // destination
+                    playerPubKey,           // owner
+                    requiredAmount,         // amount
+                    [],                     // multiSigners
+                    this.tokenProgram       // programId
                 )
             );
-
+    
             await this.sendAndConfirmTransaction(transaction);
-
+            console.log('Bet join transaction completed');
+    
         } catch (error) {
             console.error('Error handling bet join:', error);
             throw error;
@@ -963,47 +913,65 @@ class ChessBetting {
             const refundAmount = Math.floor(playerAmount * (1 - feePercentage / 100)) * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
             const houseFee = Math.floor(playerAmount * feePercentage / 100) * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
 
-            const transaction = new solanaWeb3.Transaction();
-            
             // Get all token accounts
             const [escrowATA, player1ATA, player2ATA, houseATA] = await Promise.all([
-                this.config.findAssociatedTokenAddress(
+                window.SplToken.getAssociatedTokenAddress(
+                    this.lawbMint,
                     this.currentBet.escrowAccount,
-                    this.lawbMint
+                    false,
+                    this.tokenProgram,
+                    this.associatedTokenProgram
                 ),
-                this.config.findAssociatedTokenAddress(
+                window.SplToken.getAssociatedTokenAddress(
+                    this.lawbMint,
                     new solanaWeb3.PublicKey(this.currentBet.bluePlayer),
-                    this.lawbMint
+                    false,
+                    this.tokenProgram,
+                    this.associatedTokenProgram
                 ),
-                this.config.findAssociatedTokenAddress(
+                window.SplToken.getAssociatedTokenAddress(
+                    this.lawbMint,
                     new solanaWeb3.PublicKey(this.currentBet.redPlayer),
-                    this.lawbMint
+                    false,
+                    this.tokenProgram,
+                    this.associatedTokenProgram
                 ),
-                this.config.findAssociatedTokenAddress(
+                window.SplToken.getAssociatedTokenAddress(
+                    this.lawbMint,
                     this.config.HOUSE_WALLET,
-                    this.lawbMint
+                    false,
+                    this.tokenProgram,
+                    this.associatedTokenProgram
                 )
             ]);
 
-            // Add all transfer instructions
+            const transaction = new solanaWeb3.Transaction();
+            
+            // Add transfer instructions
             transaction.add(
-                this.config.createTransferInstruction(
+                window.SplToken.createTransferInstruction(
                     escrowATA,
                     player1ATA,
                     this.currentBet.escrowAccount,
-                    refundAmount
+                    refundAmount,
+                    [],
+                    this.tokenProgram
                 ),
-                this.config.createTransferInstruction(
+                window.SplToken.createTransferInstruction(
                     escrowATA,
                     player2ATA,
                     this.currentBet.escrowAccount,
-                    refundAmount
+                    refundAmount,
+                    [],
+                    this.tokenProgram
                 ),
-                this.config.createTransferInstruction(
+                window.SplToken.createTransferInstruction(
                     escrowATA,
                     houseATA,
                     this.currentBet.escrowAccount,
-                    houseFee * 2
+                    houseFee * 2,
+                    [],
+                    this.tokenProgram
                 )
             );
 
@@ -1025,37 +993,50 @@ class ChessBetting {
             const winnerAmount = Math.floor(totalAmount - houseFee) * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
             const houseFeeAmount = Math.floor(houseFee) * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
 
-            const transaction = new solanaWeb3.Transaction();
-            
             // Get token accounts
             const [escrowATA, winnerATA, houseATA] = await Promise.all([
-                this.config.findAssociatedTokenAddress(
+                window.SplToken.getAssociatedTokenAddress(
+                    this.lawbMint,
                     this.currentBet.escrowAccount,
-                    this.lawbMint
+                    false,
+                    this.tokenProgram,
+                    this.associatedTokenProgram
                 ),
-                this.config.findAssociatedTokenAddress(
+                window.SplToken.getAssociatedTokenAddress(
+                    this.lawbMint,
                     new solanaWeb3.PublicKey(winnerAddress),
-                    this.lawbMint
+                    false,
+                    this.tokenProgram,
+                    this.associatedTokenProgram
                 ),
-                this.config.findAssociatedTokenAddress(
+                window.SplToken.getAssociatedTokenAddress(
+                    this.lawbMint,
                     this.config.HOUSE_WALLET,
-                    this.lawbMint
+                    false,
+                    this.tokenProgram,
+                    this.associatedTokenProgram
                 )
             ]);
 
+            const transaction = new solanaWeb3.Transaction();
+            
             // Add transfer instructions
             transaction.add(
-                this.config.createTransferInstruction(
+                window.SplToken.createTransferInstruction(
                     escrowATA,
                     winnerATA,
                     this.currentBet.escrowAccount,
-                    winnerAmount
+                    winnerAmount,
+                    [],
+                    this.tokenProgram
                 ),
-                this.config.createTransferInstruction(
+                window.SplToken.createTransferInstruction(
                     escrowATA,
                     houseATA,
                     this.currentBet.escrowAccount,
-                    houseFeeAmount
+                    houseFeeAmount,
+                    [],
+                    this.tokenProgram
                 )
             );
 
@@ -1072,27 +1053,35 @@ class ChessBetting {
         }
 
         try {
-            const transaction = new solanaWeb3.Transaction();
-            
+            // Get token accounts
             const [escrowATA, playerATA] = await Promise.all([
-                this.config.findAssociatedTokenAddress(
+                window.SplToken.getAssociatedTokenAddress(
+                    this.lawbMint,
                     this.currentBet.escrowAccount,
-                    this.lawbMint
+                    false,
+                    this.tokenProgram,
+                    this.associatedTokenProgram
                 ),
-                this.config.findAssociatedTokenAddress(
+                window.SplToken.getAssociatedTokenAddress(
+                    this.lawbMint,
                     new solanaWeb3.PublicKey(this.currentBet.bluePlayer),
-                    this.lawbMint
+                    false,
+                    this.tokenProgram,
+                    this.associatedTokenProgram
                 )
             ]);
 
             const refundAmount = this.currentBet.amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
 
+            const transaction = new solanaWeb3.Transaction();
             transaction.add(
-                this.config.createTransferInstruction(
+                window.SplToken.createTransferInstruction(
                     escrowATA,
                     playerATA,
                     this.currentBet.escrowAccount,
-                    refundAmount
+                    refundAmount,
+                    [],
+                    this.tokenProgram
                 )
             );
 
