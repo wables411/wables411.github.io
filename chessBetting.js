@@ -93,6 +93,23 @@ class ChessBetting {
         console.log('UI handlers initialized');
     }
 
+    updateBetCalculations() {
+        const betInput = document.getElementById('betAmount');
+        const feeDisplay = document.getElementById('feeAmount');
+        const winDisplay = document.getElementById('potentialWin');
+        
+        if (betInput && feeDisplay && winDisplay) {
+            const amount = Number(betInput.value);
+            if (this.validateBetAmount(amount, false)) {
+                const fee = Math.floor(amount * 2 * this.config.HOUSE_FEE_PERCENTAGE / 100);
+                const potentialWin = amount * 2 - fee;
+                
+                feeDisplay.textContent = fee;
+                winDisplay.textContent = potentialWin;
+            }
+        }
+    }
+
     async init() {
         try {
             console.log('Initializing betting system...');
@@ -725,6 +742,28 @@ class ChessBetting {
         }
     }
 
+    async createGameRecord(gameId, playerAddress, amount, escrowAccount) {
+        try {
+            const { data, error } = await this.supabase
+                .from('chess_games')
+                .insert([{
+                    game_id: gameId,
+                    blue_player: playerAddress,
+                    bet_amount: amount,
+                    escrow_account: escrowAccount.toString(),
+                    game_state: 'waiting'
+                }])
+                .select()
+                .single();
+    
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error creating game record:', error);
+            throw error;
+        }
+    }
+
     async handleJoinGame() {
         const gameCode = document.getElementById('game-code-input')?.value?.trim();
         if (!gameCode) {
@@ -1105,6 +1144,45 @@ class ChessBetting {
         } catch (error) {
             console.error('Error finalizing bet:', error);
             throw error;
+        }
+    }
+
+    async handleCreateGameNoBet() {
+        try {
+            const wallet = this.getConnectedWallet();
+            if (!wallet || !wallet.publicKey) {
+                this.updateBetStatus('Please connect your wallet first', 'error');
+                return;
+            }
+    
+            const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
+            
+            const { data, error } = await this.supabase
+                .from('chess_games')
+                .insert([{
+                    game_id: gameId,
+                    blue_player: wallet.publicKey.toString(),
+                    game_state: 'waiting',
+                    bet_amount: 0
+                }])
+                .select()
+                .single();
+    
+            if (error) throw error;
+    
+            // Show game code
+            const gameCodeDisplay = document.getElementById('gameCodeDisplay');
+            const gameCode = document.getElementById('gameCode');
+            if (gameCodeDisplay && gameCode) {
+                gameCode.textContent = gameId;
+                gameCodeDisplay.style.display = 'block';
+            }
+    
+            this.updateBetStatus('Game created! Share code to play', 'success');
+    
+        } catch (error) {
+            console.error('Error creating game:', error);
+            this.updateBetStatus('Failed to create game: ' + error.message, 'error');
         }
     }
 
