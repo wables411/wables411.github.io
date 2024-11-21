@@ -470,5 +470,50 @@
         }
     });
     </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Debug multi-player mode display
+            const multiplayerBtn = document.getElementById('multiplayer-mode');
+            const bettingContainer = document.getElementById('betting-container');
+            
+            if (multiplayerBtn) {
+                console.log('Found multiplayer button');
+                const originalClick = multiplayerBtn.onclick;
+                
+                multiplayerBtn.onclick = function(e) {
+                    console.log('Multiplayer button clicked');
+                    if (originalClick) originalClick.call(this, e);
+                    
+                    // Force show betting container
+                    if (bettingContainer) {
+                        console.log('Showing betting container');
+                        bettingContainer.style.display = 'block';
+                    } else {
+                        console.error('Betting container not found');
+                    }
+                    
+                    // Log current wallet state
+                    const wallet = window.solflare?.isConnected ? window.solflare : 
+                                 window.solana?.isConnected ? window.solana : null;
+                    console.log('Current wallet state:', wallet ? 'Connected' : 'Not connected');
+                };
+            } else {
+                console.error('Multiplayer button not found');
+            }
+            
+            // Monitor wallet connections
+            const walletCheckInterval = setInterval(() => {
+                const wallet = window.solflare?.isConnected ? window.solflare : 
+                              window.solana?.isConnected ? window.solana : null;
+                if (wallet) {
+                    console.log('Wallet connected, initializing betting system');
+                    if (window.chessBetting) {
+                        window.chessBetting.init().catch(console.error);
+                    }
+                    clearInterval(walletCheckInterval);
+                }
+            }, 1000);
+        });
+        </script>
 </body>
 </html>

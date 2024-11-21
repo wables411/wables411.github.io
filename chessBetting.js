@@ -45,14 +45,20 @@ class ChessBetting {
             
             // Verify setup
             await this.verifySetup();
-            
-            // Initialize subscriptions
-            await this.initializeSubscriptions();
+            console.log('Betting system initialized successfully');
             
             // Initialize balance checking
             await this.initializeBalanceChecking();
             
-            console.log('Betting system initialized successfully');
+            // Force show betting UI if in multiplayer mode
+            if (document.getElementById('multiplayer-mode')?.classList.contains('selected')) {
+                const bettingContainer = document.getElementById('betting-container');
+                if (bettingContainer) {
+                    console.log('Showing betting container (init)');
+                    bettingContainer.style.display = 'block';
+                }
+            }
+            
             return true;
         } catch (error) {
             console.error('Failed to initialize betting system:', error);

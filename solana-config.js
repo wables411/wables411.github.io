@@ -8,41 +8,48 @@ window.SOLANA_CONFIG = {
     CONNECTION_CONFIG: {
         commitment: 'confirmed',
         confirmTransactionInitialTimeout: 60000,
-        wsEndpoint: 'wss://solana-mainnet.rpc.extrnode.com/218119a6-454e-430e-b63c-f1ae113c7eed',
         httpHeaders: {
             'Authorization': 'Bearer 218119a6-454e-430e-b63c-f1ae113c7eed',
             'Origin': 'https://lawb.xyz',
-            'Referer': 'https://lawb.xyz'
+            'Referer': 'https://lawb.xyz/'
         }
     },
     
     async createConnection() {
         try {
-            const endpoint = this.ENDPOINTS[this.CLUSTER][0];
+            // Try GenesysGo public endpoint first
             const connection = new solanaWeb3.Connection(
-                endpoint,
-                this.CONNECTION_CONFIG
+                'https://ssc-dao.genesysgo.net/',
+                { commitment: 'confirmed' }
             );
             
-            // Test connection
-            await connection.getVersion();
-            console.log('Solana connection established successfully');
-            return connection;
+            try {
+                await connection.getVersion();
+                console.log('Connected to GenesysGo endpoint');
+                return connection;
+            } catch (error) {
+                console.warn('GenesysGo endpoint failed, trying Extrnode');
+                
+                // Try Extrnode endpoint
+                const extrnodeConnection = new solanaWeb3.Connection(
+                    this.ENDPOINTS[this.CLUSTER][0],
+                    this.CONNECTION_CONFIG
+                );
+                
+                await extrnodeConnection.getVersion();
+                console.log('Connected to Extrnode endpoint');
+                return extrnodeConnection;
+            }
         } catch (error) {
             console.error('Failed to create Solana connection:', error);
-            // Fall back to public RPC if Extrnode fails
-            try {
-                const fallbackConnection = new solanaWeb3.Connection(
-                    'https://api.mainnet-beta.solana.com',
-                    { commitment: 'confirmed' }
-                );
-                await fallbackConnection.getVersion();
-                console.log('Connected to fallback endpoint');
-                return fallbackConnection;
-            } catch (fallbackError) {
-                console.error('Fallback connection failed:', fallbackError);
-                throw error;
-            }
+            // Final fallback to public endpoint
+            const fallbackConnection = new solanaWeb3.Connection(
+                'https://api.devnet.solana.com',
+                { commitment: 'confirmed' }
+            );
+            await fallbackConnection.getVersion();
+            console.log('Connected to fallback endpoint');
+            return fallbackConnection;
         }
     }
 };
