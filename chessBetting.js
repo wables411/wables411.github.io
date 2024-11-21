@@ -38,6 +38,60 @@ class ChessBetting {
         this.initializeUI();
     }
 
+    initializeUI() {
+        console.log('Initializing UI handlers...');
+        
+        // Set up bet amount input handler
+        const betInput = document.getElementById('betAmount');
+        if (betInput) {
+            betInput.addEventListener('input', () => this.updateBetCalculations());
+        }
+
+        // Set up game creation buttons
+        const createGameWithBetBtn = document.getElementById('create-game-with-bet');
+        if (createGameWithBetBtn) {
+            createGameWithBetBtn.addEventListener('click', () => this.handleCreateGameWithBet());
+        }
+
+        const createGameNoBtn = document.getElementById('create-game-no-bet');
+        if (createGameNoBtn) {
+            createGameNoBtn.addEventListener('click', () => this.handleCreateGameNoBet());
+        }
+
+        // Set up join game button
+        const joinGameBtn = document.getElementById('join-game');
+        if (joinGameBtn) {
+            joinGameBtn.addEventListener('click', () => this.handleJoinGame());
+        }
+
+        // Set up multiplayer mode button handler
+        const multiplayerBtn = document.getElementById('multiplayer-mode');
+        if (multiplayerBtn) {
+            const originalClick = multiplayerBtn.onclick;
+            multiplayerBtn.onclick = (e) => {
+                if (originalClick) originalClick.call(multiplayerBtn, e);
+                const bettingContainer = document.getElementById('betting-container');
+                if (bettingContainer) {
+                    console.log('Showing betting container');
+                    bettingContainer.style.display = 'block';
+                }
+            };
+        }
+
+        // Set up AI mode button handler
+        const aiModeBtn = document.getElementById('ai-mode');
+        if (aiModeBtn) {
+            aiModeBtn.addEventListener('click', () => {
+                const bettingContainer = document.getElementById('betting-container');
+                if (bettingContainer) {
+                    bettingContainer.style.display = 'none';
+                }
+            });
+        }
+
+        console.log('UI handlers initialized');
+    }
+
     async init() {
         try {
             console.log('Initializing betting system...');
