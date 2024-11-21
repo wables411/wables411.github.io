@@ -8,46 +8,41 @@ window.SOLANA_CONFIG = {
     CONNECTION_CONFIG: {
         commitment: 'confirmed',
         confirmTransactionInitialTimeout: 60000,
+        wsEndpoint: 'wss://solana-mainnet.rpc.extrnode.com/218119a6-454e-430e-b63c-f1ae113c7eed',
         httpHeaders: {
             'Authorization': 'Bearer 218119a6-454e-430e-b63c-f1ae113c7eed',
-            'Content-Type': 'application/json'
+            'Origin': 'https://lawb.xyz',
+            'Referer': 'https://lawb.xyz'
         }
     },
     
     async createConnection() {
         try {
             const endpoint = this.ENDPOINTS[this.CLUSTER][0];
-            const connection = new solanaWeb3.Connection(endpoint, this.CONNECTION_CONFIG);
+            const connection = new solanaWeb3.Connection(
+                endpoint,
+                this.CONNECTION_CONFIG
+            );
             
             // Test connection
             await connection.getVersion();
             console.log('Solana connection established successfully');
-            
             return connection;
         } catch (error) {
             console.error('Failed to create Solana connection:', error);
-            throw error;
-        }
-    },
-
-    async getTokenBalance(connection, walletAddress, tokenMintAddress) {
-        try {
-            const pubKey = new solanaWeb3.PublicKey(walletAddress);
-            const tokenMint = new solanaWeb3.PublicKey(tokenMintAddress);
-            
-            const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-                pubKey,
-                { mint: tokenMint }
-            );
-
-            if (tokenAccounts.value.length === 0) {
-                return 0;
+            // Fall back to public RPC if Extrnode fails
+            try {
+                const fallbackConnection = new solanaWeb3.Connection(
+                    'https://api.mainnet-beta.solana.com',
+                    { commitment: 'confirmed' }
+                );
+                await fallbackConnection.getVersion();
+                console.log('Connected to fallback endpoint');
+                return fallbackConnection;
+            } catch (fallbackError) {
+                console.error('Fallback connection failed:', fallbackError);
+                throw error;
             }
-
-            return tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
-        } catch (error) {
-            console.error('Error getting token balance:', error);
-            return 0;
         }
     }
 };
