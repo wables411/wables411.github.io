@@ -2,63 +2,50 @@ window.SOLANA_CONFIG = {
     CLUSTER: 'mainnet-beta',
     ENDPOINTS: {
         'mainnet-beta': [
-            'https://neat-hidden-sanctuary.solana-mainnet.discover.quiknode.pro/2af5315d336f9ae920028bbb90a73b724dc1bbed/',
-            'https://solana.rpcpool.com',
-            'https://free.rpcpool.com'
+            'https://rpc.extrnode.com/solana/218119a6-454e-430e-b63c-f1ae113c7eed'
         ]
     },
     CONNECTION_CONFIG: {
         commitment: 'confirmed',
         confirmTransactionInitialTimeout: 60000,
-        wsEndpoint: 'wss://neat-hidden-sanctuary.solana-mainnet.discover.quiknode.pro/2af5315d336f9ae920028bbb90a73b724dc1bbed/',
         httpHeaders: {
+            'Authorization': 'Bearer 218119a6-454e-430e-b63c-f1ae113c7eed',
+            'Origin': 'https://lawb.xyz',
+            'Referer': 'https://lawb.xyz/',
             'Content-Type': 'application/json'
         }
     },
     
     async createConnection() {
-        const endpoints = this.ENDPOINTS[this.CLUSTER];
-        
-        for (let endpoint of endpoints) {
-            try {
-                console.log('Trying endpoint:', endpoint);
-                
-                const connection = new solanaWeb3.Connection(
-                    endpoint,
-                    {
-                        ...this.CONNECTION_CONFIG,
-                        commitment: 'confirmed',
-                        confirmTransactionInitialTimeout: 60000
-                    }
-                );
-                
-                // Test the connection
-                const version = await connection.getVersion();
-                console.log('Successfully connected to:', endpoint, 'Version:', version);
-                return connection;
-                
-            } catch (error) {
-                console.warn(`Failed to connect to ${endpoint}:`, error);
-                continue;
-            }
-        }
-        
-        // If all endpoints fail, create a fallback connection
         try {
-            console.log('Trying fallback connection...');
-            const fallbackEndpoint = 'https://api.mainnet-beta.solana.com';
-            const fallbackConnection = new solanaWeb3.Connection(
-                fallbackEndpoint,
-                'confirmed'
+            console.log('Connecting to Extrnode...');
+            const connection = new solanaWeb3.Connection(
+                this.ENDPOINTS[this.CLUSTER][0],
+                this.CONNECTION_CONFIG
             );
             
-            await fallbackConnection.getVersion();
-            console.log('Connected to fallback endpoint');
-            return fallbackConnection;
+            // Test the connection
+            const version = await connection.getVersion();
+            console.log('Successfully connected to Extrnode:', version);
+            return connection;
             
         } catch (error) {
-            console.error('All connection attempts failed:', error);
-            throw new Error('Failed to connect to any Solana endpoint');
+            console.error('Error connecting to Extrnode:', error);
+            
+            // Try Helius as backup
+            try {
+                console.log('Trying Helius backup...');
+                const heliusConnection = new solanaWeb3.Connection(
+                    'https://mainnet.helius-rpc.com/?api-key=15319bf9-5dd0-4386-a98c-65281887673c',
+                    { commitment: 'confirmed' }
+                );
+                await heliusConnection.getVersion();
+                console.log('Connected to Helius backup');
+                return heliusConnection;
+            } catch (backupError) {
+                console.error('Backup connection failed:', backupError);
+                throw new Error('All connection attempts failed');
+            }
         }
     }
 };
