@@ -2,16 +2,17 @@ window.SOLANA_CONFIG = {
     CLUSTER: 'mainnet-beta',
     ENDPOINTS: {
         'mainnet-beta': [
-            'https://rpc.extrnode.com/solana/218119a6-454e-430e-b63c-f1ae113c7eed',  // Primary HTTPS endpoint
-            'https://api.mainnet-beta.solana.com',
-            'https://solana-api.projectserum.com'
+            'https://neat-hidden-sanctuary.solana-mainnet.discover.quiknode.pro/2af5315d336f9ae920028bbb90a73b724dc1bbed/',
+            'https://solana.rpcpool.com',
+            'https://free.rpcpool.com'
         ]
     },
     CONNECTION_CONFIG: {
         commitment: 'confirmed',
         confirmTransactionInitialTimeout: 60000,
+        wsEndpoint: 'wss://neat-hidden-sanctuary.solana-mainnet.discover.quiknode.pro/2af5315d336f9ae920028bbb90a73b724dc1bbed/',
         httpHeaders: {
-            'Authorization': 'Bearer 218119a6-454e-430e-b63c-f1ae113c7eed'
+            'Content-Type': 'application/json'
         }
     },
     
@@ -22,28 +23,42 @@ window.SOLANA_CONFIG = {
             try {
                 console.log('Trying endpoint:', endpoint);
                 
-                const config = endpoint.includes('extrnode') ? 
+                const connection = new solanaWeb3.Connection(
+                    endpoint,
                     {
                         ...this.CONNECTION_CONFIG,
-                        httpHeaders: {
-                            ...this.CONNECTION_CONFIG.httpHeaders,
-                            'Origin': 'https://lawb.xyz',
-                            'Referer': 'https://lawb.xyz/'
-                        }
-                    } : this.CONNECTION_CONFIG;
-                
-                const connection = new solanaWeb3.Connection(endpoint, config);
+                        commitment: 'confirmed',
+                        confirmTransactionInitialTimeout: 60000
+                    }
+                );
                 
                 // Test the connection
-                await connection.getVersion();
-                console.log('Successfully connected to:', endpoint);
+                const version = await connection.getVersion();
+                console.log('Successfully connected to:', endpoint, 'Version:', version);
                 return connection;
+                
             } catch (error) {
                 console.warn(`Failed to connect to ${endpoint}:`, error);
                 continue;
             }
         }
         
-        throw new Error('Failed to connect to any Solana endpoint');
+        // If all endpoints fail, create a fallback connection
+        try {
+            console.log('Trying fallback connection...');
+            const fallbackEndpoint = 'https://api.mainnet-beta.solana.com';
+            const fallbackConnection = new solanaWeb3.Connection(
+                fallbackEndpoint,
+                'confirmed'
+            );
+            
+            await fallbackConnection.getVersion();
+            console.log('Connected to fallback endpoint');
+            return fallbackConnection;
+            
+        } catch (error) {
+            console.error('All connection attempts failed:', error);
+            throw new Error('Failed to connect to any Solana endpoint');
+        }
     }
 };
