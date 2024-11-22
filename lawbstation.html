@@ -447,116 +447,83 @@
 <script src="chess.js"></script>
 
     <!-- Initialize Betting System -->
-    <script>
-    document.addEventListener('DOMContentLoaded', async function() {
-        console.log('Initializing betting system...');
-        
-        try {
-            // Initialize connection
-            const connection = await window.SOLANA_CONFIG.createConnection();
-            console.log('Solana connection established:', await connection.getVersion());
-            
-            // Initialize betting system
-            const chessBetting = new ChessBetting();
-            window.chessBetting = chessBetting;
-            
-            // Set up bet amount input handler
-            const betInput = document.getElementById('betAmount');
-            if (betInput) {
-                betInput.addEventListener('input', function() {
-                    const amount = Number(this.value);
-                    const fee = (amount * 0.05); // 5% fee
-                    const potentialWin = (amount * 2) - (amount * 2 * 0.05);
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Single interval for all wallet-dependent initializations
+        const initInterval = setInterval(async () => {
+            const wallet = window.solflare?.isConnected ? window.solflare : 
+                          window.solana?.isConnected ? window.solana : null;
+                          
+            if (wallet) {
+                clearInterval(initInterval);
+                console.log('Wallet connected:', wallet.publicKey.toString());
+                
+                try {
+                    // Initialize betting system if not already initialized
+                    if (!window.chessBetting?.initialized) {
+                        console.log('Initializing betting system...');
+                        window.chessBetting = new ChessBetting();
+                        await window.chessBetting.init();
+                    }
                     
-                    document.getElementById('feeAmount').textContent = fee.toFixed(2);
-                    document.getElementById('potentialWin').textContent = potentialWin.toFixed(2);
-                });
+                    // Set up bet amount calculations
+                    const betInput = document.getElementById('betAmount');
+                    if (betInput) {
+                        betInput.addEventListener('input', function() {
+                            const amount = Number(this.value);
+                            const fee = (amount * 0.05);
+                            const potentialWin = (amount * 2) - (amount * 2 * 0.05);
+                            
+                            document.getElementById('feeAmount').textContent = fee.toFixed(2);
+                            document.getElementById('potentialWin').textContent = potentialWin.toFixed(2);
+                        });
+                    }
+                    
+                    // Set up game code copy functionality
+                    const gameCodeDisplay = document.getElementById('gameCode');
+                    if (gameCodeDisplay) {
+                        gameCodeDisplay.addEventListener('click', function() {
+                            navigator.clipboard.writeText(this.textContent).then(() => {
+                                const notification = document.getElementById('copyNotification');
+                                notification.style.display = 'block';
+                                setTimeout(() => {
+                                    notification.style.display = 'none';
+                                }, 2000);
+                            });
+                        });
+                    }
+                    
+                    // Set up multiplayer UI
+                    const multiplayerBtn = document.getElementById('multiplayer-mode');
+                    const bettingContainer = document.getElementById('betting-container');
+                    const aiModeBtn = document.getElementById('ai-mode');
+                    
+                    if (multiplayerBtn && bettingContainer) {
+                        multiplayerBtn.addEventListener('click', () => {
+                            console.log('Multiplayer mode activated');
+                            bettingContainer.style.display = 'block';
+                        });
+                    }
+                    
+                    if (aiModeBtn && bettingContainer) {
+                        aiModeBtn.addEventListener('click', () => {
+                            console.log('AI mode activated');
+                            bettingContainer.style.display = 'none';
+                        });
+                    }
+                    
+                    console.log('All systems initialized successfully');
+                    
+                } catch (error) {
+                    console.error('Initialization error:', error);
+                    const statusElement = document.getElementById('status');
+                    if (statusElement) {
+                        statusElement.textContent = 'Error initializing game systems';
+                    }
+                }
             }
-            
-            // Set up game code copy functionality
-            const gameCodeDisplay = document.getElementById('gameCode');
-            if (gameCodeDisplay) {
-                gameCodeDisplay.addEventListener('click', function() {
-                    navigator.clipboard.writeText(this.textContent).then(() => {
-                        const notification = document.getElementById('copyNotification');
-                        notification.style.display = 'block';
-                        setTimeout(() => {
-                            notification.style.display = 'none';
-                        }, 2000);
-                    });
-                });
-            }
-            
-            // Set up mode-specific UI visibility
-            const multiplayerBtn = document.getElementById('multiplayer-mode');
-            const bettingContainer = document.getElementById('betting-container');
-            const aiModeBtn = document.getElementById('ai-mode');
-            
-            if (multiplayerBtn && bettingContainer) {
-                multiplayerBtn.addEventListener('click', () => {
-                    bettingContainer.style.display = 'block';
-                });
-            }
-            
-            if (aiModeBtn && bettingContainer) {
-                aiModeBtn.addEventListener('click', () => {
-                    bettingContainer.style.display = 'none';
-                });
-            }
-
-        } catch (error) {
-            console.error('Error initializing betting system:', error);
-            const statusElement = document.getElementById('status');
-            if (statusElement) {
-                statusElement.textContent = 'Error connecting to network';
-            }
-        }
+        }, 1000);
     });
     </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Debug multi-player mode display
-            const multiplayerBtn = document.getElementById('multiplayer-mode');
-            const bettingContainer = document.getElementById('betting-container');
-            
-            if (multiplayerBtn) {
-                console.log('Found multiplayer button');
-                const originalClick = multiplayerBtn.onclick;
-                
-                multiplayerBtn.onclick = function(e) {
-                    console.log('Multiplayer button clicked');
-                    if (originalClick) originalClick.call(this, e);
-                    
-                    // Force show betting container
-                    if (bettingContainer) {
-                        console.log('Showing betting container');
-                        bettingContainer.style.display = 'block';
-                    } else {
-                        console.error('Betting container not found');
-                    }
-                    
-                    // Log current wallet state
-                    const wallet = window.solflare?.isConnected ? window.solflare : 
-                                 window.solana?.isConnected ? window.solana : null;
-                    console.log('Current wallet state:', wallet ? 'Connected' : 'Not connected');
-                };
-            } else {
-                console.error('Multiplayer button not found');
-            }
-            
-            // Monitor wallet connections
-            const walletCheckInterval = setInterval(() => {
-                const wallet = window.solflare?.isConnected ? window.solflare : 
-                              window.solana?.isConnected ? window.solana : null;
-                if (wallet) {
-                    console.log('Wallet connected, initializing betting system');
-                    if (window.chessBetting) {
-                        window.chessBetting.init().catch(console.error);
-                    }
-                    clearInterval(walletCheckInterval);
-                }
-            }, 1000);
-        });
-        </script>
 </body>
 </html>

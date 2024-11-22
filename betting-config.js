@@ -1,9 +1,8 @@
 window.BETTING_CONFIG = {
-    // Token config with proper PublicKey initialization
+    // Token config
     LAWB_TOKEN: {
         MINT: new solanaWeb3.PublicKey('65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6'),
-        DECIMALS: 9,
-        PROGRAM_ID: new solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
+        DECIMALS: 9
     },
 
     // Parameters
@@ -11,50 +10,62 @@ window.BETTING_CONFIG = {
     MIN_BET: 100,
     MAX_BET: 5000000,
     
-    // Escrow and wallet
+    // System accounts
     HOUSE_WALLET: new solanaWeb3.PublicKey('3NCvL5itgJVrwNZw8BNL8syP8Za5hAmhmApCDh4bdsTu'),
     
     // Program IDs
-    TOKEN_PROGRAM_ID: new solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
-    ASSOCIATED_TOKEN_PROGRAM_ID: new solanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'),
+    TOKEN_PROGRAM_ID: window.SplToken.TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID: window.SplToken.ASSOCIATED_TOKEN_PROGRAM_ID,
     SYSTEM_PROGRAM_ID: solanaWeb3.SystemProgram.programId,
 
     // Helper methods
     async findAssociatedTokenAddress(walletAddress, tokenMintAddress) {
-        if (typeof walletAddress === 'string') {
-            walletAddress = new solanaWeb3.PublicKey(walletAddress);
+        try {
+            // Convert string addresses to PublicKeys if needed
+            if (typeof walletAddress === 'string') {
+                walletAddress = new solanaWeb3.PublicKey(walletAddress);
+            }
+            if (typeof tokenMintAddress === 'string') {
+                tokenMintAddress = new solanaWeb3.PublicKey(tokenMintAddress);
+            }
+
+            // Use SPL Token helper
+            return window.SplToken.getAssociatedTokenAddress(
+                tokenMintAddress,
+                walletAddress,
+                false
+            );
+        } catch (error) {
+            console.error('Error finding associated token address:', error);
+            throw error;
         }
-        if (typeof tokenMintAddress === 'string') {
-            tokenMintAddress = new solanaWeb3.PublicKey(tokenMintAddress);
-        }
-        
-        return (await solanaWeb3.PublicKey.findProgramAddress(
-            [
-                walletAddress.toBuffer(),
-                this.TOKEN_PROGRAM_ID.toBuffer(),
-                tokenMintAddress.toBuffer()
-            ],
-            this.ASSOCIATED_TOKEN_PROGRAM_ID
-        ))[0];
     },
 
     async findEscrowPDA(gameId) {
-        return (await solanaWeb3.PublicKey.findProgramAddress(
-            [Buffer.from(gameId)],
-            this.TOKEN_PROGRAM_ID
-        ))[0];
+        try {
+            return (await solanaWeb3.PublicKey.findProgramAddress(
+                [Buffer.from(gameId)],
+                this.TOKEN_PROGRAM_ID
+            ))[0];
+        } catch (error) {
+            console.error('Error finding escrow PDA:', error);
+            throw error;
+        }
     },
 
     createTransferInstruction(source, destination, owner, amount) {
-        return window.SplToken.createTransferInstruction(
-            source,              // source
-            destination,         // destination
-            owner,              // owner
-            amount,             // amount
-            [],                 // multiSigners
-            this.TOKEN_PROGRAM_ID // programId
-        );
+        try {
+            return window.SplToken.createTransferInstruction(
+                source,
+                destination,
+                owner,
+                amount,
+                [],
+                this.TOKEN_PROGRAM_ID
+            );
+        } catch (error) {
+            console.error('Error creating transfer instruction:', error);
+            throw error;
+        }
     }
 };
-
-window.BETTING_CONFIG = BETTING_CONFIG;
