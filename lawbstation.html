@@ -449,22 +449,19 @@
     <!-- Initialize Betting System -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Single interval for all wallet-dependent initializations
-        const initInterval = setInterval(async () => {
-            const wallet = window.solflare?.isConnected ? window.solflare : 
-                          window.solana?.isConnected ? window.solana : null;
-                          
-            if (wallet) {
-                clearInterval(initInterval);
-                console.log('Wallet connected:', wallet.publicKey.toString());
-                
-                try {
-                    // Initialize betting system if not already initialized
-                    if (!window.chessBetting?.initialized) {
-                        console.log('Initializing betting system...');
-                        window.chessBetting = new ChessBetting();
-                        await window.chessBetting.init();
-                    }
+    const initInterval = setInterval(async () => {
+        const wallet = window.solflare?.isConnected ? window.solflare : 
+                      window.solana?.isConnected ? window.solana : null;
+                      
+        if (wallet) {
+            clearInterval(initInterval);
+            console.log('Wallet connected:', wallet.publicKey.toString());
+            
+            try {
+                // Only init, don't create new instance
+                if (!window.chessBetting.initialized) {
+                    await window.chessBetting.init();
+                }
                     
                     // Set up bet amount calculations
                     const betInput = document.getElementById('betAmount');
@@ -515,15 +512,15 @@
                     console.log('All systems initialized successfully');
                     
                 } catch (error) {
-                    console.error('Initialization error:', error);
-                    const statusElement = document.getElementById('status');
-                    if (statusElement) {
-                        statusElement.textContent = 'Error initializing game systems';
-                    }
+                console.error('Initialization error:', error);
+                const statusElement = document.getElementById('status');
+                if (statusElement) {
+                    statusElement.textContent = 'Error initializing game systems';
                 }
             }
-        }, 1000);
-    });
+        }
+    }, 1000);
+});
     </script>
 </body>
 </html>

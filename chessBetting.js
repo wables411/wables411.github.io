@@ -1,5 +1,12 @@
 class ChessBetting {
+    static instance = null;
+
     constructor() {
+        if (ChessBetting.instance) {
+            return ChessBetting.instance;
+        }
+        ChessBetting.instance = this;
+
         this.config = window.BETTING_CONFIG;
         this.solanaConfig = window.SOLANA_CONFIG;
         this.supabase = window.gameDatabase;
@@ -36,7 +43,7 @@ class ChessBetting {
         };
 
         // Don't auto-initialize
-        this.initialized = false;
+        this.initialized = false;  // <-- Second time
     }
 
     async init() {
@@ -44,7 +51,7 @@ class ChessBetting {
             console.log('Betting system already initialized');
             return true;
         }
-
+    
         try {
             console.log('Initializing betting system...');
             
@@ -54,11 +61,11 @@ class ChessBetting {
                 console.log('No wallet connected, waiting for wallet...');
                 return false;
             }
-
+    
             // Wait for connection to be established
             this.connection = await this.solanaConfig.createConnection();
             console.log('Connection established');
-
+    
             // Verify setup
             await this.verifySetup();
             console.log('Setup verified');
@@ -139,6 +146,50 @@ class ChessBetting {
         }
 
         console.log('UI handlers initialized');
+    }
+
+    async createGameRecord(gameId, playerAddress, amount, escrowAccount) {
+        try {
+            const { data, error } = await this.supabase
+                .from('chess_games')
+                .insert([{
+                    game_id: gameId,
+                    blue_player: playerAddress,
+                    bet_amount: amount,
+                    escrow_account: escrowAccount.toString(),
+                    game_state: 'waiting'
+                }])
+                .select()
+                .single();
+    
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error creating game record:', error);
+            throw error;
+        }
+    }
+    
+    async createBetRecord(gameId, playerAddress, amount, escrowAccount) {
+        try {
+            const { data, error } = await this.supabase
+                .from('chess_bets')
+                .insert([{
+                    game_id: gameId,
+                    bet_amount: amount,
+                    blue_player: playerAddress,
+                    escrow_account: escrowAccount.toString(),
+                    status: 'pending'
+                }])
+                .select()
+                .single();
+    
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error creating bet record:', error);
+            throw error;
+        }
     }
 
     updateBetCalculations() {
@@ -490,20 +541,5 @@ class ChessBetting {
     }
 }
 
-// Initialize betting system
-window.ChessBetting = ChessBetting;
-
-// Initialize when document is ready and wallet is connected
-document.addEventListener('DOMContentLoaded', () => {
-    const walletCheckInterval = setInterval(() => {
-        const wallet = window.solflare?.isConnected ? window.solflare : 
-                      window.solana?.isConnected ? window.solana : null;
-        
-        if (wallet && !window.chessBetting?.initialized) {
-            clearInterval(walletCheckInterval);
-            console.log('Wallet detected, initializing betting system');
-            window.chessBetting = new ChessBetting();
-            window.chessBetting.init().catch(console.error);
-        }
-    }, 1000);
-});
+// Create singleton instance
+window.chessBetting = new ChessBetting();
