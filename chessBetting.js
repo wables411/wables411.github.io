@@ -43,7 +43,7 @@ class ChessBetting {
         };
 
         // Don't auto-initialize
-        this.initialized = false;  // <-- Second time
+        this.initialized = false;
     }
 
     async init() {
