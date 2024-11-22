@@ -14,7 +14,7 @@
             padding: 20px;
             border-radius: 10px;
             margin: 20px 0;
-            border: 1px solid rgba(255, 0, 0, 0.3);
+            border: 1px solid rgba(32, 1, 1, 0.3);
         }
 
         .betting-ui {
@@ -365,16 +365,18 @@
 <script src="https://cdn.jsdelivr.net/npm/bn.js@5.2.1/lib/bn.js"></script>
 <script>
     window.Buffer = buffer.Buffer;
-    window.BN = window.BN || require('bn.js');
 </script>
 
 <!-- Solana Core Dependencies -->
 <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
 <script src="https://unpkg.com/@solana/spl-token@0.3.9/lib/index.iife.min.js"></script>
+
+<!-- Initialize SPL Token Program -->
 <script>
-    window.TokenProgram = window.SplToken.TOKEN_PROGRAM;
-    window.AssociatedTokenProgram = window.SplToken.ASSOCIATED_TOKEN_PROGRAM_ID;
-    window.createAssociatedTokenAccountInstruction = window.SplToken.createAssociatedTokenAccountInstruction;
+    window.SplToken = window.splToken;
+    window.TokenProgram = window.splToken.TOKEN_PROGRAM_ID;
+    window.AssociatedTokenProgram = window.splToken.ASSOCIATED_TOKEN_PROGRAM_ID;
+    window.createAssociatedTokenAccountInstruction = window.splToken.createAssociatedTokenAccountInstruction;
 </script>
 
 <!-- Wallet Adapters -->

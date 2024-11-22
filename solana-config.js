@@ -17,39 +17,32 @@ window.SOLANA_CONFIG = {
     
     async createConnection() {
         try {
-            // Try GenesysGo public endpoint first
+            // Try Extrnode endpoint first
             const connection = new solanaWeb3.Connection(
-                'https://ssc-dao.genesysgo.net/',
-                { commitment: 'confirmed' }
+                this.ENDPOINTS[this.CLUSTER][0],
+                this.CONNECTION_CONFIG
             );
             
             try {
                 await connection.getVersion();
-                console.log('Connected to GenesysGo endpoint');
+                console.log('Connected to Extrnode endpoint');
                 return connection;
             } catch (error) {
-                console.warn('GenesysGo endpoint failed, trying Extrnode');
+                console.warn('Extrnode endpoint failed, trying fallback');
                 
-                // Try Extrnode endpoint
-                const extrnodeConnection = new solanaWeb3.Connection(
-                    this.ENDPOINTS[this.CLUSTER][0],
-                    this.CONNECTION_CONFIG
+                // Fallback to public endpoint
+                const fallbackConnection = new solanaWeb3.Connection(
+                    'https://api.mainnet-beta.solana.com',
+                    { commitment: 'confirmed' }
                 );
                 
-                await extrnodeConnection.getVersion();
-                console.log('Connected to Extrnode endpoint');
-                return extrnodeConnection;
+                await fallbackConnection.getVersion();
+                console.log('Connected to fallback endpoint');
+                return fallbackConnection;
             }
         } catch (error) {
             console.error('Failed to create Solana connection:', error);
-            // Final fallback to public endpoint
-            const fallbackConnection = new solanaWeb3.Connection(
-                'https://api.devnet.solana.com',
-                { commitment: 'confirmed' }
-            );
-            await fallbackConnection.getVersion();
-            console.log('Connected to fallback endpoint');
-            return fallbackConnection;
+            throw error;
         }
     }
 };
