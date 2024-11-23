@@ -5,7 +5,7 @@ window.BETTING_CONFIG = {
         DECIMALS: 9
     },
 
-    // Parameters
+    // Game parameters
     HOUSE_FEE_PERCENTAGE: 5,
     MIN_BET: 100,
     MAX_BET: 5000000,
@@ -18,22 +18,78 @@ window.BETTING_CONFIG = {
     ASSOCIATED_TOKEN_PROGRAM_ID: window.SplToken.ASSOCIATED_TOKEN_PROGRAM_ID,
     SYSTEM_PROGRAM_ID: solanaWeb3.SystemProgram.programId,
 
-    // Helper methods
+    // Database schemas
+    SCHEMAS: {
+        CHESS_GAMES: {
+            tableName: 'chess_games',
+            columns: {
+                id: 'uuid',
+                game_id: 'text',
+                blue_player: 'text',
+                red_player: 'text',
+                board: 'jsonb',
+                current_player: 'text',
+                game_state: 'text',
+                piece_state: 'jsonb',
+                last_move: 'jsonb',
+                winner: 'text',
+                bet_amount: 'numeric',
+                escrow_account: 'text',
+                created_at: 'timestamp',
+                updated_at: 'timestamp'
+            }
+        },
+        CHESS_BETS: {
+            tableName: 'chess_bets',
+            columns: {
+                id: 'uuid',
+                game_id: 'text',
+                bet_amount: 'numeric',
+                blue_player: 'text',
+                red_player: 'text',
+                status: 'text',
+                winner: 'text',
+                escrow_account: 'text',
+                created_at: 'timestamp',
+                processed_at: 'timestamp'
+            }
+        }
+    },
+
+    // Database validation helpers
+    validateGameRecord: function(record) {
+        const schema = this.SCHEMAS.CHESS_GAMES.columns;
+        return Object.entries(record).every(([key, value]) => {
+            return schema[key] && 
+                   (value === null || 
+                    typeof value === (schema[key] === 'jsonb' ? 'object' : schema[key]));
+        });
+    },
+
+    validateBetRecord: function(record) {
+        const schema = this.SCHEMAS.CHESS_BETS.columns;
+        return Object.entries(record).every(([key, value]) => {
+            return schema[key] && 
+                   (value === null || 
+                    typeof value === (schema[key] === 'numeric' ? 'number' : schema[key]));
+        });
+    },
+
+    // Account helper functions
     async findAssociatedTokenAddress(walletAddress, tokenMintAddress) {
         try {
-            // Convert string addresses to PublicKeys if needed
-            if (typeof walletAddress === 'string') {
-                walletAddress = new solanaWeb3.PublicKey(walletAddress);
-            }
-            if (typeof tokenMintAddress === 'string') {
-                tokenMintAddress = new solanaWeb3.PublicKey(tokenMintAddress);
-            }
+            const wallet = typeof walletAddress === 'string' ? 
+                new solanaWeb3.PublicKey(walletAddress) : walletAddress;
+            
+            const mint = typeof tokenMintAddress === 'string' ? 
+                new solanaWeb3.PublicKey(tokenMintAddress) : tokenMintAddress;
 
-            // Use SPL Token helper
             return window.SplToken.getAssociatedTokenAddress(
-                tokenMintAddress,
-                walletAddress,
-                false
+                mint,
+                wallet,
+                false,
+                this.TOKEN_PROGRAM_ID,
+                this.ASSOCIATED_TOKEN_PROGRAM_ID
             );
         } catch (error) {
             console.error('Error finding associated token address:', error);
