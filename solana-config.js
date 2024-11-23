@@ -3,17 +3,16 @@ window.SOLANA_CONFIG = {
     ENDPOINTS: {
         'mainnet-beta': [
             'https://solana-mainnet.rpc.extrnode.com/218119a6-454e-430e-b63c-f1ae113c7eed',
-            'https://api.mainnet-beta.solana.com'  // Fallback
+            'https://api.mainnet-beta.solana.com'
         ]
     },
     CONNECTION_CONFIG: {
         commitment: 'confirmed',
         confirmTransactionInitialTimeout: 60000,
-        wsEndpoint: false,
         httpHeaders: {
             'Authorization': '218119a6-454e-430e-b63c-f1ae113c7eed',
             'Origin': 'https://lawb.xyz',
-            'Referer': 'https://lawb.xyz'
+            'Referer': 'https://lawb.xyz/lawbstation'
         }
     },
     
@@ -26,13 +25,9 @@ window.SOLANA_CONFIG = {
                 console.log('Attempting connection to:', endpoint);
                 
                 const config = {
-                    ...this.CONNECTION_CONFIG
+                    ...this.CONNECTION_CONFIG,
+                    httpHeaders: endpoint.includes('extrnode') ? this.CONNECTION_CONFIG.httpHeaders : {}
                 };
-                
-                // Add headers only for Extrnode endpoint
-                if (endpoint.includes('extrnode')) {
-                    config.httpHeaders = this.CONNECTION_CONFIG.httpHeaders;
-                }
                 
                 connection = new solanaWeb3.Connection(endpoint, config);
                 

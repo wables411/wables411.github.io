@@ -55,7 +55,6 @@ class MultiplayerManager {
             } else {
                 alert('Betting system not initialized');
             }
-
         } catch (error) {
             console.error('Error creating game with bet:', error);
             alert('Failed to create game with bet');
@@ -100,6 +99,14 @@ class MultiplayerManager {
             this.playerColor = 'blue';
             this.subscribeToGame();
             this.showGame('blue');
+
+            // Show game code
+            const gameCodeDisplay = document.getElementById('gameCodeDisplay');
+            const gameCode = document.getElementById('gameCode');
+            if (gameCodeDisplay && gameCode) {
+                gameCode.textContent = gameId;
+                gameCodeDisplay.style.display = 'block';
+            }
             alert(`Game code: ${gameId}`);
 
         } catch (error) {
@@ -108,6 +115,7 @@ class MultiplayerManager {
         }
     }
 
+    // All other methods remain unchanged...
     async joinGameByCode(code) {
         try {
             const player = localStorage.getItem('currentPlayer');

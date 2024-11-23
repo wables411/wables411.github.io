@@ -456,9 +456,97 @@
 <script src="multiplayer.js"></script>
 <script src="chess.js"></script>
 
-    <!-- Initialize Betting System -->
+<!-- Initialize Game Systems -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
+    const elements = {
+        aiModeBtn: document.getElementById('ai-mode'),
+        multiplayerModeBtn: document.getElementById('multiplayer-mode'),
+        difficultyScreen: document.getElementById('difficulty-screen'),
+        multiplayerMenu: document.querySelector('.multiplayer-menu'),
+        bettingContainer: document.getElementById('betting-container'),
+        betInput: document.getElementById('betAmount'),
+        gameCodeInput: document.getElementById('game-code-input'),
+        gameCodeDisplay: document.getElementById('gameCode'),
+        joinGameBtn: document.getElementById('join-game'),
+        statusElement: document.getElementById('status'),
+        betStatus: document.getElementById('betStatus')
+    };
+
+    // Initialize mode switching
+    if (elements.multiplayerModeBtn) {
+        elements.multiplayerModeBtn.addEventListener('click', () => {
+            console.log('Activating multiplayer mode');
+            elements.aiModeBtn?.classList.remove('selected');
+            elements.multiplayerModeBtn.classList.add('selected');
+            elements.difficultyScreen.style.display = 'none';
+            elements.multiplayerMenu.style.display = 'block';
+            elements.bettingContainer.style.display = 'block';
+        });
+    }
+
+    if (elements.aiModeBtn) {
+        elements.aiModeBtn.addEventListener('click', () => {
+            console.log('Activating AI mode');
+            elements.multiplayerModeBtn?.classList.remove('selected');
+            elements.aiModeBtn.classList.add('selected');
+            elements.difficultyScreen.style.display = 'flex';
+            elements.multiplayerMenu.style.display = 'none';
+            elements.bettingContainer.style.display = 'none';
+        });
+    }
+
+    // Initialize bet calculations
+    if (elements.betInput) {
+        elements.betInput.addEventListener('input', function() {
+            const amount = Number(this.value);
+            const fee = (amount * 0.05);
+            const potentialWin = (amount * 2) - (amount * 2 * 0.05);
+            
+            document.getElementById('feeAmount').textContent = fee.toFixed(2);
+            document.getElementById('potentialWin').textContent = potentialWin.toFixed(2);
+        });
+    }
+
+    // Initialize game code functionality
+    if (elements.gameCodeDisplay) {
+        elements.gameCodeDisplay.addEventListener('click', function() {
+            navigator.clipboard.writeText(this.textContent).then(() => {
+                const notification = document.getElementById('copyNotification');
+                notification.style.display = 'block';
+                setTimeout(() => notification.style.display = 'none', 2000);
+            });
+        });
+    }
+
+    if (elements.gameCodeInput) {
+        elements.gameCodeInput.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+            if (this.value.length > 6) {
+                this.value = this.value.slice(0, 6);
+            }
+        });
+    }
+
+    if (elements.joinGameBtn) {
+        elements.joinGameBtn.addEventListener('click', () => {
+            const gameCode = elements.gameCodeInput?.value?.trim();
+            if (!gameCode) {
+                alert('Please enter a game code');
+                return;
+            }
+            if (window.multiplayerManager) {
+                window.multiplayerManager.joinGameByCode(gameCode);
+            }
+        });
+    }
+
+    // Hide betting UI initially
+    if (elements.bettingContainer) {
+        elements.bettingContainer.style.display = 'none';
+    }
+
+    // Initialize betting system when wallet connects
     const initInterval = setInterval(async () => {
         const wallet = window.solflare?.isConnected ? window.solflare : 
                       window.solana?.isConnected ? window.solana : null;
@@ -468,69 +556,24 @@
             console.log('Wallet connected:', wallet.publicKey.toString());
             
             try {
-                // Only init, don't create new instance
                 if (!window.chessBetting.initialized) {
-                    await window.chessBetting.init();
+                    await window.chessBetting.init().catch(error => {
+                        console.error('Betting initialization failed:', error);
+                        if (elements.betStatus) {
+                            elements.betStatus.textContent = 'Betting system unavailable';
+                            elements.betStatus.className = 'bet-status error';
+                        }
+                    });
                 }
-                    
-                    // Set up bet amount calculations
-                    const betInput = document.getElementById('betAmount');
-                    if (betInput) {
-                        betInput.addEventListener('input', function() {
-                            const amount = Number(this.value);
-                            const fee = (amount * 0.05);
-                            const potentialWin = (amount * 2) - (amount * 2 * 0.05);
-                            
-                            document.getElementById('feeAmount').textContent = fee.toFixed(2);
-                            document.getElementById('potentialWin').textContent = potentialWin.toFixed(2);
-                        });
-                    }
-                    
-                    // Set up game code copy functionality
-                    const gameCodeDisplay = document.getElementById('gameCode');
-                    if (gameCodeDisplay) {
-                        gameCodeDisplay.addEventListener('click', function() {
-                            navigator.clipboard.writeText(this.textContent).then(() => {
-                                const notification = document.getElementById('copyNotification');
-                                notification.style.display = 'block';
-                                setTimeout(() => {
-                                    notification.style.display = 'none';
-                                }, 2000);
-                            });
-                        });
-                    }
-                    
-                    // Set up multiplayer UI
-                    const multiplayerBtn = document.getElementById('multiplayer-mode');
-                    const bettingContainer = document.getElementById('betting-container');
-                    const aiModeBtn = document.getElementById('ai-mode');
-                    
-                    if (multiplayerBtn && bettingContainer) {
-                        multiplayerBtn.addEventListener('click', () => {
-                            console.log('Multiplayer mode activated');
-                            bettingContainer.style.display = 'block';
-                        });
-                    }
-                    
-                    if (aiModeBtn && bettingContainer) {
-                        aiModeBtn.addEventListener('click', () => {
-                            console.log('AI mode activated');
-                            bettingContainer.style.display = 'none';
-                        });
-                    }
-                    
-                    console.log('All systems initialized successfully');
-                    
-                } catch (error) {
+            } catch (error) {
                 console.error('Initialization error:', error);
-                const statusElement = document.getElementById('status');
-                if (statusElement) {
-                    statusElement.textContent = 'Error initializing game systems';
+                if (elements.statusElement) {
+                    elements.statusElement.textContent = 'Error initializing game systems';
                 }
             }
         }
     }, 1000);
 });
-    </script>
+</script>
 </body>
 </html>
