@@ -47,6 +47,121 @@ class ChessBetting {
         this.maxConnectionErrors = 3;
     }
 
+    // Utility Functions
+    getConnectedWallet() {
+        const wallet = window.solflare?.isConnected ? window.solflare : 
+                      window.solana?.isConnected ? window.solana : null;
+                      
+        if (!wallet) {
+            this.updateBetStatus('No wallet connected', 'error');
+        }
+        return wallet;
+    }
+
+    validateBetAmount(amount, showError = true) {
+        if (!amount || isNaN(amount)) {
+            if (showError) this.updateBetStatus('Invalid bet amount', 'error');
+            return false;
+        }
+        if (amount < this.config.MIN_BET) {
+            if (showError) this.updateBetStatus(`Minimum bet is ${this.config.MIN_BET} $LAWB`, 'error');
+            return false;
+        }
+        if (amount > this.config.MAX_BET) {
+            if (showError) this.updateBetStatus(`Maximum bet is ${this.config.MAX_BET} $LAWB`, 'error');
+            return false;
+        }
+        return true;
+    }
+
+    updateBetStatus(message, type = 'info') {
+        const statusElement = document.getElementById('betStatus');
+        if (statusElement) {
+            statusElement.textContent = message;
+            statusElement.className = `bet-status ${type}`;
+        }
+        console.log(`Bet status: ${message}`);
+    }
+
+    showCopyNotification() {
+        const notification = document.getElementById('copyNotification');
+        if (notification) {
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 2000);
+        }
+    }
+
+    resetBetState() {
+        this.currentBet = {
+            amount: 0,
+            bluePlayer: null,
+            redPlayer: null,
+            gameId: null,
+            betId: null,
+            isActive: false,
+            escrowAccount: null,
+            matched: false,
+            status: 'pending'
+        };
+        this.enableBetting();
+
+        const gameCodeDisplay = document.getElementById('gameCodeDisplay');
+        if (gameCodeDisplay) {
+            gameCodeDisplay.style.display = 'none';
+        }
+    }
+
+    disableBetting() {
+        const createGameWithBetBtn = document.getElementById('create-game-with-bet');
+        const betInput = document.getElementById('betAmount');
+        if (createGameWithBetBtn) createGameWithBetBtn.disabled = true;
+        if (betInput) betInput.disabled = true;
+    }
+
+    enableBetting() {
+        const createGameWithBetBtn = document.getElementById('create-game-with-bet');
+        const betInput = document.getElementById('betAmount');
+        if (createGameWithBetBtn) createGameWithBetBtn.disabled = false;
+        if (betInput) betInput.disabled = false;
+    }
+
+    // Transaction Helper
+    async sendAndConfirmTransaction(transaction) {
+        try {
+            const wallet = this.getConnectedWallet();
+            if (!wallet) throw new Error('No wallet connected');
+
+            const { blockhash, lastValidBlockHeight } = 
+                await this.connection.getLatestBlockhash('confirmed');
+            
+            transaction.recentBlockhash = blockhash;
+            transaction.feePayer = wallet.publicKey;
+
+            const signed = await wallet.signTransaction(transaction);
+            const signature = await this.connection.sendRawTransaction(
+                signed.serialize(),
+                this.transactionOptions
+            );
+
+            const confirmation = await this.connection.confirmTransaction({
+                signature,
+                blockhash,
+                lastValidBlockHeight
+            }, this.transactionOptions.commitment);
+
+            if (confirmation.value.err) {
+                throw new Error('Transaction failed to confirm');
+            }
+
+            return signature;
+        } catch (error) {
+            console.error('Transaction failed:', error);
+            throw error;
+        }
+    }
+
     async init() {
         if (this.initialized) {
             console.log('Betting system already initialized');
