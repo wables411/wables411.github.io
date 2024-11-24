@@ -699,6 +699,7 @@ function evaluateHardMove(move) {
 
 function evaluateMaterial(move) {
     let score = 0;
+    const piece = board[move.startRow][move.startCol];
     const targetPiece = board[move.endRow][move.endCol];
     
     if (targetPiece) {
@@ -706,10 +707,12 @@ function evaluateMaterial(move) {
         score += PIECE_VALUES[targetPiece.toLowerCase()] * 2;
         
         // Bonus for capturing with lesser pieces
-        const attackingPieceValue = PIECE_VALUES[board[move.startRow][move.startCol].toLowerCase()];
-        const targetPieceValue = PIECE_VALUES[targetPiece.toLowerCase()];
-        if (attackingPieceValue < targetPieceValue) {
-            score += (targetPieceValue - attackingPieceValue) * 0.5;
+        if (piece) {  // Add this check
+            const attackingPieceValue = PIECE_VALUES[piece.toLowerCase()];
+            const targetPieceValue = PIECE_VALUES[targetPiece.toLowerCase()];
+            if (attackingPieceValue < targetPieceValue) {
+                score += (targetPieceValue - attackingPieceValue) * 0.5;
+            }
         }
     }
 
