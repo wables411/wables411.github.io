@@ -699,20 +699,21 @@ function evaluateHardMove(move) {
 
 function evaluateMaterial(move) {
     let score = 0;
-    const piece = board[move.startRow][move.startCol];
+    const movingPiece = board[move.startRow][move.startCol];
     const targetPiece = board[move.endRow][move.endCol];
     
+    // Skip evaluation if no piece is moving
+    if (!movingPiece) return score;
+
+    // Add bonus for captures
     if (targetPiece) {
-        // Capturing
         score += PIECE_VALUES[targetPiece.toLowerCase()] * 2;
         
-        // Bonus for capturing with lesser pieces
-        if (piece) {  // Add this check
-            const attackingPieceValue = PIECE_VALUES[piece.toLowerCase()];
-            const targetPieceValue = PIECE_VALUES[targetPiece.toLowerCase()];
-            if (attackingPieceValue < targetPieceValue) {
-                score += (targetPieceValue - attackingPieceValue) * 0.5;
-            }
+        // Add bonus for favorable exchanges
+        const attackerValue = PIECE_VALUES[movingPiece.toLowerCase()];
+        const targetValue = PIECE_VALUES[targetPiece.toLowerCase()];
+        if (attackerValue < targetValue) {
+            score += (targetValue - attackerValue) * 0.5;
         }
     }
 
@@ -721,9 +722,13 @@ function evaluateMaterial(move) {
 
 function evaluatePosition(move) {
     let score = 0;
-    const piece = board[move.startRow][move.startCol].toLowerCase();
+    const piece = board[move.startRow][move.startCol];
+    
+    // Skip evaluation if no piece is moving
+    if (!piece) return score;
+    
     const gamePhase = calculateGamePhase();
-
+    
     // Center control bonus with dynamic weightings
     const centerValue = gamePhase === 'opening' ? 80 : 
                        gamePhase === 'middlegame' ? 60 : 40;
@@ -736,7 +741,7 @@ function evaluatePosition(move) {
     }
 
     // Piece-specific positional evaluation
-    switch (piece) {
+    switch (piece.toLowerCase()) {
         case 'p':
             score += evaluatePawnPosition(move, gamePhase);
             break;
