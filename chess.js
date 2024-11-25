@@ -555,7 +555,8 @@ function isValidGameMove(piece, startRow, startCol, endRow, endCol) {
     return true;
 }
 
-// AI Move Generation and Evaluation
+// Find this section in chess.js and replace it with this safer version
+
 function makeAIMove() {
     if (currentGameMode !== GameMode.AI || currentPlayer !== 'red' || isMultiplayerMode) return;
     
@@ -571,7 +572,12 @@ function makeAIMove() {
             executeMove(move.startRow, move.startCol, move.endRow, move.endCol, move.promotionPiece);
         }, 500);
     } else {
-        // Add debug statement here
+        // If no valid moves found, check for game end conditions
+        if (isCheckmate('red')) {
+            endGame('blue');
+        } else if (isStalemate('red')) {
+            endGame('draw');
+        }
         console.log("No valid moves found for AI");
     }
 }
@@ -582,7 +588,29 @@ function selectBestMove() {
 
     const inCheck = isKingInCheck('red');
 
-    // Evaluate each move
+    // If in check, prioritize any move that gets out of check
+    if (inCheck) {
+        for (const move of legalMoves) {
+            // Make temporary move
+            const originalPiece = board[move.endRow][move.endCol];
+            const movingPiece = board[move.startRow][move.startCol];
+            board[move.endRow][move.endCol] = movingPiece;
+            board[move.startRow][move.startCol] = null;
+
+            // Check if this move escapes check
+            const escapesCheck = !isKingInCheck('red');
+
+            // Restore board
+            board[move.startRow][move.startCol] = movingPiece;
+            board[move.endRow][move.endCol] = originalPiece;
+
+            if (escapesCheck) {
+                return move; // Return first move that escapes check
+            }
+        }
+    }
+
+    // Normal move evaluation
     legalMoves.forEach(move => {
         if (gameDifficulty === 'hard') {
             move.score = evaluateHardMove(
@@ -601,24 +629,6 @@ function selectBestMove() {
                 move.endCol
             );
         }
-
-        // If in check, prioritize moves that escape check
-        if (inCheck) {
-            // Make temporary move
-            const originalPiece = board[move.endRow][move.endCol];
-            const movingPiece = board[move.startRow][move.startCol];
-            board[move.endRow][move.endCol] = movingPiece;
-            board[move.startRow][move.startCol] = null;
-
-            // Check if this move escapes check
-            if (!isKingInCheck('red')) {
-                move.score += 1000; // Heavy bonus for escaping check
-            }
-
-            // Restore board
-            board[move.startRow][move.startCol] = movingPiece;
-            board[move.endRow][move.endCol] = originalPiece;
-        }
     });
 
     // Sort moves by score
@@ -627,10 +637,10 @@ function selectBestMove() {
     // Select move based on difficulty and situation
     if (inCheck || gameDifficulty === 'hard') {
         // In check or hard mode: usually choose the best move
-        return Math.random() < 0.9 ? legalMoves[0] : legalMoves[1];
+        return legalMoves[0];
     } else {
         // In easy mode: randomly select from top 3 moves
-        const topMoves = legalMoves.slice(0, 3);
+        const topMoves = legalMoves.slice(0, Math.min(3, legalMoves.length));
         return topMoves[Math.floor(Math.random() * topMoves.length)];
     }
 }
