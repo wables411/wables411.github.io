@@ -24,6 +24,8 @@ const initialBoard = [
     ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
 ];
 
+window.initialBoard = initialBoard;
+
 // Game state variables
 let board = JSON.parse(JSON.stringify(initialBoard));
 let selectedPiece = null;

@@ -538,6 +538,21 @@ class ChessBetting {
 
     async createGameRecord(gameId, playerAddress, amount, escrowPDA) {
         try {
+            // Get initial board state from the chess game
+            const initialBoardState = {
+                positions: [
+                    ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+                    ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+                    [null, null, null, null, null, null, null, null],
+                    [null, null, null, null, null, null, null, null],
+                    [null, null, null, null, null, null, null, null],
+                    [null, null, null, null, null, null, null, null],
+                    ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+                    ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
+                ],
+                pieceState: {}
+            };
+    
             const record = {
                 game_id: gameId,
                 blue_player: playerAddress,
@@ -545,18 +560,16 @@ class ChessBetting {
                 escrow_account: escrowPDA.toString(),
                 game_state: 'waiting',
                 current_player: 'blue',
-                board: {
-                    positions: JSON.parse(JSON.stringify(window.initialBoard)),
-                    pieceState: {}
-                }
+                board: initialBoardState,
+                piece_state: {}
             };
-
+    
             const { data, error } = await this.supabase
                 .from('chess_games')
                 .insert([record])
                 .select()
                 .single();
-
+    
             if (error) throw error;
             return data;
         } catch (error) {
