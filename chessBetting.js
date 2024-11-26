@@ -808,32 +808,79 @@ class ChessBetting {
         try {
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
-
+    
+            // Get latest blockhash
             const { blockhash, lastValidBlockHeight } = 
                 await this.connection.getLatestBlockhash('confirmed');
             
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = wallet.publicKey;
-
+    
+            // Add escrow account as signer if it's included in the transaction
+            const escrowSigners = [];
+            transaction.instructions.forEach(instruction => {
+                instruction.keys.forEach(key => {
+                    if (key.isSigner && !key.pubkey.equals(wallet.publicKey)) {
+                        escrowSigners.push(key.pubkey);
+                    }
+                });
+            });
+    
+            // If there are escrow signers, we need to derive their authorities
+            if (escrowSigners.length > 0) {
+                for (const escrowSigner of escrowSigners) {
+                    const escrowAuth = await solanaWeb3.Keypair.fromSeed(
+                        (await solanaWeb3.PublicKey.findProgramAddress(
+                            [Buffer.from(escrowSigner.toBytes())],
+                            this.tokenProgram
+                        ))[0].toBytes()
+                    );
+                    transaction.partialSign(escrowAuth);
+                }
+            }
+    
+            // Sign with wallet
             const signed = await wallet.signTransaction(transaction);
+    
+            // Send and confirm
             const signature = await this.connection.sendRawTransaction(
                 signed.serialize(),
-                this.transactionOptions
+                {
+                    skipPreflight: false,
+                    preflightCommitment: 'confirmed',
+                    maxRetries: 3
+                }
             );
-
+    
+            // Wait for confirmation
             const confirmation = await this.connection.confirmTransaction({
                 signature,
                 blockhash,
                 lastValidBlockHeight
-            }, this.transactionOptions.commitment);
-
+            }, 'confirmed');
+    
             if (confirmation.value.err) {
-                throw new Error('Transaction failed to confirm');
+                throw new Error('Transaction failed to confirm: ' + confirmation.value.err);
             }
-
+    
             return signature;
+    
         } catch (error) {
             console.error('Transaction failed:', error);
+            // Add more detailed error information to help debugging
+            const errorDetails = {
+                error: error.message,
+                stack: error.stack,
+                txInstructions: transaction.instructions.map(i => ({
+                    programId: i.programId.toString(),
+                    keys: i.keys.map(k => ({
+                        pubkey: k.pubkey.toString(),
+                        isSigner: k.isSigner,
+                        isWritable: k.isWritable
+                    }))
+                }))
+            };
+            console.debug('Transaction error details:', errorDetails);
             throw error;
         }
     }
