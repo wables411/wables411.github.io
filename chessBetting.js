@@ -385,6 +385,16 @@ class ChessBetting {
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
     
+            // Convert UI amount to native units
+            // amount is in UI units (e.g. 100), need to convert to native units
+            const nativeAmount = Math.floor(amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS));
+            
+            console.log('Amount conversion:', {
+                uiAmount: amount,
+                nativeAmount: nativeAmount,
+                decimals: this.config.LAWB_TOKEN.DECIMALS
+            });
+    
             // Generate escrow accounts
             const escrowPDA = await this.config.findEscrowPDA(gameId);
             console.log('Escrow PDA:', escrowPDA.toString());
@@ -400,10 +410,10 @@ class ChessBetting {
                 this.lawbMint
             );
     
-            // Check player's token balance - amount is already in native units
+            // Check player's token balance
             const balance = await this.connection.getTokenAccountBalance(playerATA);
             
-            if (Number(balance.value.amount) < amount) {
+            if (Number(balance.value.amount) < nativeAmount) {
                 throw new Error(`Insufficient $LAWB balance`);
             }
     
@@ -424,12 +434,12 @@ class ChessBetting {
                 await this.sendAndConfirmTransaction(tx);
             }
     
-            // Transfer tokens to escrow - amount is already in native units
+            // Transfer tokens to escrow using the native amount
             const transferIx = this.config.createTransferInstruction(
                 playerATA,
                 escrowATA,
                 wallet.publicKey,
-                amount // Use amount directly as it's already converted
+                nativeAmount // Use the converted native amount
             );
     
             const transferTx = new solanaWeb3.Transaction().add(transferIx);
@@ -456,12 +466,8 @@ class ChessBetting {
             const rawAmount = betInput ? Number(betInput.value) : 0;
             if (!this.validateBetAmount(rawAmount)) return;
     
-            // Convert to native units (lamports)
-            const nativeAmount = rawAmount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
-            
             console.log('Creating bet:', {
                 rawAmount,
-                nativeAmount,
                 decimals: this.config.LAWB_TOKEN.DECIMALS
             });
     
@@ -469,26 +475,26 @@ class ChessBetting {
             
             // Generate game ID and setup escrow
             const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
-            const { escrowPDA, signature } = await this.createBetEscrow(gameId, nativeAmount);
+            const { escrowPDA, signature } = await this.createBetEscrow(gameId, rawAmount);
     
-            // First create game record
+            // Create game record with the UI amount
             const gameRecord = await this.createGameRecord(
                 gameId, 
                 wallet.publicKey.toString(), 
-                rawAmount, 
+                rawAmount,  // Use raw UI amount
                 escrowPDA
             );
     
-            // Then create bet record with existing game ID
+            // Create bet record with the UI amount
             const betRecord = await this.createBetRecord(
                 gameId,
                 wallet.publicKey.toString(),
-                rawAmount,
+                rawAmount,  // Use raw UI amount
                 escrowPDA
             );
     
             this.currentBet = {
-                amount: rawAmount,
+                amount: rawAmount,  // Store UI amount
                 bluePlayer: wallet.publicKey.toString(),
                 gameId,
                 betId: betRecord.id,
@@ -511,30 +517,7 @@ class ChessBetting {
     
         } catch (error) {
             console.error('Error creating game with bet:', error);
-            
-            // If we failed after escrow was created but before records were created,
-            // we should try to refund the player
-            if (error.message?.includes('foreign key constraint')) {
-                this.updateBetStatus('Database error - attempting refund...', 'error');
-                try {
-                    // Create a minimal bet record for refund
-                    const refundBet = {
-                        game_id: gameId,
-                        bet_amount: rawAmount,
-                        blue_player: wallet.publicKey.toString(),
-                        escrow_account: escrowPDA.toString(),
-                        status: 'cancelled'
-                    };
-                    await this.processRefunds(refundBet);
-                    this.updateBetStatus('Bet refunded due to error', 'error');
-                } catch (refundError) {
-                    console.error('Refund failed:', refundError);
-                    this.updateBetStatus('Error creating game and refund failed. Please contact support.', 'error');
-                }
-            } else {
-                this.updateBetStatus('Failed to create game: ' + error.message, 'error');
-            }
-            
+            this.updateBetStatus('Failed to create game: ' + error.message, 'error');
             this.resetBetState();
         }
     }
