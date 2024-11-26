@@ -598,48 +598,128 @@ class ChessBetting {
                 return;
             }
     
+            console.log('Attempting to join game:', gameCode);
             this.updateBetStatus('Joining game...', 'processing');
     
-            // Get game details
-            const { data: game } = await this.supabase
+            // First check if game exists without any filters
+            const { data: allGames, error: searchError } = await this.supabase
+                .from('chess_games')
+                .select('*')
+                .eq('game_id', gameCode);
+    
+            console.log('Raw game search results:', {
+                games: allGames,
+                error: searchError
+            });
+    
+            // Then try to get the specific waiting game
+            const { data: game, error: queryError } = await this.supabase
                 .from('chess_games')
                 .select('*')
                 .eq('game_id', gameCode)
                 .eq('game_state', 'waiting')
+                .is('red_player', null)
                 .single();
     
+            console.log('Filtered game query result:', {
+                game,
+                error: queryError,
+                conditions: {
+                    gameId: gameCode,
+                    state: 'waiting',
+                    redPlayer: null
+                }
+            });
+    
+            // Also check active bets
+            const { data: activeBets, error: betError } = await this.supabase
+                .from('chess_bets')
+                .select('*')
+                .eq('game_id', gameCode);
+    
+            console.log('Active bets for game:', {
+                bets: activeBets,
+                error: betError
+            });
+    
             if (!game) {
-                throw new Error('Game not found or already started');
+                // Check why game wasn't found
+                let reason = '';
+                if (allGames?.length > 0) {
+                    const foundGame = allGames[0];
+                    if (foundGame.game_state !== 'waiting') {
+                        reason = `Game state is ${foundGame.game_state}`;
+                    } else if (foundGame.red_player) {
+                        reason = 'Game already has a red player';
+                    }
+                } else {
+                    reason = 'Game not found';
+                }
+                
+                console.error('Game lookup failed:', { 
+                    gameCode,
+                    reason,
+                    error: queryError 
+                });
+                throw new Error(`Game not found or already started: ${reason}`);
             }
     
             if (game.blue_player === wallet.publicKey.toString()) {
                 throw new Error('Cannot join your own game');
             }
     
+            console.log('Found valid game to join:', {
+                gameId: game.game_id,
+                state: game.game_state,
+                betAmount: game.bet_amount
+            });
+    
             // Handle bet matching if necessary
             if (game.bet_amount > 0) {
+                console.log('Matching bet amount:', game.bet_amount);
                 await this.matchBet(game);
             }
     
             // Update game state
-            const { error: updateError } = await this.supabase
+            console.log('Updating game state for player 2');
+            const { data: updateData, error: updateError } = await this.supabase
                 .from('chess_games')
                 .update({
                     red_player: wallet.publicKey.toString(),
-                    game_state: 'active'
+                    game_state: 'active',
+                    updated_at: new Date().toISOString()
                 })
-                .eq('game_id', gameCode);
+                .eq('game_id', gameCode)
+                .select()
+                .single();
+    
+            console.log('Game state update result:', {
+                updateData,
+                error: updateError
+            });
     
             if (updateError) throw updateError;
     
             this.updateBetStatus('Successfully joined game!', 'success');
             
-            // Initialize game UI for red player (joiner)
             if (window.multiplayerManager) {
-                window.multiplayerManager.gameId = gameCode;
-                window.multiplayerManager.playerColor = 'red';
-                window.multiplayerManager.subscribeToGame();
-                window.multiplayerManager.showGame('red');
+                console.log('Initializing multiplayer game for player 2');
+                
+                const mm = window.multiplayerManager;
+                mm.gameId = gameCode;
+                mm.playerColor = 'red';
+                
+                console.log('Setting up game state:', {
+                    gameId: mm.gameId,
+                    playerColor: mm.playerColor,
+                    gameState: updateData
+                });
+                
+                mm.subscribeToGame();
+                mm.showGame('red');
+            } else {
+                console.error('Multiplayer manager not initialized!');
+                throw new Error('Game system not ready');
             }
     
         } catch (error) {
@@ -1117,10 +1197,11 @@ class ChessBetting {
 
     async cancelGameAndRefund(gameId) {
         try {
-            console.log('Cancelling game:', gameId);
+            console.log('Cancellation requested for game:', gameId);
+            console.log('Cancellation stack trace:', new Error().stack);
             
             // First update database records to prevent re-entrancy
-            await Promise.all([
+            const [gamesResult, betsResult] = await Promise.all([
                 // Update chess_games table
                 this.supabase
                     .from('chess_games')
@@ -1143,6 +1224,11 @@ class ChessBetting {
                     .eq('game_id', gameId)
             ]);
     
+            console.log('Cancel database updates:', {
+                gamesResult,
+                betsResult
+            });
+    
             // Get bet details after marking as cancelled
             const { data: bet } = await this.supabase
                 .from('chess_bets')
@@ -1161,7 +1247,7 @@ class ChessBetting {
             console.error('Error cancelling game:', error);
             throw error;
         }
-    } 
+    }
     
     async processRefunds(bet) {
         try {
@@ -1223,6 +1309,12 @@ class ChessBetting {
     }
 
     cleanup() {
+        console.log('Cleanup called:', {
+            isInitialized: this.initialized,
+            currentBet: this.currentBet,
+            stack: new Error().stack
+        });
+    
         // Clear all subscriptions
         Object.values(this.subscriptions).forEach(subscription => {
             if (subscription) {
@@ -1233,18 +1325,21 @@ class ChessBetting {
                 }
             }
         });
-
+    
+        // Only cancel active bets if explicitly requested
         this.initialized = false;
-        this.resetBetState();
+        this.currentBet = {
+            amount: 0,
+            bluePlayer: null,
+            redPlayer: null,
+            gameId: null,
+            betId: null,
+            isActive: false,
+            escrowAccount: null,
+            matched: false,
+            status: 'pending'
+        };
     }
-}
 
 // Create singleton instance
 window.chessBetting = new ChessBetting();
-
-// Add cleanup on page unload
-window.addEventListener('beforeunload', () => {
-    if (window.chessBetting) {
-        window.chessBetting.cleanup();
-    }
-});
