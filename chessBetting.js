@@ -896,20 +896,33 @@ class ChessBetting {
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
     
-            const escrowPDA = new solanaWeb3.PublicKey(this.currentBet.escrowAccount);
+            // Get the escrow PDA and bump
+            const [escrowPDA, escrowBump] = await solanaWeb3.PublicKey.findProgramAddress(
+                [Buffer.from(this.currentBet.gameId)],
+                this.tokenProgram
+            );
+    
             const escrowATA = await this.config.findAssociatedTokenAddress(
                 escrowPDA,
                 this.lawbMint
             );
     
             // Calculate payouts
-            const totalAmount = this.currentBet.amount * 2;
+            const totalAmount = this.currentBet.amount * 2; // Both players' bets
             const houseFee = Math.floor(totalAmount * this.config.HOUSE_FEE_PERCENTAGE / 100);
             const winnerAmount = totalAmount - houseFee;
     
             // Convert to native amounts
             const nativeWinnerAmount = this.config.LAWB_TOKEN.convertToNative(winnerAmount);
             const nativeHouseFee = this.config.LAWB_TOKEN.convertToNative(houseFee);
+    
+            console.log('Processing winner payout:', {
+                totalAmount,
+                houseFee,
+                winnerAmount,
+                nativeWinnerAmount: nativeWinnerAmount.toString(),
+                nativeHouseFee: nativeHouseFee.toString()
+            });
     
             // Get winner's token account
             const winnerPubkey = new solanaWeb3.PublicKey(
@@ -926,31 +939,61 @@ class ChessBetting {
                 this.lawbMint
             );
     
-            // Process payouts
-            await Promise.all([
-                // Winner payout
-                this.sendAndConfirmTransaction(
-                    new solanaWeb3.Transaction().add(
-                        this.config.createTransferInstruction(
-                            escrowATA,
-                            winnerATA,
-                            escrowPDA,
-                            nativeWinnerAmount.toString()
-                        )
-                    )
-                ),
-                // House fee
-                this.sendAndConfirmTransaction(
-                    new solanaWeb3.Transaction().add(
-                        this.config.createTransferInstruction(
-                            escrowATA,
-                            houseATA,
-                            escrowPDA,
-                            nativeHouseFee.toString()
-                        )
-                    )
-                )
-            ]);
+            // Create the PDA signer seeds
+            const signerSeeds = [
+                Buffer.from(this.currentBet.gameId),
+                Buffer.from([escrowBump])
+            ];
+    
+            // Winner payout transaction
+            const winnerPayoutIx = this.config.createTransferInstruction(
+                escrowATA,
+                winnerATA,
+                escrowPDA,
+                nativeWinnerAmount.toString()
+            );
+    
+            // House fee transaction
+            const houseFeeIx = this.config.createTransferInstruction(
+                escrowATA,
+                houseATA,
+                escrowPDA,
+                nativeHouseFee.toString()
+            );
+    
+            // Combine into single transaction
+            const transaction = new solanaWeb3.Transaction()
+                .add(winnerPayoutIx)
+                .add(houseFeeIx);
+    
+            transaction.feePayer = wallet.publicKey;
+            
+            // Get recent blockhash
+            const { blockhash } = await this.connection.getLatestBlockhash();
+            transaction.recentBlockhash = blockhash;
+    
+            // Partial sign with wallet
+            const signedTx = await wallet.signTransaction(transaction);
+    
+            // Send and confirm with PDA signing
+            const signature = await solanaWeb3.sendAndConfirmTransaction(
+                this.connection,
+                signedTx,
+                [
+                    {
+                        publicKey: escrowPDA,
+                        secretKey: null,
+                        seeds: signerSeeds
+                    }
+                ],
+                {
+                    skipPreflight: false,
+                    commitment: 'confirmed',
+                    preflightCommitment: 'confirmed'
+                }
+            );
+    
+            console.log('Payout transaction confirmed:', signature);
     
             // Update records
             await Promise.all([
@@ -958,12 +1001,13 @@ class ChessBetting {
                 this.updateBetRecord(this.currentBet.betId, winner)
             ]);
     
-            this.updateBetStatus('Bet settled successfully', 'success');
+            this.updateBetStatus(`Winner paid out successfully! Amount: ${winnerAmount} $LAWB`, 'success');
             this.resetBetState();
     
         } catch (error) {
             console.error('Error processing winner:', error);
             this.updateBetStatus('Failed to process winner: ' + error.message, 'error');
+            throw error;
         }
     }
 
@@ -1176,11 +1220,20 @@ class ChessBetting {
     async cancelGameAndRefund(gameId) {
         try {
             console.log('Cancellation requested for game:', gameId);
-            console.log('Cancellation stack trace:', new Error().stack);
             
-            // First update database records to prevent re-entrancy
+            // Get current game and bet status
+            const { data: game } = await this.supabase
+                .from('chess_games')
+                .select('*')
+                .eq('game_id', gameId)
+                .single();
+    
+            if (!game) {
+                throw new Error('Game not found');
+            }
+    
+            // Update database records first
             const [gamesResult, betsResult] = await Promise.all([
-                // Update chess_games table
                 this.supabase
                     .from('chess_games')
                     .update({
@@ -1191,7 +1244,6 @@ class ChessBetting {
                     })
                     .eq('game_id', gameId),
                 
-                // Update chess_bets table 
                 this.supabase
                     .from('chess_bets')
                     .update({
@@ -1207,22 +1259,33 @@ class ChessBetting {
                 betsResult
             });
     
-            // Get bet details after marking as cancelled
+            // Get bet details
             const { data: bet } = await this.supabase
                 .from('chess_bets')
                 .select('*')
                 .eq('game_id', gameId)
                 .single();
     
-            if (!bet) throw new Error('Bet not found');
+            if (!bet) {
+                throw new Error('Bet not found');
+            }
     
-            // Process refunds after DB update
+            // Process refunds
             await this.processRefunds(bet);
             
-            console.log('Game cancelled and refunds processed successfully');
+            // Update UI
+            this.updateBetStatus('Game cancelled and refunds processed', 'success');
+            this.resetBetState();
+    
+            // Reset multiplayer if active
+            if (window.multiplayerManager) {
+                window.multiplayerManager.leaveGame();
+            }
+            
             return true;
         } catch (error) {
             console.error('Error cancelling game:', error);
+            this.updateBetStatus('Failed to cancel game: ' + error.message, 'error');
             throw error;
         }
     }
@@ -1231,7 +1294,11 @@ class ChessBetting {
         try {
             console.log('Starting refund process for game:', bet.game_id);
             
-            const escrowPDA = await this.config.findEscrowPDA(bet.game_id);
+            // Get the escrow PDA and bump
+            const [escrowPDA, escrowBump] = await solanaWeb3.PublicKey.findProgramAddress(
+                [Buffer.from(bet.game_id)],
+                this.tokenProgram
+            );
             console.log('Escrow PDA:', escrowPDA.toString());
     
             const escrowATA = await this.config.findAssociatedTokenAddress(
@@ -1239,47 +1306,115 @@ class ChessBetting {
                 this.lawbMint
             );
     
-            const bluePlayerATA = await this.config.findAssociatedTokenAddress(
-                new solanaWeb3.PublicKey(bet.blue_player),
-                this.lawbMint
-            );
-    
             // Convert UI amount to native
             const refundAmount = this.config.LAWB_TOKEN.convertToNative(bet.bet_amount);
             console.log('Refund amount:', {ui: bet.bet_amount, native: refundAmount});
     
-            // Build and send refund transaction
-            const refundTx = new solanaWeb3.Transaction().add(
-                this.config.createTransferInstruction(
+            // Process refunds for both players if matched bet
+            const refundPromises = [];
+    
+            // Refund blue player
+            if (bet.blue_player) {
+                const bluePlayerATA = await this.config.findAssociatedTokenAddress(
+                    new solanaWeb3.PublicKey(bet.blue_player),
+                    this.lawbMint
+                );
+    
+                const blueRefundIx = this.config.createTransferInstruction(
                     escrowATA,
                     bluePlayerATA,
                     escrowPDA,
                     refundAmount.toString()
-                )
-            );
+                );
     
-            await this.sendAndConfirmTransaction(refundTx);
+                // Create the PDA signer seeds
+                const signerSeeds = [
+                    Buffer.from(bet.game_id),
+                    Buffer.from([escrowBump])
+                ];
     
-            // Handle red player refund if exists
+                // Add PDA as signer
+                const blueTx = new solanaWeb3.Transaction().add(blueRefundIx);
+                blueTx.feePayer = this.getConnectedWallet().publicKey;
+                
+                // Partial sign with wallet
+                const signedTx = await this.getConnectedWallet().signTransaction(blueTx);
+    
+                // Sign with PDA using seeds
+                await solanaWeb3.sendAndConfirmTransaction(
+                    this.connection,
+                    signedTx,
+                    [
+                        {
+                            publicKey: escrowPDA,
+                            secretKey: null,
+                            seeds: signerSeeds
+                        }
+                    ],
+                    {
+                        skipPreflight: false,
+                        commitment: 'confirmed',
+                        preflightCommitment: 'confirmed'
+                    }
+                );
+    
+                refundPromises.push(blueTx);
+            }
+    
+            // Refund red player if matched
             if (bet.red_player) {
                 const redPlayerATA = await this.config.findAssociatedTokenAddress(
                     new solanaWeb3.PublicKey(bet.red_player),
                     this.lawbMint
                 );
     
-                const redRefundTx = new solanaWeb3.Transaction().add(
-                    this.config.createTransferInstruction(
-                        escrowATA,
-                        redPlayerATA,
-                        escrowPDA,
-                        refundAmount.toString()
-                    )
+                const redRefundIx = this.config.createTransferInstruction(
+                    escrowATA,
+                    redPlayerATA,
+                    escrowPDA,
+                    refundAmount.toString()
                 );
     
-                await this.sendAndConfirmTransaction(redRefundTx);
+                // Create the PDA signer seeds
+                const signerSeeds = [
+                    Buffer.from(bet.game_id),
+                    Buffer.from([escrowBump])
+                ];
+    
+                // Add PDA as signer
+                const redTx = new solanaWeb3.Transaction().add(redRefundIx);
+                redTx.feePayer = this.getConnectedWallet().publicKey;
+                
+                // Partial sign with wallet
+                const signedTx = await this.getConnectedWallet().signTransaction(redTx);
+    
+                // Sign with PDA using seeds
+                await solanaWeb3.sendAndConfirmTransaction(
+                    this.connection,
+                    signedTx,
+                    [
+                        {
+                            publicKey: escrowPDA,
+                            secretKey: null,
+                            seeds: signerSeeds
+                        }
+                    ],
+                    {
+                        skipPreflight: false,
+                        commitment: 'confirmed',
+                        preflightCommitment: 'confirmed'
+                    }
+                );
+    
+                refundPromises.push(redTx);
             }
     
+            // Wait for all refunds to complete
+            await Promise.all(refundPromises);
+            
+            console.log('Refunds processed successfully');
             return true;
+    
         } catch (error) {
             console.error('Error processing refunds:', error);
             throw error;

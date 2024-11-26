@@ -1,55 +1,22 @@
-window.SUPABASE_CHECK = {
-    async testConnection() {
-        try {
-            // First try to get the version to test connection
-            const { data: versionData, error: versionError } = await window.gameDatabase
-                .from('chess_games')
-                .select('count')
-                .limit(1)
-                .single();
-
-            if (versionError) {
-                // If that fails, try a simpler query
-                const { data, error } = await window.gameDatabase
-                    .from('chess_games')
-                    .select('id')
-                    .limit(1);
-
-                if (error) {
-                    console.error('Supabase connection test failed:', error);
-                    return false;
-                }
-
-                console.log('Supabase connection test successful (fallback):', data);
-                return true;
-            }
-
-            console.log('Supabase connection test successful:', versionData);
-            return true;
-        } catch (err) {
-            console.error('Supabase test error:', err);
-            return false;
-        }
-    }
-};
-
 window.BETTING_CONFIG = {
     // Token config
     LAWB_TOKEN: {
         MINT: new solanaWeb3.PublicKey('65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6'),
         DECIMALS: 9,
         convertToNative: function(uiAmount) {
-            return Math.round(uiAmount * Math.pow(10, this.DECIMALS));
+            // Convert UI amount (e.g. 100) to native amount with proper decimals
+            return BigInt(Math.round(uiAmount * Math.pow(10, this.DECIMALS)));
         },
         convertToUi: function(nativeAmount) {
-            return nativeAmount / Math.pow(10, this.DECIMALS);
+            // Convert native amount back to UI amount
+            return Number(nativeAmount) / Math.pow(10, this.DECIMALS);
         }
     },
 
     // Game parameters
     HOUSE_FEE_PERCENTAGE: 5,
-    MIN_BET: 100,
-    MAX_BET: 5000000,
+    MIN_BET: 100,          // In UI amount
+    MAX_BET: 5000000,      // In UI amount
     
     // System accounts
     HOUSE_WALLET: new solanaWeb3.PublicKey('3NCvL5itgJVrwNZw8BNL8syP8Za5hAmhmApCDh4bdsTu'),
@@ -59,64 +26,7 @@ window.BETTING_CONFIG = {
     ASSOCIATED_TOKEN_PROGRAM_ID: window.SplToken.ASSOCIATED_TOKEN_PROGRAM_ID,
     SYSTEM_PROGRAM_ID: solanaWeb3.SystemProgram.programId,
 
-    // Database schemas
-    SCHEMAS: {
-        CHESS_GAMES: {
-            tableName: 'chess_games',
-            columns: {
-                id: 'uuid',
-                game_id: 'text',
-                blue_player: 'text',
-                red_player: 'text',
-                board: 'jsonb',
-                current_player: 'text',
-                game_state: 'text',
-                piece_state: 'jsonb',
-                last_move: 'jsonb',
-                winner: 'text',
-                bet_amount: 'numeric',
-                escrow_account: 'text',
-                created_at: 'timestamp',
-                updated_at: 'timestamp'
-            }
-        },
-        CHESS_BETS: {
-            tableName: 'chess_bets',
-            columns: {
-                id: 'uuid',
-                game_id: 'text',
-                bet_amount: 'numeric',
-                blue_player: 'text',
-                red_player: 'text',
-                status: 'text',
-                winner: 'text',
-                escrow_account: 'text',
-                created_at: 'timestamp',
-                processed_at: 'timestamp'
-            }
-        }
-    },
-
-    // Database validation helpers
-    validateGameRecord: function(record) {
-        const schema = this.SCHEMAS.CHESS_GAMES.columns;
-        return Object.entries(record).every(([key, value]) => {
-            return schema[key] && 
-                   (value === null || 
-                    typeof value === (schema[key] === 'jsonb' ? 'object' : schema[key]));
-        });
-    },
-
-    validateBetRecord: function(record) {
-        const schema = this.SCHEMAS.CHESS_BETS.columns;
-        return Object.entries(record).every(([key, value]) => {
-            return schema[key] && 
-                   (value === null || 
-                    typeof value === (schema[key] === 'numeric' ? 'number' : schema[key]));
-        });
-    },
-
-    // Account helper functions
+    // Helper functions
     async findAssociatedTokenAddress(walletAddress, tokenMintAddress) {
         try {
             const wallet = typeof walletAddress === 'string' ? 
@@ -164,5 +74,20 @@ window.BETTING_CONFIG = {
             console.error('Error creating transfer instruction:', error);
             throw error;
         }
+    },
+
+    validateBetAmount(amount) {
+        // Log the validation to catch any issues
+        console.log('Validating bet amount:', {
+            input: amount,
+            nativeAmount: this.LAWB_TOKEN.convertToNative(amount).toString(),
+            min: this.MIN_BET,
+            max: this.MAX_BET
+        });
+        
+        if (!amount || isNaN(amount)) return false;
+        if (amount < this.MIN_BET) return false;
+        if (amount > this.MAX_BET) return false;
+        return true;
     }
 };
