@@ -380,34 +380,33 @@ class ChessBetting {
 
     async createBetEscrow(gameId, amount) {
         try {
-            console.log('Creating bet escrow for game:', gameId);
+            console.log('Creating bet escrow for game:', gameId, 'amount:', amount);
             
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
-
+    
             // Generate escrow accounts
             const escrowPDA = await this.config.findEscrowPDA(gameId);
             console.log('Escrow PDA:', escrowPDA.toString());
-
+    
             // Get player and escrow token accounts
             const playerATA = await this.config.findAssociatedTokenAddress(
                 wallet.publicKey,
                 this.lawbMint
             );
-
+    
             const escrowATA = await this.config.findAssociatedTokenAddress(
                 escrowPDA,
                 this.lawbMint
             );
-
-            // Check player's token balance
+    
+            // Check player's token balance - amount is already in native units
             const balance = await this.connection.getTokenAccountBalance(playerATA);
-            const requiredAmount = amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
             
-            if (Number(balance.value.amount) < requiredAmount) {
+            if (Number(balance.value.amount) < amount) {
                 throw new Error(`Insufficient $LAWB balance`);
             }
-
+    
             // Create escrow ATA if it doesn't exist
             const escrowAccount = await this.connection.getAccountInfo(escrowATA);
             if (!escrowAccount) {
@@ -424,21 +423,21 @@ class ChessBetting {
                 const tx = new solanaWeb3.Transaction().add(createATAIx);
                 await this.sendAndConfirmTransaction(tx);
             }
-
-            // Transfer tokens to escrow
+    
+            // Transfer tokens to escrow - amount is already in native units
             const transferIx = this.config.createTransferInstruction(
                 playerATA,
                 escrowATA,
                 wallet.publicKey,
-                requiredAmount
+                amount // Use amount directly as it's already converted
             );
-
+    
             const transferTx = new solanaWeb3.Transaction().add(transferIx);
             const signature = await this.sendAndConfirmTransaction(transferTx);
-
+    
             console.log('Escrow funded:', signature);
             return { escrowPDA, escrowATA, signature };
-
+    
         } catch (error) {
             console.error('Error creating bet escrow:', error);
             throw error;
@@ -452,25 +451,34 @@ class ChessBetting {
                 this.updateBetStatus('Please connect your wallet first', 'error');
                 return;
             }
-
+    
             const betInput = document.getElementById('betAmount');
-            const amount = betInput ? Number(betInput.value) : 0;
-            if (!this.validateBetAmount(amount)) return;
-
+            const rawAmount = betInput ? Number(betInput.value) : 0;
+            if (!this.validateBetAmount(rawAmount)) return;
+    
+            // Convert to native units (lamports)
+            const nativeAmount = rawAmount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
+            
+            console.log('Creating bet:', {
+                rawAmount,
+                nativeAmount,
+                decimals: this.config.LAWB_TOKEN.DECIMALS
+            });
+    
             this.updateBetStatus('Processing bet...', 'processing');
             
             // Generate game ID and setup escrow
             const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
-            const { escrowPDA, signature } = await this.createBetEscrow(gameId, amount);
-
+            const { escrowPDA, signature } = await this.createBetEscrow(gameId, nativeAmount);
+    
             // Create game and bet records
             const [gameRecord, betRecord] = await Promise.all([
-                this.createGameRecord(gameId, wallet.publicKey.toString(), amount, escrowPDA),
-                this.createBetRecord(gameId, wallet.publicKey.toString(), amount, escrowPDA)
+                this.createGameRecord(gameId, wallet.publicKey.toString(), rawAmount, escrowPDA),  // Store display amount
+                this.createBetRecord(gameId, wallet.publicKey.toString(), rawAmount, escrowPDA)   // Store display amount
             ]);
-
+    
             this.currentBet = {
-                amount,
+                amount: rawAmount,  // Store display amount
                 bluePlayer: wallet.publicKey.toString(),
                 gameId,
                 betId: betRecord.id,
@@ -479,7 +487,7 @@ class ChessBetting {
                 matched: false,
                 status: 'pending'
             };
-
+    
             // Show game code
             const gameCodeDisplay = document.getElementById('gameCodeDisplay');
             const gameCode = document.getElementById('gameCode');
@@ -487,10 +495,10 @@ class ChessBetting {
                 gameCode.textContent = gameId;
                 gameCodeDisplay.style.display = 'block';
             }
-
+    
             this.updateBetStatus('Game created successfully!', 'success');
             this.disableBetting();
-
+    
         } catch (error) {
             console.error('Error creating game with bet:', error);
             this.updateBetStatus('Failed to create game: ' + error.message, 'error');
