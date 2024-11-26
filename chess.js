@@ -1377,11 +1377,28 @@ function createPieceElement(piece, row, col) {
 
 function onPieceClick(event) {
     try {
+        // Debug logging
+        console.log('Piece clicked:', {
+            isWalletConnected: isWalletConnected(),
+            isMultiplayerMode: window.isMultiplayerMode,
+            currentPlayer: currentPlayer,
+            playerColor: playerColor,
+            gameState: gameState
+        });
+
         if (!checkGameAccess()) return;
         
         // Check game mode restrictions
-        if (isMultiplayerMode) {
-            if (currentPlayer !== playerColor) return;
+        if (window.isMultiplayerMode) {
+            console.log('Multiplayer move check:', {
+                currentPlayer: currentPlayer,
+                playerColor: playerColor
+            });
+            
+            if (!window.multiplayerManager) {
+                console.error('Multiplayer manager not initialized');
+                return;
+            }
         } else if (currentGameMode === GameMode.AI && currentPlayer !== 'blue') {
             return;
         }
@@ -1393,14 +1410,22 @@ function onPieceClick(event) {
         const col = parseInt(clickedPiece.getAttribute('data-col'));
         const pieceType = board[row][col];
         
+        console.log('Processing piece click:', {
+            row, col, pieceType,
+            selectedPiece: selectedPiece ? {
+                row: selectedPiece.getAttribute('data-row'),
+                col: selectedPiece.getAttribute('data-col')
+            } : null
+        });
+        
         if (selectedPiece) {
             selectedPiece.style.opacity = '1';
             removeHighlights();
         }
         
         const pieceColor = getPieceColor(pieceType);
-        const validPlayer = isMultiplayerMode ? 
-            pieceColor === playerColor : 
+        const validPlayer = window.isMultiplayerMode ? 
+            pieceColor === playerColor && currentPlayer === playerColor : 
             pieceColor === currentPlayer;
             
         if (validPlayer) {
