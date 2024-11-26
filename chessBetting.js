@@ -456,15 +456,15 @@ class ChessBetting {
                 this.updateBetStatus('Please connect your wallet first', 'error');
                 return;
             }
-
+    
             const gameCode = document.getElementById('game-code-input')?.value?.trim().toUpperCase();
             if (!gameCode) {
                 this.updateBetStatus('Please enter a game code', 'error');
                 return;
             }
-
+    
             this.updateBetStatus('Joining game...', 'processing');
-
+    
             // Get game details
             const { data: game } = await this.supabase
                 .from('chess_games')
@@ -472,20 +472,20 @@ class ChessBetting {
                 .eq('game_id', gameCode)
                 .eq('game_state', 'waiting')
                 .single();
-
+    
             if (!game) {
                 throw new Error('Game not found or already started');
             }
-
+    
             if (game.blue_player === wallet.publicKey.toString()) {
                 throw new Error('Cannot join your own game');
             }
-
+    
             // Handle bet matching if necessary
             if (game.bet_amount > 0) {
                 await this.matchBet(game);
             }
-
+    
             // Update game state
             const { error: updateError } = await this.supabase
                 .from('chess_games')
@@ -494,16 +494,19 @@ class ChessBetting {
                     game_state: 'active'
                 })
                 .eq('game_id', gameCode);
-
+    
             if (updateError) throw updateError;
-
+    
             this.updateBetStatus('Successfully joined game!', 'success');
             
-            // Trigger game start in the UI
+            // Initialize game UI for red player (joiner)
             if (window.multiplayerManager) {
+                window.multiplayerManager.gameId = gameCode;
+                window.multiplayerManager.playerColor = 'red';
+                window.multiplayerManager.subscribeToGame();
                 window.multiplayerManager.showGame('red');
             }
-
+    
         } catch (error) {
             console.error('Error joining game:', error);
             this.updateBetStatus('Failed to join game: ' + error.message, 'error');
@@ -606,12 +609,20 @@ class ChessBetting {
         try {
             const bet = payload.new;
             if (!bet || !this.currentBet.isActive) return;
-
+    
             if (bet.game_id === this.currentBet.gameId) {
                 if (bet.status === 'matched' && bet.red_player) {
                     this.currentBet.matched = true;
                     this.currentBet.redPlayer = bet.red_player;
                     this.updateBetStatus('Bet matched! Game starting...', 'success');
+                    
+                    // Initialize game for blue player (creator)
+                    if (window.multiplayerManager) {
+                        window.multiplayerManager.showGame('blue');
+                        window.multiplayerManager.gameId = bet.game_id;
+                        window.multiplayerManager.playerColor = 'blue';
+                        window.multiplayerManager.subscribeToGame();
+                    }
                 }
             }
         } catch (error) {
