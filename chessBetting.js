@@ -220,19 +220,19 @@ class ChessBetting {
             if (betInput) {
                 betInput.addEventListener('input', () => this.updateBetCalculations());
             }
-
+    
             // Set up game creation buttons
             const createGameWithBetBtn = document.getElementById('create-game-with-bet');
             if (createGameWithBetBtn) {
                 createGameWithBetBtn.onclick = () => this.handleCreateGameWithBet();
             }
-
+    
             // Set up join game handling
             const joinGameBtn = document.getElementById('join-game');
             if (joinGameBtn) {
                 joinGameBtn.onclick = () => this.handleJoinGame();
             }
-
+    
             // Set up game code copy functionality
             const gameCode = document.getElementById('gameCode');
             if (gameCode) {
@@ -242,10 +242,39 @@ class ChessBetting {
                         .catch(err => console.error('Failed to copy game code:', err));
                 };
             }
-
+    
             // Initialize bet calculations
             this.updateBetCalculations();
-
+    
+            // Add cancel game button handler
+            const cancelGameBtn = document.getElementById('cancel-game-bet');
+            if (cancelGameBtn) {
+                cancelGameBtn.onclick = async () => {
+                    try {
+                        if (!this.currentBet.gameId) {
+                            this.updateBetStatus('No active game to cancel', 'error');
+                            return;
+                        }
+    
+                        this.updateBetStatus('Cancelling game and processing refunds...', 'processing');
+                        await this.cancelGameAndRefund(this.currentBet.gameId);
+                        this.updateBetStatus('Game cancelled and refunds processed', 'success');
+                        this.resetBetState();
+                        
+                        // Reset UI
+                        const gameCodeDisplay = document.getElementById('gameCodeDisplay');
+                        if (gameCodeDisplay) gameCodeDisplay.style.display = 'none';
+                        
+                        if (window.multiplayerManager) {
+                            window.multiplayerManager.leaveGame();
+                        }
+                    } catch (error) {
+                        console.error('Error cancelling game:', error);
+                        this.updateBetStatus('Failed to cancel game: ' + error.message, 'error');
+                    }
+                };
+            }
+    
             console.log('UI handlers initialized');
         } catch (error) {
             console.error('UI initialization error:', error);
@@ -865,6 +894,108 @@ class ChessBetting {
         const gameCodeDisplay = document.getElementById('gameCodeDisplay');
         if (gameCodeDisplay) {
             gameCodeDisplay.style.display = 'none';
+        }
+    }
+
+    async cancelGameAndRefund(gameId) {
+        try {
+            // Get game and bet details
+            const { data: game } = await this.supabase
+                .from('chess_games')
+                .select('*')
+                .eq('game_id', gameId)
+                .single();
+    
+            if (!game) throw new Error('Game not found');
+    
+            const { data: bet } = await this.supabase
+                .from('chess_bets')
+                .select('*')
+                .eq('game_id', gameId)
+                .single();
+    
+            if (!bet) throw new Error('Bet not found');
+    
+            // Process refunds
+            await this.processRefunds(bet);
+    
+            // Update game and bet status
+            await Promise.all([
+                this.supabase
+                    .from('chess_games')
+                    .update({
+                        game_state: 'cancelled',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('game_id', gameId),
+                
+                this.supabase
+                    .from('chess_bets')
+                    .update({
+                        status: 'cancelled',
+                        processed_at: new Date().toISOString()
+                    })
+                    .eq('game_id', gameId)
+            ]);
+    
+            return true;
+        } catch (error) {
+            console.error('Error cancelling game:', error);
+            throw error;
+        }
+    }
+    
+    async processRefunds(bet) {
+        try {
+            const escrowPDA = new solanaWeb3.PublicKey(bet.escrow_account);
+            const escrowATA = await this.config.findAssociatedTokenAddress(
+                escrowPDA,
+                this.lawbMint
+            );
+    
+            // Refund blue player
+            const bluePlayerPubkey = new solanaWeb3.PublicKey(bet.blue_player);
+            const bluePlayerATA = await this.config.findAssociatedTokenAddress(
+                bluePlayerPubkey,
+                this.lawbMint
+            );
+    
+            // If game was matched, refund red player too
+            const refundPromises = [];
+            
+            const blueRefundTx = new solanaWeb3.Transaction().add(
+                this.config.createTransferInstruction(
+                    escrowATA,
+                    bluePlayerATA,
+                    escrowPDA,
+                    bet.bet_amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS)
+                )
+            );
+            refundPromises.push(this.sendAndConfirmTransaction(blueRefundTx));
+    
+            if (bet.red_player) {
+                const redPlayerPubkey = new solanaWeb3.PublicKey(bet.red_player);
+                const redPlayerATA = await this.config.findAssociatedTokenAddress(
+                    redPlayerPubkey,
+                    this.lawbMint
+                );
+    
+                const redRefundTx = new solanaWeb3.Transaction().add(
+                    this.config.createTransferInstruction(
+                        escrowATA,
+                        redPlayerATA,
+                        escrowPDA,
+                        bet.bet_amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS)
+                    )
+                );
+                refundPromises.push(this.sendAndConfirmTransaction(redRefundTx));
+            }
+    
+            await Promise.all(refundPromises);
+            return true;
+        } catch (error) {
+            console.error('Error processing refunds:', error);
+            throw error;
         }
     }
 
