@@ -4,6 +4,8 @@ class MultiplayerManager {
         this.gameId = null;
         this.playerColor = null;
         this.subscription = null;
+        this.currentGameState = null;
+        this.isMultiplayerMode = true;
         this.initializeEventListeners();
         console.log('MultiplayerManager initialized');
     }
@@ -49,7 +51,6 @@ class MultiplayerManager {
                 return;
             }
 
-            // Let chessBetting handle the bet creation
             if (window.chessBetting) {
                 await window.chessBetting.handleCreateGameWithBet();
             } else {
@@ -93,10 +94,9 @@ class MultiplayerManager {
 
             if (error) throw error;
 
-            console.log('Game created successfully:', data[0]);
-
-            this.gameId = data[0].id;
+            this.gameId = gameId;
             this.playerColor = 'blue';
+            this.currentGameState = data[0];
             this.subscribeToGame();
             this.showGame('blue');
 
@@ -142,10 +142,8 @@ class MultiplayerManager {
                 return;
             }
 
-            // Check if this is a betting game
             if (data.bet_amount > 0) {
                 if (window.chessBetting) {
-                    // Let chessBetting handle bet matching
                     return await window.chessBetting.handleJoinGame(code);
                 } else {
                     alert('Betting system not initialized');
@@ -153,21 +151,19 @@ class MultiplayerManager {
                 }
             }
 
-            // Handle non-betting game join
             const { error } = await this.supabase
                 .from('chess_games')
                 .update({
                     red_player: player,
                     game_state: 'active'
                 })
-                .eq('id', data.id);
+                .eq('game_id', data.game_id);
 
             if (error) throw error;
 
-            console.log('Successfully joined game:', data.id);
-
-            this.gameId = data.id;
+            this.gameId = data.game_id;
             this.playerColor = 'red';
+            this.currentGameState = data;
             this.subscribeToGame();
             this.showGame('red');
 
@@ -178,62 +174,32 @@ class MultiplayerManager {
     }
 
     showGame(color) {
-        console.log('Attempting to show game:', {
-            color,
-            gameId: this.gameId,
-            isMultiplayerMode: this.isMultiplayerMode
-        });
-    
         try {
             const menuEl = document.querySelector('.multiplayer-menu');
             const gameEl = document.getElementById('chess-game');
             
-            console.log('Game elements:', {
-                menuFound: !!menuEl,
-                gameFound: !!gameEl
-            });
-            
             if (menuEl) menuEl.style.display = 'none';
             if (gameEl) gameEl.style.display = 'block';
             
-            resetGame();
-            isMultiplayerMode = true;
-            playerColor = color;
-            currentPlayer = 'blue'; // Game always starts with blue
+            window.resetGame();
+            window.isMultiplayerMode = true;
+            window.playerColor = color;
+            window.currentPlayer = 'blue'; // Game always starts with blue
             
             // Initialize board with the initial state
-            console.log('Initializing game board');
-            board = JSON.parse(JSON.stringify(initialBoard));
-            
-            console.log('Placing pieces');
-            placePieces();
+            window.board = JSON.parse(JSON.stringify(window.initialBoard));
+            window.placePieces();
     
             const chessboard = document.getElementById('chessboard');
             if (chessboard) {
-                console.log('Setting up chessboard interactions:', {
-                    color,
-                    currentPlayer,
-                    canMove: color === currentPlayer
-                });
-                chessboard.style.pointerEvents = color === currentPlayer ? 'auto' : 'none';
-            } else {
-                console.error('Chessboard element not found!');
+                chessboard.style.pointerEvents = color === 'blue' ? 'auto' : 'none';
             }
     
-            console.log(`Game started - Player: ${color}, Current turn: ${currentPlayer}`);
-            updateStatusDisplay(color === currentPlayer ? "Your turn" : "Opponent's turn");
+            window.updateStatusDisplay(color === 'blue' ? "Your turn" : "Opponent's turn");
             
-            // Verify board state
-            console.log('Final board state:', {
-                boardInitialized: !!board,
-                pieces: board,
-                playerColor: color,
-                currentPlayer,
-                isMultiplayerMode
-            });
         } catch (error) {
             console.error('Error showing game:', error);
-            updateStatusDisplay('Error initializing game board');
+            window.updateStatusDisplay('Error initializing game board');
         }
     }
 
@@ -250,7 +216,7 @@ class MultiplayerManager {
                 event: '*',
                 schema: 'public',
                 table: 'chess_games',
-                filter: `id=eq.${this.gameId}`
+                filter: `game_id=eq.${this.gameId}`
             }, 
             (payload) => {
                 console.log('Received game update:', payload);
@@ -264,53 +230,44 @@ class MultiplayerManager {
 
         try {
             console.log('Processing game update:', game);
+            this.currentGameState = game;
 
-            // Handle board update
             if (game.board && game.board.positions) {
-                console.log('Received board update:', game.board.positions);
                 window.board = JSON.parse(JSON.stringify(game.board.positions));
                 
                 if (game.board.pieceState) {
                     Object.assign(window.pieceState, game.board.pieceState);
                 }
                 
-                // Force board redraw
                 window.placePieces();
-                console.log('Board updated:', window.board);
             }
 
-            // Update current turn
             if (game.current_player) {
                 window.currentPlayer = game.current_player;
-                const isMyTurn = window.currentPlayer === this.playerColor;
+                const isMyTurn = game.current_player === this.playerColor;
                 
                 const chessboard = document.getElementById('chessboard');
                 if (chessboard) {
                     chessboard.style.pointerEvents = isMyTurn ? 'auto' : 'none';
                 }
                 
-                console.log(`Turn updated - Current: ${window.currentPlayer}, My color: ${this.playerColor}`);
                 window.updateStatusDisplay(isMyTurn ? "Your turn" : "Opponent's turn");
             }
 
-            // Handle game end
             if (game.game_state === 'ended') {
                 const message = game.winner === 'draw' ? 
                     'Game Over - Draw!' : 
                     `Game Over - ${game.winner.charAt(0).toUpperCase() + game.winner.slice(1)} wins!`;
                 window.updateStatusDisplay(message);
 
-                // Update scores
                 if (window.updateGameResult) {
-                    window.updateGameResult(game.winner === this.playerColor ? 'blue' : 'red');
+                    window.updateGameResult(game.winner === this.playerColor ? 'win' : 'loss');
                 }
 
-                // Process bet winner if it was a betting game
                 if (window.chessBetting && game.bet_amount > 0) {
                     window.chessBetting.processWinner(game.winner);
                 }
 
-                // Refresh leaderboard
                 if (window.leaderboardManager) {
                     window.leaderboardManager.loadLeaderboard();
                 }
@@ -327,21 +284,30 @@ class MultiplayerManager {
     }
 
     async makeMove(startRow, startCol, endRow, endCol, promotion = null) {
-        if (!this.gameId || window.currentPlayer !== this.playerColor) {
-            console.log('Move rejected - Not player\'s turn');
-            return false;
-        }
+        if (!this.gameId) return false;
 
         try {
-            console.log('Attempting move:', {startRow, startCol, endRow, endCol});
+            console.log('Attempting move:', {
+                startRow, 
+                startCol, 
+                endRow, 
+                endCol,
+                playerColor: this.playerColor,
+                currentPlayer: this.currentGameState?.current_player
+            });
 
-            // Make a deep copy of the current board
+            // Verify it's player's turn
+            if (this.currentGameState?.current_player !== this.playerColor) {
+                console.log('Not player\'s turn');
+                return false;
+            }
+
             const newBoard = JSON.parse(JSON.stringify(window.board));
             newBoard[endRow][endCol] = promotion || newBoard[startRow][startCol];
             newBoard[startRow][startCol] = null;
 
             // Check for game ending conditions
-            window.board = newBoard; // Temporarily update board to check game state
+            window.board = newBoard;
             const nextPlayer = this.playerColor === 'blue' ? 'red' : 'blue';
             let gameEndState = null;
 
@@ -350,22 +316,18 @@ class MultiplayerManager {
                     game_state: 'ended',
                     winner: this.playerColor
                 };
-                console.log('Checkmate detected!');
             } else if (window.isStalemate(nextPlayer)) {
                 gameEndState = {
                     game_state: 'ended',
                     winner: 'draw'
                 };
-                console.log('Stalemate detected!');
             }
 
-            // Create the new board state
             const boardState = {
                 positions: newBoard,
                 pieceState: window.pieceState
             };
 
-            // Update game in database
             const updateData = {
                 board: boardState,
                 current_player: nextPlayer,
@@ -376,10 +338,10 @@ class MultiplayerManager {
                     endCol,
                     piece: window.board[startRow][startCol],
                     promotion
-                }
+                },
+                updated_at: new Date().toISOString()
             };
 
-            // Add game end state if game is over
             if (gameEndState) {
                 Object.assign(updateData, gameEndState);
             }
@@ -387,11 +349,11 @@ class MultiplayerManager {
             const { error } = await this.supabase
                 .from('chess_games')
                 .update(updateData)
-                .eq('id', this.gameId);
+                .eq('game_id', this.gameId)
+                .select();
 
             if (error) throw error;
 
-            // Update local state
             window.board = newBoard;
             window.placePieces();
 
@@ -414,21 +376,19 @@ class MultiplayerManager {
                     .from('chess_games')
                     .update({
                         game_state: 'ended',
-                        winner: this.playerColor === 'blue' ? 'red' : 'blue'
+                        winner: this.playerColor === 'blue' ? 'red' : 'blue',
+                        updated_at: new Date().toISOString()
                     })
-                    .eq('id', this.gameId);
+                    .eq('game_id', this.gameId);
 
-                // Update scores for forfeit
                 if (window.updateGameResult) {
                     window.updateGameResult('loss');
                 }
 
-                // Refresh leaderboard
                 if (window.leaderboardManager) {
                     window.leaderboardManager.loadLeaderboard();
                 }
 
-                console.log('Left game successfully');
             } catch (error) {
                 console.error('Leave game error:', error);
             }
@@ -436,8 +396,12 @@ class MultiplayerManager {
 
         this.gameId = null;
         this.playerColor = null;
-        document.querySelector('.multiplayer-menu').style.display = 'block';
-        document.getElementById('chess-game').style.display = 'none';
+        this.currentGameState = null;
+        
+        const menuEl = document.querySelector('.multiplayer-menu');
+        const gameEl = document.getElementById('chess-game');
+        if (menuEl) menuEl.style.display = 'block';
+        if (gameEl) gameEl.style.display = 'none';
     }
 
     async updateGameStatus(status, winner = null) {
@@ -445,7 +409,8 @@ class MultiplayerManager {
 
         try {
             const updateData = {
-                game_state: status
+                game_state: status,
+                updated_at: new Date().toISOString()
             };
             if (winner) {
                 updateData.winner = winner;
@@ -454,7 +419,7 @@ class MultiplayerManager {
             await this.supabase
                 .from('chess_games')
                 .update(updateData)
-                .eq('id', this.gameId);
+                .eq('game_id', this.gameId);
 
         } catch (error) {
             console.error('Error updating game status:', error);
