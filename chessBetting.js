@@ -705,30 +705,32 @@ class ChessBetting {
             console.log('Attempting to join game:', gameCode);
             this.updateBetStatus('Joining game...', 'processing');
     
-            // Get game without filters first
-            const { data: game } = await this.supabase
+            // Get game without state filter first
+            const { data: games, error: queryError } = await this.supabase
                 .from('chess_games')
                 .select('*')
-                .eq('game_id', gameCode)
-                .maybeSingle();
+                .eq('game_id', gameCode);
     
-            console.log('Game lookup result:', game);
-    
-            if (!game) {
+            if (queryError || !games || games.length === 0) {
                 throw new Error('Game not found');
             }
     
+            const game = games[0];
+            console.log('Found game:', game);
+    
             // Validate game state
-            if (game.game_state !== 'waiting') {
+            if (game.game_state !== 'waiting' && game.game_state !== 'active') {
                 throw new Error(`Game is ${game.game_state}`);
             }
     
-            if (game.red_player) {
-                throw new Error('Game already has a player 2');
-            }
-    
-            if (game.blue_player === wallet.publicKey.toString()) {
-                throw new Error('Cannot join your own game');
+            if (game.red_player || game.blue_player === wallet.publicKey.toString()) {
+                if (game.blue_player === wallet.publicKey.toString() || game.red_player === wallet.publicKey.toString()) {
+                    // Rejoin existing game
+                    console.log('Rejoining existing game');
+                    await this.recoverActiveGame(game);
+                    return;
+                }
+                throw new Error('Cannot join this game');
             }
     
             // Check if there's an active bet
@@ -737,26 +739,18 @@ class ChessBetting {
                 .select('*')
                 .eq('game_id', gameCode)
                 .eq('status', 'pending')
-                .maybeSingle();
+                .single();
     
-            console.log('Found valid game to join:', {
-                gameId: game.game_id,
-                state: game.game_state,
-                betAmount: game.bet_amount,
-                activeBet
-            });
-    
-            // Handle bet matching if needed
-            if (game.bet_amount > 0) {
-                if (!activeBet) {
-                    throw new Error('Bet not found for this game');
-                }
-                console.log('Matching bet amount:', game.bet_amount);
-                await this.matchBet(game);
+            if (!activeBet) {
+                throw new Error('Bet not found for this game');
             }
     
+            console.log('Matching bet:', activeBet);
+    
+            // Handle bet matching
+            await this.matchBet(game);
+    
             // Update game state
-            console.log('Updating game state for player 2');
             const { data: updateData, error: updateError } = await this.supabase
                 .from('chess_games')
                 .update({
@@ -765,32 +759,21 @@ class ChessBetting {
                     updated_at: new Date().toISOString()
                 })
                 .eq('game_id', gameCode)
-                .eq('game_state', 'waiting')  // Extra safety check
                 .select()
                 .single();
     
-            if (updateError || !updateData) {
-                throw new Error('Failed to update game state. Game may no longer be available.');
+            if (updateError) {
+                throw new Error('Failed to update game state');
             }
     
-            console.log('Game state updated:', updateData);
-    
             this.updateBetStatus('Successfully joined game!', 'success');
-            
+    
             // Initialize game UI
             if (window.multiplayerManager) {
-                console.log('Initializing multiplayer game for player 2');
-                
                 const mm = window.multiplayerManager;
                 mm.gameId = gameCode;
                 mm.playerColor = 'red';
-                
-                console.log('Setting up game state:', {
-                    gameId: mm.gameId,
-                    playerColor: mm.playerColor,
-                    gameState: updateData
-                });
-                
+                mm.currentGameState = updateData;
                 await mm.subscribeToGame();
                 mm.showGame('red');
             } else {

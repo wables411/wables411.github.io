@@ -122,54 +122,89 @@ class MultiplayerManager {
                 alert('Connect wallet first');
                 return;
             }
-
+    
             console.log('Attempting to join game:', code);
-
-            const { data } = await this.supabase
+    
+            // First get the game without state filter
+            const { data: games, error: queryError } = await this.supabase
                 .from('chess_games')
                 .select('*')
-                .eq('game_id', code.toUpperCase())
-                .eq('game_state', 'waiting')
-                .single();
-
-            if (!data) {
+                .eq('game_id', code.toUpperCase());
+    
+            if (queryError) {
+                console.error('Game query error:', queryError);
+                throw new Error('Failed to query game');
+            }
+    
+            if (!games || games.length === 0) {
                 alert('Game not found');
                 return;
             }
-
-            if (data.red_player || data.blue_player === player) {
-                alert('Cannot join this game');
+    
+            const game = games[0];
+            console.log('Found game:', game);
+    
+            // Validate game state
+            if (game.game_state !== 'waiting' && game.game_state !== 'active') {
+                alert(`Game is ${game.game_state}`);
                 return;
             }
-
-            if (data.bet_amount > 0) {
+    
+            if (game.red_player === player || game.blue_player === player) {
+                // This player is already in the game - rejoin
+                console.log('Rejoining existing game');
+                this.gameId = game.game_id;
+                this.playerColor = game.blue_player === player ? 'blue' : 'red';
+                this.currentGameState = game;
+                this.subscribeToGame();
+                this.showGame(this.playerColor);
+                return;
+            }
+    
+            if (game.red_player) {
+                alert('Game already has both players');
+                return;
+            }
+    
+            // Check if this is a betting game
+            if (game.bet_amount > 0) {
                 if (window.chessBetting) {
+                    console.log('Joining betting game');
                     return await window.chessBetting.handleJoinGame(code);
                 } else {
                     alert('Betting system not initialized');
                     return;
                 }
             }
-
-            const { error } = await this.supabase
+    
+            // Handle non-betting game join
+            const { data: updateData, error: updateError } = await this.supabase
                 .from('chess_games')
                 .update({
                     red_player: player,
-                    game_state: 'active'
+                    game_state: 'active',
+                    updated_at: new Date().toISOString()
                 })
-                .eq('game_id', data.game_id);
-
-            if (error) throw error;
-
-            this.gameId = data.game_id;
+                .eq('game_id', game.game_id)
+                .select()
+                .single();
+    
+            if (updateError) {
+                console.error('Game update error:', updateError);
+                throw new Error('Failed to join game');
+            }
+    
+            console.log('Successfully joined game:', updateData);
+    
+            this.gameId = game.game_id;
             this.playerColor = 'red';
-            this.currentGameState = data;
+            this.currentGameState = updateData;
             this.subscribeToGame();
             this.showGame('red');
-
+    
         } catch (error) {
             console.error('Join game error:', error);
-            alert('Failed to join game');
+            alert(`Failed to join game: ${error.message}`);
         }
     }
 
