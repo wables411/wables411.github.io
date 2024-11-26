@@ -1340,6 +1340,7 @@ class ChessBetting {
             status: 'pending'
         };
     }
+}
 
 // Create singleton instance
 window.chessBetting = new ChessBetting();
