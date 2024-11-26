@@ -804,7 +804,7 @@ class ChessBetting {
         }
     }
 
-    async sendAndConfirmTransaction(transaction) {
+    async sendAndConfirmTransaction(transaction, pdaAccount = null) {
         try {
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
@@ -816,51 +816,15 @@ class ChessBetting {
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = wallet.publicKey;
     
-            // Check for escrow signer
-            let escrowAuthRequired = false;
-            let escrowPubkey = null;
-    
-            transaction.instructions.forEach(instruction => {
-                instruction.keys.forEach(key => {
-                    if (key.isSigner && !key.pubkey.equals(wallet.publicKey)) {
-                        escrowAuthRequired = true;
-                        escrowPubkey = key.pubkey;
-                    }
+            // If we have a PDA account, generate the signer
+            if (pdaAccount) {
+                const pdaKeypair = solanaWeb3.Keypair.generate();
+                const pdaSignature = await solanaWeb3.Ed25519Program.createInstructionWithPublicKey({
+                    publicKey: pdaAccount.toBytes(),
+                    message: transaction.serializeMessage(),
+                    signature: pdaKeypair.sign(transaction.serializeMessage()),
                 });
-            });
-    
-            if (escrowAuthRequired && escrowPubkey) {
-                // Get the game ID - either from current bet or escrow PDA
-                const gameId = this.currentBet.gameId || 'CWBKGK';
-                
-                // Derive the escrow PDA and bump
-                const [escrowPDA, bump] = await solanaWeb3.PublicKey.findProgramAddress(
-                    [Buffer.from(gameId)],
-                    this.tokenProgram
-                );
-    
-                console.log('Transaction requires escrow authority:', {
-                    required: escrowPubkey.toString(),
-                    derived: escrowPDA.toString(),
-                    gameId
-                });
-    
-                // Verify we derived the correct PDA
-                if (!escrowPDA.equals(escrowPubkey)) {
-                    throw new Error('Derived escrow PDA doesn\'t match required signer');
-                }
-    
-                // Create and add PDA authority instruction
-                const authIx = new solanaWeb3.TransactionInstruction({
-                    keys: [
-                        { pubkey: escrowPDA, isSigner: false, isWritable: false },
-                        { pubkey: this.tokenProgram, isSigner: false, isWritable: false }
-                    ],
-                    programId: this.tokenProgram,
-                    data: Buffer.from([bump])
-                });
-    
-                transaction.instructions = [authIx, ...transaction.instructions];
+                transaction.addSignature(pdaAccount, pdaSignature);
             }
     
             // Sign with wallet
@@ -1061,13 +1025,18 @@ class ChessBetting {
         try {
             console.log('Starting refund process for game:', bet.game_id);
             
-            // Get escrow PDA
-            const [escrowPDA, escrowBump] = await solanaWeb3.PublicKey.findProgramAddress(
+            // Find the escrow account and authority
+            const [escrowPDA, bump] = await solanaWeb3.PublicKey.findProgramAddress(
                 [Buffer.from(bet.game_id)],
                 this.tokenProgram
             );
     
-            // Get token accounts
+            // Verify the escrow PDA matches our stored escrow account
+            if (escrowPDA.toString() !== bet.escrow_account) {
+                throw new Error(`PDA mismatch: ${escrowPDA.toString()} vs ${bet.escrow_account}`);
+            }
+    
+            // Get the ATA accounts
             const escrowATA = await this.config.findAssociatedTokenAddress(
                 escrowPDA,
                 this.lawbMint
@@ -1078,52 +1047,71 @@ class ChessBetting {
                 this.lawbMint
             );
     
-            // Create refund instruction for blue player
+            // Calculate refund amount
             const refundAmount = bet.bet_amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
-            const blueRefundIx = this.config.createTransferInstruction(
-                escrowATA,
-                bluePlayerATA,
-                escrowPDA, // Use escrow PDA as authority
-                refundAmount
+    
+            // Create refund instruction for blue player
+            let transaction = new solanaWeb3.Transaction();
+    
+            // Add authority verification instruction
+            transaction.add(
+                new solanaWeb3.TransactionInstruction({
+                    keys: [
+                        { pubkey: escrowPDA, isSigner: false, isWritable: false },
+                        { pubkey: this.tokenProgram, isSigner: false, isWritable: false }
+                    ],
+                    programId: this.tokenProgram,
+                    data: Buffer.from([bump])
+                })
             );
     
-            const blueTx = new solanaWeb3.Transaction();
-            blueTx.add(blueRefundIx);
-            
-            console.log('Processing blue player refund:', {
-                from: escrowATA.toString(),
-                to: bluePlayerATA.toString(),
-                authority: escrowPDA.toString(),
-                amount: refundAmount
-            });
-            
-            await this.sendAndConfirmTransaction(blueTx);
+            // Add transfer instruction
+            transaction.add(
+                this.config.createTransferInstruction(
+                    escrowATA,
+                    bluePlayerATA,
+                    escrowPDA,
+                    refundAmount
+                )
+            );
     
-            // If red player exists, process their refund
+            console.log('Sending blue player refund transaction');
+            await this.sendAndConfirmTransaction(transaction, escrowPDA);
+    
+            // If red player exists, refund them too
             if (bet.red_player) {
                 const redPlayerATA = await this.config.findAssociatedTokenAddress(
                     new solanaWeb3.PublicKey(bet.red_player),
                     this.lawbMint
                 );
     
-                const redRefundIx = this.config.createTransferInstruction(
-                    escrowATA,
-                    redPlayerATA,
-                    escrowPDA, // Use escrow PDA as authority
-                    refundAmount
+                // Create new transaction for red player refund
+                transaction = new solanaWeb3.Transaction();
+    
+                // Add authority verification instruction
+                transaction.add(
+                    new solanaWeb3.TransactionInstruction({
+                        keys: [
+                            { pubkey: escrowPDA, isSigner: false, isWritable: false },
+                            { pubkey: this.tokenProgram, isSigner: false, isWritable: false }
+                        ],
+                        programId: this.tokenProgram,
+                        data: Buffer.from([bump])
+                    })
                 );
     
-                const redTx = new solanaWeb3.Transaction();
-                redTx.add(redRefundIx);
-                
-                console.log('Processing red player refund:', {
-                    from: escrowATA.toString(),
-                    to: redPlayerATA.toString(),
-                    authority: escrowPDA.toString(),
-                    amount: refundAmount
-                });
-                
-                await this.sendAndConfirmTransaction(redTx);
+                // Add transfer instruction
+                transaction.add(
+                    this.config.createTransferInstruction(
+                        escrowATA,
+                        redPlayerATA,
+                        escrowPDA,
+                        refundAmount
+                    )
+                );
+    
+                console.log('Sending red player refund transaction');
+                await this.sendAndConfirmTransaction(transaction, escrowPDA);
             }
     
             return true;
