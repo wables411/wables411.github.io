@@ -1,3 +1,25 @@
+window.SUPABASE_CHECK = {
+    async testConnection() {
+        try {
+            const { data, error } = await window.gameDatabase
+                .from('chess_games')
+                .select('count(*)')
+                .limit(1);
+                
+            if (error) {
+                console.error('Supabase connection test failed:', error);
+                return false;
+            }
+            
+            console.log('Supabase connection test successful:', data);
+            return true;
+        } catch (err) {
+            console.error('Supabase test error:', err);
+            return false;
+        }
+    }
+};
+
 window.BETTING_CONFIG = {
     // Token config
     LAWB_TOKEN: {

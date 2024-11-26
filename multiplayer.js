@@ -178,25 +178,63 @@ class MultiplayerManager {
     }
 
     showGame(color) {
-        document.querySelector('.multiplayer-menu').style.display = 'none';
-        document.getElementById('chess-game').style.display = 'block';
-        
-        window.resetGame();
-        window.isMultiplayerMode = true;
-        window.playerColor = color;
-        window.currentPlayer = 'blue'; // Game always starts with blue
-        
-        // Initialize board with the initial state
-        window.board = JSON.parse(JSON.stringify(window.initialBoard));
-        window.placePieces();
-
-        const chessboard = document.getElementById('chessboard');
-        if (chessboard) {
-            chessboard.style.pointerEvents = color === window.currentPlayer ? 'auto' : 'none';
+        console.log('Attempting to show game:', {
+            color,
+            gameId: this.gameId,
+            isMultiplayerMode: this.isMultiplayerMode
+        });
+    
+        try {
+            const menuEl = document.querySelector('.multiplayer-menu');
+            const gameEl = document.getElementById('chess-game');
+            
+            console.log('Game elements:', {
+                menuFound: !!menuEl,
+                gameFound: !!gameEl
+            });
+            
+            if (menuEl) menuEl.style.display = 'none';
+            if (gameEl) gameEl.style.display = 'block';
+            
+            resetGame();
+            isMultiplayerMode = true;
+            playerColor = color;
+            currentPlayer = 'blue'; // Game always starts with blue
+            
+            // Initialize board with the initial state
+            console.log('Initializing game board');
+            board = JSON.parse(JSON.stringify(initialBoard));
+            
+            console.log('Placing pieces');
+            placePieces();
+    
+            const chessboard = document.getElementById('chessboard');
+            if (chessboard) {
+                console.log('Setting up chessboard interactions:', {
+                    color,
+                    currentPlayer,
+                    canMove: color === currentPlayer
+                });
+                chessboard.style.pointerEvents = color === currentPlayer ? 'auto' : 'none';
+            } else {
+                console.error('Chessboard element not found!');
+            }
+    
+            console.log(`Game started - Player: ${color}, Current turn: ${currentPlayer}`);
+            updateStatusDisplay(color === currentPlayer ? "Your turn" : "Opponent's turn");
+            
+            // Verify board state
+            console.log('Final board state:', {
+                boardInitialized: !!board,
+                pieces: board,
+                playerColor: color,
+                currentPlayer,
+                isMultiplayerMode
+            });
+        } catch (error) {
+            console.error('Error showing game:', error);
+            updateStatusDisplay('Error initializing game board');
         }
-
-        console.log(`Game started - Player: ${color}, Current turn: ${window.currentPlayer}`);
-        window.updateStatusDisplay(color === window.currentPlayer ? "Your turn" : "Opponent's turn");
     }
 
     subscribeToGame() {

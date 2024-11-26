@@ -210,17 +210,24 @@ class ChessBetting {
         try {
             console.log('Verifying setup...');
             
+            // Test Supabase connection first
+            console.log('Testing Supabase connection...');
+            const supabaseOk = await window.SUPABASE_CHECK.testConnection();
+            if (!supabaseOk) {
+                throw new Error('Failed to verify Supabase connection');
+            }
+            
             // Basic connection test
             const version = await this.connection.getVersion();
             console.log('Solana connection verified, version:', version);
-
+    
             // Verify LAWB token
             const tokenInfo = await this.connection.getParsedAccountInfo(this.lawbMint);
             if (!tokenInfo.value) {
                 throw new Error('Could not verify LAWB token');
             }
             console.log('LAWB token verified');
-
+    
             // Initialize subscriptions
             await this.initializeSubscriptions();
             
@@ -488,32 +495,48 @@ class ChessBetting {
                 decimals: this.config.LAWB_TOKEN.DECIMALS
             });
     
-            // Add these two lines here
             console.log('Creating bet for', rawAmount, '$LAWB');
             this.updateBetStatus(`Creating bet for ${rawAmount} $LAWB...`, 'processing');
             
             // Generate game ID and setup escrow
             const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
+            console.log('Generated game ID:', gameId);
+    
+            // Create escrow
+            this.updateBetStatus('Creating escrow account...', 'processing');
             const { escrowPDA, signature } = await this.createBetEscrow(gameId, rawAmount);
     
-            // Create game record with the UI amount
+            // Create game record first
+            this.updateBetStatus('Creating game record...', 'processing');
             const gameRecord = await this.createGameRecord(
                 gameId, 
                 wallet.publicKey.toString(), 
-                rawAmount,  // Use raw UI amount
+                rawAmount,
                 escrowPDA
             );
     
-            // Create bet record with the UI amount
+            // Verify game was created
+            const { data: verifyGame } = await this.supabase
+                .from('chess_games')
+                .select('*')
+                .eq('game_id', gameId)
+                .single();
+    
+            if (!verifyGame) {
+                throw new Error('Failed to verify game creation');
+            }
+    
+            // Then create bet record
+            this.updateBetStatus('Creating bet record...', 'processing');
             const betRecord = await this.createBetRecord(
                 gameId,
                 wallet.publicKey.toString(),
-                rawAmount,  // Use raw UI amount
+                rawAmount,
                 escrowPDA
             );
     
             this.currentBet = {
-                amount: rawAmount,  // Store UI amount
+                amount: rawAmount,
                 bluePlayer: wallet.publicKey.toString(),
                 gameId,
                 betId: betRecord.id,
@@ -531,12 +554,32 @@ class ChessBetting {
                 gameCodeDisplay.style.display = 'block';
             }
     
+            console.log('Game and bet created successfully:', {
+                gameId,
+                betId: betRecord.id,
+                escrowAccount: escrowPDA.toString()
+            });
+    
             this.updateBetStatus('Game created successfully!', 'success');
             this.disableBetting();
     
         } catch (error) {
             console.error('Error creating game with bet:', error);
-            this.updateBetStatus('Failed to create game: ' + error.message, 'error');
+            
+            // More detailed error message
+            const errorMessage = error.message || error.toString();
+            const details = error.details || '';
+            this.updateBetStatus(`Failed to create game: ${errorMessage} ${details}`, 'error');
+            
+            // Attempt cleanup if escrow was created but database failed
+            try {
+                if (gameId && escrowPDA) {
+                    await this.cancelGameAndRefund(gameId);
+                }
+            } catch (cleanupError) {
+                console.error('Cleanup failed:', cleanupError);
+            }
+            
             this.resetBetState();
         }
     }
@@ -633,6 +676,13 @@ class ChessBetting {
 
     async createGameRecord(gameId, playerAddress, amount, escrowPDA) {
         try {
+            console.log('Creating game record:', {
+                gameId,
+                playerAddress,
+                amount,
+                escrowPDA: escrowPDA.toString()
+            });
+    
             // Get initial board state from the chess game
             const initialBoardState = {
                 positions: [
@@ -656,8 +706,12 @@ class ChessBetting {
                 game_state: 'waiting',
                 current_player: 'blue',
                 board: initialBoardState,
-                piece_state: {}
+                piece_state: {},
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
             };
+    
+            console.log('Inserting game record:', record);
     
             const { data, error } = await this.supabase
                 .from('chess_games')
@@ -665,7 +719,12 @@ class ChessBetting {
                 .select()
                 .single();
     
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase error creating game:', error);
+                throw error;
+            }
+    
+            console.log('Game record created successfully:', data);
             return data;
         } catch (error) {
             console.error('Error creating game record:', error);
@@ -700,20 +759,55 @@ class ChessBetting {
     handleBetUpdate(payload) {
         try {
             const bet = payload.new;
-            if (!bet || !this.currentBet.isActive) return;
+            console.log('Received bet update:', bet);
+            
+            if (!bet || !this.currentBet.isActive) {
+                console.log('Ignoring bet update - no active bet or invalid update');
+                return;
+            }
     
             if (bet.game_id === this.currentBet.gameId) {
+                console.log('Processing matching bet update:', {
+                    status: bet.status,
+                    gameId: bet.game_id,
+                    currentBet: this.currentBet
+                });
+                
                 if (bet.status === 'matched' && bet.red_player) {
+                    console.log('Bet matched, initializing game for player 1');
                     this.currentBet.matched = true;
                     this.currentBet.redPlayer = bet.red_player;
                     this.updateBetStatus('Bet matched! Game starting...', 'success');
                     
                     // Initialize game for blue player (creator)
                     if (window.multiplayerManager) {
-                        window.multiplayerManager.showGame('blue');
-                        window.multiplayerManager.gameId = bet.game_id;
-                        window.multiplayerManager.playerColor = 'blue';
-                        window.multiplayerManager.subscribeToGame();
+                        const mm = window.multiplayerManager;
+                        console.log('Setting up multiplayer game for player 1:', {
+                            gameId: bet.game_id,
+                            playerColor: 'blue'
+                        });
+                        
+                        // Set game properties
+                        mm.gameId = bet.game_id;
+                        mm.playerColor = 'blue';
+                        
+                        // Subscribe to updates
+                        console.log('Subscribing to game updates for player 1');
+                        mm.subscribeToGame();
+                        
+                        // Show game board
+                        console.log('Showing game board for player 1');
+                        mm.showGame('blue');
+                        
+                        // Verify game state
+                        console.log('Checking game initialization:', {
+                            gameId: mm.gameId,
+                            playerColor: mm.playerColor,
+                            isMultiplayerMode: mm.isMultiplayerMode,
+                            gameState: mm.currentGameState
+                        });
+                    } else {
+                        console.error('Multiplayer manager not available for player 1!');
                     }
                 }
             }
