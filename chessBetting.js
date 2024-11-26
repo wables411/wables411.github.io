@@ -380,14 +380,30 @@ class ChessBetting {
 
     async createBetEscrow(gameId, amount) {
         try {
-            console.log('Creating bet escrow for game:', gameId, 'amount:', amount);
+            // Add first log right at the start of the function
+            console.log('LAWB Token config:', {
+                decimals: this.config.LAWB_TOKEN.DECIMALS,
+                minBet: this.config.MIN_BET,
+                maxBet: this.config.MAX_BET
+            });
+    
+            console.log('Creating bet escrow for game:', gameId, 'UI amount:', amount);
             
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
     
             // Convert UI amount to native units
-            // amount is in UI units (e.g. 100), need to convert to native units
-            const nativeAmount = Math.floor(amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS));
+            const nativeAmount = this.config.LAWB_TOKEN.convertToNative(amount);
+            
+            // Add detailed transfer log right here
+            console.log('Transfer details:', {
+                rawAmount: amount,
+                nativeAmount: nativeAmount,
+                nativeAmountString: nativeAmount.toString(),
+                decimals: this.config.LAWB_TOKEN.DECIMALS,
+                calculation: `${amount} * (10 ^ ${this.config.LAWB_TOKEN.DECIMALS})`,
+                actualCalculation: amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS)
+            });
             
             console.log('Amount conversion:', {
                 uiAmount: amount,
@@ -412,8 +428,9 @@ class ChessBetting {
     
             // Check player's token balance
             const balance = await this.connection.getTokenAccountBalance(playerATA);
+            console.log('Current balance:', balance.value.amount, 'Required:', nativeAmount);
             
-            if (Number(balance.value.amount) < nativeAmount) {
+            if (BigInt(balance.value.amount) < BigInt(nativeAmount)) {
                 throw new Error(`Insufficient $LAWB balance`);
             }
     
@@ -439,7 +456,7 @@ class ChessBetting {
                 playerATA,
                 escrowATA,
                 wallet.publicKey,
-                nativeAmount // Use the converted native amount
+                nativeAmount.toString() // Convert to string to handle large numbers safely
             );
     
             const transferTx = new solanaWeb3.Transaction().add(transferIx);
@@ -720,22 +737,26 @@ class ChessBetting {
 
     async processWinner(winner) {
         if (!this.currentBet.isActive) return;
-
+    
         try {
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
-
+    
             const escrowPDA = new solanaWeb3.PublicKey(this.currentBet.escrowAccount);
             const escrowATA = await this.config.findAssociatedTokenAddress(
                 escrowPDA,
                 this.lawbMint
             );
-
+    
             // Calculate payouts
             const totalAmount = this.currentBet.amount * 2;
             const houseFee = Math.floor(totalAmount * this.config.HOUSE_FEE_PERCENTAGE / 100);
             const winnerAmount = totalAmount - houseFee;
-
+    
+            // Convert to native amounts
+            const nativeWinnerAmount = this.config.LAWB_TOKEN.convertToNative(winnerAmount);
+            const nativeHouseFee = this.config.LAWB_TOKEN.convertToNative(houseFee);
+    
             // Get winner's token account
             const winnerPubkey = new solanaWeb3.PublicKey(
                 winner === 'blue' ? this.currentBet.bluePlayer : this.currentBet.redPlayer
@@ -744,13 +765,13 @@ class ChessBetting {
                 winnerPubkey,
                 this.lawbMint
             );
-
+    
             // Get house token account
             const houseATA = await this.config.findAssociatedTokenAddress(
                 this.config.HOUSE_WALLET,
                 this.lawbMint
             );
-
+    
             // Process payouts
             await Promise.all([
                 // Winner payout
@@ -760,7 +781,7 @@ class ChessBetting {
                             escrowATA,
                             winnerATA,
                             escrowPDA,
-                            winnerAmount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS)
+                            nativeWinnerAmount.toString()
                         )
                     )
                 ),
@@ -771,21 +792,21 @@ class ChessBetting {
                             escrowATA,
                             houseATA,
                             escrowPDA,
-                            houseFee * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS)
+                            nativeHouseFee.toString()
                         )
                     )
                 )
             ]);
-
+    
             // Update records
             await Promise.all([
                 this.updateGameRecord(this.currentBet.gameId, winner),
                 this.updateBetRecord(this.currentBet.betId, winner)
             ]);
-
+    
             this.updateBetStatus('Bet settled successfully', 'success');
             this.resetBetState();
-
+    
         } catch (error) {
             console.error('Error processing winner:', error);
             this.updateBetStatus('Failed to process winner: ' + error.message, 'error');
@@ -1008,18 +1029,11 @@ class ChessBetting {
         try {
             console.log('Starting refund process for game:', bet.game_id);
             
-            // First get escrow PDA and verify
-            const [escrowPDA, bump] = await solanaWeb3.PublicKey.findProgramAddress(
-                [Buffer.from(bet.game_id)],
-                this.tokenProgram
-            );
-            
-            console.log('Derived escrow:', escrowPDA.toString());
-            console.log('Stored escrow:', bet.escrow_account);
+            const escrowPDA = await this.config.findEscrowPDA(bet.game_id);
+            console.log('Escrow PDA:', escrowPDA.toString());
     
-            // Get token accounts
             const escrowATA = await this.config.findAssociatedTokenAddress(
-                new solanaWeb3.PublicKey(bet.escrow_account),
+                escrowPDA,
                 this.lawbMint
             );
     
@@ -1028,71 +1042,38 @@ class ChessBetting {
                 this.lawbMint
             );
     
-            // Calculate refund amount
-            const refundAmount = bet.bet_amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
+            // Convert UI amount to native
+            const refundAmount = this.config.LAWB_TOKEN.convertToNative(bet.bet_amount);
+            console.log('Refund amount:', {ui: bet.bet_amount, native: refundAmount});
     
-            // Build the refund transaction
-            const refundTx = new solanaWeb3.Transaction();
-    
-            // Create the authority validation instruction for the escrow PDA
-            const authIx = new solanaWeb3.TransactionInstruction({
-                keys: [
-                    { pubkey: escrowPDA, isSigner: false, isWritable: false },
-                    { pubkey: this.tokenProgram, isSigner: false, isWritable: false }
-                ],
-                programId: this.tokenProgram,
-                data: Buffer.from([bump]) 
-            });
-    
-            // Add auth instruction first
-            refundTx.add(authIx);
-    
-            // Then add transfer instruction
-            refundTx.add(
-                window.SplToken.createTransferInstruction(
+            // Build and send refund transaction
+            const refundTx = new solanaWeb3.Transaction().add(
+                this.config.createTransferInstruction(
                     escrowATA,
                     bluePlayerATA,
-                    escrowPDA,  // Use escrow PDA as authority
-                    refundAmount,
-                    [],
-                    this.tokenProgram
+                    escrowPDA,
+                    refundAmount.toString()
                 )
             );
     
-            console.log('Sending refund transaction:', {
-                escrowATA: escrowATA.toString(),
-                playerATA: bluePlayerATA.toString(),
-                amount: refundAmount,
-                authority: escrowPDA.toString()
-            });
-            
             await this.sendAndConfirmTransaction(refundTx);
     
-            // If red player exists, do their refund
+            // Handle red player refund if exists
             if (bet.red_player) {
                 const redPlayerATA = await this.config.findAssociatedTokenAddress(
                     new solanaWeb3.PublicKey(bet.red_player),
                     this.lawbMint
                 );
     
-                const redRefundTx = new solanaWeb3.Transaction();
-                
-                // Add auth instruction for red player refund
-                redRefundTx.add(authIx);
-                
-                // Add transfer for red player
-                redRefundTx.add(
-                    window.SplToken.createTransferInstruction(
+                const redRefundTx = new solanaWeb3.Transaction().add(
+                    this.config.createTransferInstruction(
                         escrowATA,
                         redPlayerATA,
-                        escrowPDA,  // Use escrow PDA as authority
-                        refundAmount,
-                        [],
-                        this.tokenProgram
+                        escrowPDA,
+                        refundAmount.toString()
                     )
                 );
     
-                console.log('Sending red player refund transaction');
                 await this.sendAndConfirmTransaction(redRefundTx);
             }
     

@@ -2,7 +2,13 @@ window.BETTING_CONFIG = {
     // Token config
     LAWB_TOKEN: {
         MINT: new solanaWeb3.PublicKey('65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6'),
-        DECIMALS: 9
+        DECIMALS: 9,
+        convertToNative: function(uiAmount) {
+            return Math.round(uiAmount * Math.pow(10, this.DECIMALS));
+        },
+        convertToUi: function(nativeAmount) {
+            return nativeAmount / Math.pow(10, this.DECIMALS);
+        }
     },
 
     // Game parameters
