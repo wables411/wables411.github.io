@@ -804,7 +804,7 @@ class ChessBetting {
         }
     }
 
-    async sendAndConfirmTransaction(transaction, pdaAccount = null) {
+    async sendAndConfirmTransaction(transaction) {
         try {
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
@@ -816,21 +816,12 @@ class ChessBetting {
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = wallet.publicKey;
     
-            // If we have a PDA account, generate the signer
-            if (pdaAccount) {
-                const pdaKeypair = solanaWeb3.Keypair.generate();
-                const pdaSignature = await solanaWeb3.Ed25519Program.createInstructionWithPublicKey({
-                    publicKey: pdaAccount.toBytes(),
-                    message: transaction.serializeMessage(),
-                    signature: pdaKeypair.sign(transaction.serializeMessage()),
-                });
-                transaction.addSignature(pdaAccount, pdaSignature);
-            }
-    
+            console.log('Sending transaction...');
+            
             // Sign with wallet
             const signed = await wallet.signTransaction(transaction);
     
-            console.log('Sending transaction...');
+            // Send transaction
             const signature = await this.connection.sendRawTransaction(
                 signed.serialize(),
                 {
@@ -840,7 +831,9 @@ class ChessBetting {
                 }
             );
     
-            console.log('Confirming transaction:', signature);
+            console.log('Awaiting confirmation for:', signature);
+    
+            // Wait for confirmation
             const confirmation = await this.connection.confirmTransaction({
                 signature,
                 blockhash,
@@ -856,19 +849,6 @@ class ChessBetting {
     
         } catch (error) {
             console.error('Transaction failed:', error);
-            const errorDetails = {
-                error: error.message,
-                stack: error.stack,
-                txInstructions: transaction.instructions.map(i => ({
-                    programId: i.programId.toString(),
-                    keys: i.keys.map(k => ({
-                        pubkey: k.pubkey.toString(),
-                        isSigner: k.isSigner,
-                        isWritable: k.isWritable
-                    }))
-                }))
-            };
-            console.debug('Transaction error details:', errorDetails);
             throw error;
         }
     }
@@ -954,27 +934,9 @@ class ChessBetting {
 
     async cancelGameAndRefund(gameId) {
         try {
-            // Get game and bet details
-            const { data: game } = await this.supabase
-                .from('chess_games')
-                .select('*')
-                .eq('game_id', gameId)
-                .single();
-    
-            if (!game) throw new Error('Game not found');
-    
-            const { data: bet } = await this.supabase
-                .from('chess_bets')
-                .select('*')
-                .eq('game_id', gameId)
-                .single();
-    
-            if (!bet) throw new Error('Bet not found');
-    
-            // Process refunds
-            await this.processRefunds(bet);
-    
-            // Update both game and bet records
+            console.log('Cancelling game:', gameId);
+            
+            // First update database records to prevent re-entrancy
             await Promise.all([
                 // Update chess_games table
                 this.supabase
@@ -987,7 +949,7 @@ class ChessBetting {
                     })
                     .eq('game_id', gameId),
                 
-                // Update chess_bets table
+                // Update chess_bets table 
                 this.supabase
                     .from('chess_bets')
                     .update({
@@ -998,47 +960,36 @@ class ChessBetting {
                     .eq('game_id', gameId)
             ]);
     
-            // Also delete or update any related rows
-            await Promise.all([
-                this.supabase
-                    .from('chess_games')
-                    .delete()
-                    .eq('game_id', gameId)
-                    .eq('game_state', 'waiting'),
+            // Get bet details after marking as cancelled
+            const { data: bet } = await this.supabase
+                .from('chess_bets')
+                .select('*')
+                .eq('game_id', gameId)
+                .single();
     
-                this.supabase
-                    .from('chess_bets')
-                    .delete()
-                    .eq('game_id', gameId)
-                    .eq('status', 'pending')
-            ]);
+            if (!bet) throw new Error('Bet not found');
     
-            console.log('Game and bet cancelled successfully');
+            // Process refunds after DB update
+            await this.processRefunds(bet);
+            
+            console.log('Game cancelled and refunds processed successfully');
             return true;
         } catch (error) {
             console.error('Error cancelling game:', error);
             throw error;
         }
-    }    
+    } 
     
     async processRefunds(bet) {
         try {
             console.log('Starting refund process for game:', bet.game_id);
             
-            // Find the escrow account and authority
-            const [escrowPDA, bump] = await solanaWeb3.PublicKey.findProgramAddress(
-                [Buffer.from(bet.game_id)],
-                this.tokenProgram
-            );
+            const wallet = this.getConnectedWallet();
+            if (!wallet) throw new Error('No wallet connected');
     
-            // Verify the escrow PDA matches our stored escrow account
-            if (escrowPDA.toString() !== bet.escrow_account) {
-                throw new Error(`PDA mismatch: ${escrowPDA.toString()} vs ${bet.escrow_account}`);
-            }
-    
-            // Get the ATA accounts
+            // Get escrow and token accounts
             const escrowATA = await this.config.findAssociatedTokenAddress(
-                escrowPDA,
+                new solanaWeb3.PublicKey(bet.escrow_account),
                 this.lawbMint
             );
     
@@ -1050,33 +1001,26 @@ class ChessBetting {
             // Calculate refund amount
             const refundAmount = bet.bet_amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
     
-            // Create refund instruction for blue player
-            let transaction = new solanaWeb3.Transaction();
+            // Create refund transaction for blue player
+            const blueRefundTx = new solanaWeb3.Transaction();
     
-            // Add authority verification instruction
-            transaction.add(
-                new solanaWeb3.TransactionInstruction({
-                    keys: [
-                        { pubkey: escrowPDA, isSigner: false, isWritable: false },
-                        { pubkey: this.tokenProgram, isSigner: false, isWritable: false }
-                    ],
-                    programId: this.tokenProgram,
-                    data: Buffer.from([bump])
-                })
-            );
-    
-            // Add transfer instruction
-            transaction.add(
+            // Add transfer instruction but use wallet as authority
+            blueRefundTx.add(
                 this.config.createTransferInstruction(
                     escrowATA,
                     bluePlayerATA,
-                    escrowPDA,
+                    wallet.publicKey,
                     refundAmount
                 )
             );
     
-            console.log('Sending blue player refund transaction');
-            await this.sendAndConfirmTransaction(transaction, escrowPDA);
+            console.log('Sending blue player refund transaction:', {
+                from: escrowATA.toString(),
+                to: bluePlayerATA.toString(),
+                amount: refundAmount
+            });
+            
+            await this.sendAndConfirmTransaction(blueRefundTx);
     
             // If red player exists, refund them too
             if (bet.red_player) {
@@ -1085,33 +1029,24 @@ class ChessBetting {
                     this.lawbMint
                 );
     
-                // Create new transaction for red player refund
-                transaction = new solanaWeb3.Transaction();
-    
-                // Add authority verification instruction
-                transaction.add(
-                    new solanaWeb3.TransactionInstruction({
-                        keys: [
-                            { pubkey: escrowPDA, isSigner: false, isWritable: false },
-                            { pubkey: this.tokenProgram, isSigner: false, isWritable: false }
-                        ],
-                        programId: this.tokenProgram,
-                        data: Buffer.from([bump])
-                    })
-                );
-    
-                // Add transfer instruction
-                transaction.add(
+                const redRefundTx = new solanaWeb3.Transaction();
+                
+                redRefundTx.add(
                     this.config.createTransferInstruction(
                         escrowATA,
                         redPlayerATA,
-                        escrowPDA,
+                        wallet.publicKey,
                         refundAmount
                     )
                 );
     
-                console.log('Sending red player refund transaction');
-                await this.sendAndConfirmTransaction(transaction, escrowPDA);
+                console.log('Sending red player refund transaction:', {
+                    from: escrowATA.toString(),
+                    to: redPlayerATA.toString(),
+                    amount: refundAmount
+                });
+                
+                await this.sendAndConfirmTransaction(redRefundTx);
             }
     
             return true;
