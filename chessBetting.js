@@ -47,17 +47,38 @@ class ChessBetting {
         this.initRetryCount = 0;
     }
 
+    async checkForActiveBets() {
+        try {
+            const { data: activeBets } = await this.supabase
+                .from('chess_bets')
+                .select('*')
+                .not('status', 'eq', 'cancelled')
+                .not('status', 'eq', 'completed');
+    
+            if (activeBets?.length > 0) {
+                console.log('Found active bets:', activeBets);
+                // Cancel all active bets
+                for (const bet of activeBets) {
+                    await this.cancelGameAndRefund(bet.game_id);
+                }
+            }
+        } catch (error) {
+            console.error('Error checking active bets:', error);
+            throw error;
+        }
+    }
+
     async init() {
         if (this.initialized) {
             console.log('Betting system already initialized');
             return true;
         }
-
+    
         if (this.initializing) {
             console.log('Initialization already in progress');
             return false;
         }
-
+    
         this.initializing = true;
     
         try {
@@ -76,14 +97,13 @@ class ChessBetting {
             if (!this.connection) {
                 throw new Error('Failed to establish connection after retries');
             }
-
-            // Verify setup
+    
+            // Check for and cancel any active bets for this wallet
+            await this.checkForActiveBets();
+    
+            // Rest of initialization code...
             await this.verifySetup();
-            
-            // Initialize UI
             this.initializeUI();
-            
-            // Initialize balance checking
             await this.initializeBalanceChecking();
             
             this.initialized = true;
@@ -919,31 +939,52 @@ class ChessBetting {
             // Process refunds
             await this.processRefunds(bet);
     
-            // Update game and bet status
+            // Update both game and bet records
             await Promise.all([
+                // Update chess_games table
                 this.supabase
                     .from('chess_games')
                     .update({
                         game_state: 'cancelled',
-                        updated_at: new Date().toISOString()
+                        updated_at: new Date().toISOString(),
+                        current_player: null,
+                        winner: null
                     })
                     .eq('game_id', gameId),
                 
+                // Update chess_bets table
                 this.supabase
                     .from('chess_bets')
                     .update({
                         status: 'cancelled',
-                        processed_at: new Date().toISOString()
+                        processed_at: new Date().toISOString(),
+                        winner: null
                     })
                     .eq('game_id', gameId)
             ]);
     
+            // Also delete or update any related rows
+            await Promise.all([
+                this.supabase
+                    .from('chess_games')
+                    .delete()
+                    .eq('game_id', gameId)
+                    .eq('game_state', 'waiting'),
+    
+                this.supabase
+                    .from('chess_bets')
+                    .delete()
+                    .eq('game_id', gameId)
+                    .eq('status', 'pending')
+            ]);
+    
+            console.log('Game and bet cancelled successfully');
             return true;
         } catch (error) {
             console.error('Error cancelling game:', error);
             throw error;
         }
-    }
+    }    
     
     async processRefunds(bet) {
         try {
