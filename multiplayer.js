@@ -230,11 +230,28 @@ class MultiplayerManager {
             // Set current player from game state if available
             window.currentPlayer = this.currentGameState?.current_player || 'blue';
     
+            // Initialize piece state
+            window.pieceState = {
+                blueKingMoved: false,
+                redKingMoved: false,
+                blueRooksMove: { left: false, right: false },
+                redRooksMove: { left: false, right: false },
+                lastPawnDoubleMove: null
+            };
+    
             // Load board state if available
             if (this.currentGameState?.board?.positions) {
                 window.board = JSON.parse(JSON.stringify(this.currentGameState.board.positions));
+                
+                // Only copy piece state if it exists
                 if (this.currentGameState.board.pieceState) {
-                    Object.assign(window.pieceState, this.currentGameState.board.pieceState);
+                    const savedPieceState = this.currentGameState.board.pieceState;
+                    // Copy only existing properties
+                    Object.keys(window.pieceState).forEach(key => {
+                        if (savedPieceState[key] !== undefined) {
+                            window.pieceState[key] = savedPieceState[key];
+                        }
+                    });
                 }
             } else {
                 window.board = JSON.parse(JSON.stringify(window.initialBoard));
@@ -254,11 +271,13 @@ class MultiplayerManager {
                     const row = parseInt(piece.getAttribute('data-row'));
                     const col = parseInt(piece.getAttribute('data-col'));
                     const pieceType = window.board[row][col];
-                    const pieceColor = window.getPieceColor(pieceType);
-                    
-                    if (pieceColor === color) {
-                        piece.style.cursor = 'pointer';
-                        piece.onclick = (e) => window.onPieceClick(e);
+                    if (pieceType) {  // Only add handlers to actual pieces
+                        const pieceColor = window.getPieceColor(pieceType);
+                        
+                        if (pieceColor === color) {
+                            piece.style.cursor = 'pointer';
+                            piece.onclick = (e) => window.onPieceClick(e);
+                        }
                     }
                 });
             }
@@ -270,6 +289,7 @@ class MultiplayerManager {
                 currentPlayer: window.currentPlayer,
                 isMultiplayerMode: window.isMultiplayerMode,
                 boardState: window.board,
+                pieceState: window.pieceState,
                 interactive: color === window.currentPlayer
             });
     
