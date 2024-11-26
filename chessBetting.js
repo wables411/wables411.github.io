@@ -488,7 +488,9 @@ class ChessBetting {
                 decimals: this.config.LAWB_TOKEN.DECIMALS
             });
     
-            this.updateBetStatus('Processing bet...', 'processing');
+            // Add these two lines here
+            console.log('Creating bet for', rawAmount, '$LAWB');
+            this.updateBetStatus(`Creating bet for ${rawAmount} $LAWB...`, 'processing');
             
             // Generate game ID and setup escrow
             const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -854,19 +856,19 @@ class ChessBetting {
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
     
-            // Get latest blockhash
+            // Get fresh blockhash
             const { blockhash, lastValidBlockHeight } = 
                 await this.connection.getLatestBlockhash('confirmed');
             
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = wallet.publicKey;
     
-            console.log('Sending transaction...');
+            console.log('Sending transaction with blockhash:', blockhash);
             
-            // Sign with wallet
+            // Sign with wallet immediately after setting blockhash
             const signed = await wallet.signTransaction(transaction);
     
-            // Send transaction
+            // Send immediately after signing
             const signature = await this.connection.sendRawTransaction(
                 signed.serialize(),
                 {
@@ -878,7 +880,7 @@ class ChessBetting {
     
             console.log('Awaiting confirmation for:', signature);
     
-            // Wait for confirmation
+            // More aggressive confirmation check
             const confirmation = await this.connection.confirmTransaction({
                 signature,
                 blockhash,
@@ -893,6 +895,43 @@ class ChessBetting {
             return signature;
     
         } catch (error) {
+            // If it's a blockhash error, retry once
+            if (error.message.includes('Blockhash not found')) {
+                console.log('Blockhash expired, retrying transaction...');
+                
+                // Get fresh blockhash
+                const { blockhash, lastValidBlockHeight } = 
+                    await this.connection.getLatestBlockhash('confirmed');
+                
+                transaction.recentBlockhash = blockhash;
+                
+                // Try again with new blockhash
+                const signed = await wallet.signTransaction(transaction);
+                const signature = await this.connection.sendRawTransaction(
+                    signed.serialize(),
+                    {
+                        skipPreflight: false,
+                        preflightCommitment: 'confirmed',
+                        maxRetries: 5
+                    }
+                );
+    
+                console.log('Retried transaction sent:', signature);
+    
+                const confirmation = await this.connection.confirmTransaction({
+                    signature,
+                    blockhash,
+                    lastValidBlockHeight
+                }, 'confirmed');
+    
+                if (confirmation.value.err) {
+                    throw new Error('Retry transaction failed to confirm: ' + confirmation.value.err);
+                }
+    
+                console.log('Retry transaction confirmed successfully');
+                return signature;
+            }
+    
             console.error('Transaction failed:', error);
             throw error;
         }
@@ -918,6 +957,11 @@ class ChessBetting {
     }
 
     validateBetAmount(amount, showError = true) {
+        amount = Number(amount);
+        if (!Number.isInteger(amount)) {
+            if (showError) this.updateBetStatus('Bet amount must be a whole number', 'error');
+            return false;
+        }
         if (!amount || isNaN(amount)) {
             if (showError) this.updateBetStatus('Invalid bet amount', 'error');
             return false;
