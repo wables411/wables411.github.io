@@ -1,14 +1,36 @@
+// First define the Supabase check
+window.SUPABASE_CHECK = {
+    async testConnection() {
+        try {
+            const { data, error } = await window.gameDatabase
+                .from('chess_games')
+                .select('id')
+                .limit(1);
+
+            if (error) {
+                console.error('Supabase connection test failed:', error);
+                return false;
+            }
+
+            console.log('Supabase connection test successful:', data);
+            return true;
+        } catch (err) {
+            console.error('Supabase test error:', err);
+            return false;
+        }
+    }
+};
+
+// Then define the betting config
 window.BETTING_CONFIG = {
     // Token config
     LAWB_TOKEN: {
         MINT: new solanaWeb3.PublicKey('65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6'),
         DECIMALS: 9,
         convertToNative: function(uiAmount) {
-            // Convert UI amount (e.g. 100) to native amount with proper decimals
             return BigInt(Math.round(uiAmount * Math.pow(10, this.DECIMALS)));
         },
         convertToUi: function(nativeAmount) {
-            // Convert native amount back to UI amount
             return Number(nativeAmount) / Math.pow(10, this.DECIMALS);
         }
     },
@@ -77,7 +99,6 @@ window.BETTING_CONFIG = {
     },
 
     validateBetAmount(amount) {
-        // Log the validation to catch any issues
         console.log('Validating bet amount:', {
             input: amount,
             nativeAmount: this.LAWB_TOKEN.convertToNative(amount).toString(),

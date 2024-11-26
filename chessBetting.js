@@ -217,14 +217,26 @@ class ChessBetting {
         try {
             console.log('Verifying setup...');
             
-            // Test Supabase connection first
+            // Test Supabase connection directly first
             console.log('Testing Supabase connection...');
-            const supabaseOk = await window.SUPABASE_CHECK.testConnection();
-            if (!supabaseOk) {
-                console.warn('Supabase connection test failed - continuing anyway');
+            try {
+                const { data, error } = await this.supabase
+                    .from('chess_games')
+                    .select('id')
+                    .limit(1);
+    
+                if (error) {
+                    console.warn('Supabase connection test warning:', error);
+                    // Continue anyway as this isn't critical
+                } else {
+                    console.log('Supabase connection verified');
+                }
+            } catch (err) {
+                console.warn('Supabase test error - continuing:', err);
+                // Continue anyway
             }
-            
-            // Basic connection test
+    
+            // Basic Solana connection test
             const version = await this.connection.getVersion();
             console.log('Solana connection verified, version:', version);
     
