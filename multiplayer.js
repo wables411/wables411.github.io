@@ -191,19 +191,29 @@ class MultiplayerManager {
             window.resetGame();
             window.isMultiplayerMode = true;
             window.playerColor = color;
-            window.currentPlayer = 'blue'; // Game always starts with blue
     
-            // Initialize board
-            window.board = JSON.parse(JSON.stringify(window.initialBoard));
+            // Set current player from game state if available
+            window.currentPlayer = this.currentGameState?.current_player || 'blue';
+    
+            // Load board state if available
+            if (this.currentGameState?.board?.positions) {
+                window.board = JSON.parse(JSON.stringify(this.currentGameState.board.positions));
+                if (this.currentGameState.board.pieceState) {
+                    Object.assign(window.pieceState, this.currentGameState.board.pieceState);
+                }
+            } else {
+                window.board = JSON.parse(JSON.stringify(window.initialBoard));
+            }
+    
             window.placePieces();
     
-            // Enable piece clicking for blue player's first turn
+            // Enable piece clicking 
             const chessboard = document.getElementById('chessboard');
             if (chessboard) {
-                // If this is blue player and it's their turn
-                chessboard.style.pointerEvents = (color === 'blue') ? 'auto' : 'none';
+                const isMyTurn = color === window.currentPlayer;
+                chessboard.style.pointerEvents = isMyTurn ? 'auto' : 'none';
                 
-                // Explicitly enable piece click handlers for the correct color
+                // Set up piece handlers
                 const pieces = chessboard.getElementsByClassName('piece');
                 Array.from(pieces).forEach(piece => {
                     const row = parseInt(piece.getAttribute('data-row'));
@@ -218,14 +228,14 @@ class MultiplayerManager {
                 });
             }
     
-            window.updateStatusDisplay(color === 'blue' ? "Your turn" : "Opponent's turn");
+            window.updateStatusDisplay(color === window.currentPlayer ? "Your turn" : "Opponent's turn");
             
             console.log('Game initialized:', {
                 playerColor: color,
                 currentPlayer: window.currentPlayer,
                 isMultiplayerMode: window.isMultiplayerMode,
                 boardState: window.board,
-                interactive: color === 'blue'
+                interactive: color === window.currentPlayer
             });
     
         } catch (error) {

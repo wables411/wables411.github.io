@@ -55,13 +55,21 @@ class ChessBetting {
             const { data: activeBets } = await this.supabase
                 .from('chess_bets')
                 .select('*')
-                .eq('blue_player', wallet.publicKey.toString())  // Only check user's bets
+                .eq('blue_player', wallet.publicKey.toString())
                 .not('status', 'eq', 'cancelled')
                 .not('status', 'eq', 'completed');
     
             if (activeBets?.length > 0) {
                 console.log('Found user active bets:', activeBets);
-                // Only cancel incomplete bets from this user
+                
+                // Find matched active bet
+                const matchedBet = activeBets.find(bet => bet.status === 'matched');
+                if (matchedBet) {
+                    await this.recoverActiveGame(matchedBet);
+                    return;
+                }
+    
+                // If no matched bet, cancel pending ones
                 for (const bet of activeBets) {
                     if (bet.status === 'pending' || !bet.red_player) {
                         await this.cancelGameAndRefund(bet.game_id);
@@ -70,8 +78,85 @@ class ChessBetting {
             }
         } catch (error) {
             console.error('Error checking active bets:', error);
-            // Don't throw error, just log it
             console.warn('Continuing initialization despite active bet check error');
+        }
+    }
+
+    async recoverActiveGame(bet) {
+        try {
+            console.log('Recovering active game:', bet);
+            
+            // Get full game details
+            const { data: game } = await this.supabase
+                .from('chess_games')
+                .select('*')
+                .eq('game_id', bet.game_id)
+                .single();
+                
+            if (!game) {
+                console.error('Could not find game to recover');
+                return;
+            }
+    
+            console.log('Found active game:', game);
+    
+            // Determine player color
+            const wallet = this.getConnectedWallet();
+            if (!wallet) return;
+            
+            const playerAddress = wallet.publicKey.toString();
+            const isBluePlayer = playerAddress === bet.blue_player;
+            const playerColor = isBluePlayer ? 'blue' : 'red';
+    
+            // Set up current bet state
+            this.currentBet = {
+                amount: bet.bet_amount,
+                bluePlayer: bet.blue_player,
+                redPlayer: bet.red_player,
+                gameId: bet.game_id,
+                betId: bet.id,
+                isActive: true,
+                escrowAccount: bet.escrow_account,
+                matched: bet.status === 'matched',
+                status: bet.status
+            };
+    
+            // Initialize multiplayer
+            if (window.multiplayerManager) {
+                const mm = window.multiplayerManager;
+                mm.gameId = bet.game_id;
+                mm.playerColor = playerColor;
+                mm.currentGameState = game;
+                
+                // Subscribe to game updates
+                await mm.subscribeToGame();
+                
+                // Show game board
+                mm.showGame(playerColor);
+    
+                // Update UI
+                const gameCodeDisplay = document.getElementById('gameCodeDisplay');
+                const gameCode = document.getElementById('gameCode');
+                if (gameCodeDisplay && gameCode) {
+                    gameCode.textContent = bet.game_id;
+                    gameCodeDisplay.style.display = 'block';
+                }
+    
+                // Disable betting UI
+                this.disableBetting();
+    
+                console.log('Game recovered successfully:', {
+                    gameId: bet.game_id,
+                    playerColor,
+                    gameState: game
+                });
+    
+                this.updateBetStatus('Rejoined active game', 'success');
+            }
+    
+        } catch (error) {
+            console.error('Error recovering game:', error);
+            this.updateBetStatus('Failed to recover game: ' + error.message, 'error');
         }
     }
 
