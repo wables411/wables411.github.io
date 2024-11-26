@@ -984,10 +984,16 @@ class ChessBetting {
         try {
             console.log('Starting refund process for game:', bet.game_id);
             
-            const wallet = this.getConnectedWallet();
-            if (!wallet) throw new Error('No wallet connected');
+            // First get escrow PDA and verify
+            const [escrowPDA, bump] = await solanaWeb3.PublicKey.findProgramAddress(
+                [Buffer.from(bet.game_id)],
+                this.tokenProgram
+            );
+            
+            console.log('Derived escrow:', escrowPDA.toString());
+            console.log('Stored escrow:', bet.escrow_account);
     
-            // Get escrow and token accounts
+            // Get token accounts
             const escrowATA = await this.config.findAssociatedTokenAddress(
                 new solanaWeb3.PublicKey(bet.escrow_account),
                 this.lawbMint
@@ -1001,28 +1007,44 @@ class ChessBetting {
             // Calculate refund amount
             const refundAmount = bet.bet_amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
     
-            // Create refund transaction for blue player
-            const blueRefundTx = new solanaWeb3.Transaction();
+            // Build the refund transaction
+            const refundTx = new solanaWeb3.Transaction();
     
-            // Add transfer instruction but use wallet as authority
-            blueRefundTx.add(
-                this.config.createTransferInstruction(
+            // Create the authority validation instruction for the escrow PDA
+            const authIx = new solanaWeb3.TransactionInstruction({
+                keys: [
+                    { pubkey: escrowPDA, isSigner: false, isWritable: false },
+                    { pubkey: this.tokenProgram, isSigner: false, isWritable: false }
+                ],
+                programId: this.tokenProgram,
+                data: Buffer.from([bump]) 
+            });
+    
+            // Add auth instruction first
+            refundTx.add(authIx);
+    
+            // Then add transfer instruction
+            refundTx.add(
+                window.SplToken.createTransferInstruction(
                     escrowATA,
                     bluePlayerATA,
-                    wallet.publicKey,
-                    refundAmount
+                    escrowPDA,  // Use escrow PDA as authority
+                    refundAmount,
+                    [],
+                    this.tokenProgram
                 )
             );
     
-            console.log('Sending blue player refund transaction:', {
-                from: escrowATA.toString(),
-                to: bluePlayerATA.toString(),
-                amount: refundAmount
+            console.log('Sending refund transaction:', {
+                escrowATA: escrowATA.toString(),
+                playerATA: bluePlayerATA.toString(),
+                amount: refundAmount,
+                authority: escrowPDA.toString()
             });
             
-            await this.sendAndConfirmTransaction(blueRefundTx);
+            await this.sendAndConfirmTransaction(refundTx);
     
-            // If red player exists, refund them too
+            // If red player exists, do their refund
             if (bet.red_player) {
                 const redPlayerATA = await this.config.findAssociatedTokenAddress(
                     new solanaWeb3.PublicKey(bet.red_player),
@@ -1031,21 +1053,22 @@ class ChessBetting {
     
                 const redRefundTx = new solanaWeb3.Transaction();
                 
+                // Add auth instruction for red player refund
+                redRefundTx.add(authIx);
+                
+                // Add transfer for red player
                 redRefundTx.add(
-                    this.config.createTransferInstruction(
+                    window.SplToken.createTransferInstruction(
                         escrowATA,
                         redPlayerATA,
-                        wallet.publicKey,
-                        refundAmount
+                        escrowPDA,  // Use escrow PDA as authority
+                        refundAmount,
+                        [],
+                        this.tokenProgram
                     )
                 );
     
-                console.log('Sending red player refund transaction:', {
-                    from: escrowATA.toString(),
-                    to: redPlayerATA.toString(),
-                    amount: refundAmount
-                });
-                
+                console.log('Sending red player refund transaction');
                 await this.sendAndConfirmTransaction(redRefundTx);
             }
     
