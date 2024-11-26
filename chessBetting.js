@@ -471,14 +471,24 @@ class ChessBetting {
             const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
             const { escrowPDA, signature } = await this.createBetEscrow(gameId, nativeAmount);
     
-            // Create game and bet records
-            const [gameRecord, betRecord] = await Promise.all([
-                this.createGameRecord(gameId, wallet.publicKey.toString(), rawAmount, escrowPDA),  // Store display amount
-                this.createBetRecord(gameId, wallet.publicKey.toString(), rawAmount, escrowPDA)   // Store display amount
-            ]);
+            // First create game record
+            const gameRecord = await this.createGameRecord(
+                gameId, 
+                wallet.publicKey.toString(), 
+                rawAmount, 
+                escrowPDA
+            );
+    
+            // Then create bet record with existing game ID
+            const betRecord = await this.createBetRecord(
+                gameId,
+                wallet.publicKey.toString(),
+                rawAmount,
+                escrowPDA
+            );
     
             this.currentBet = {
-                amount: rawAmount,  // Store display amount
+                amount: rawAmount,
                 bluePlayer: wallet.publicKey.toString(),
                 gameId,
                 betId: betRecord.id,
@@ -501,7 +511,30 @@ class ChessBetting {
     
         } catch (error) {
             console.error('Error creating game with bet:', error);
-            this.updateBetStatus('Failed to create game: ' + error.message, 'error');
+            
+            // If we failed after escrow was created but before records were created,
+            // we should try to refund the player
+            if (error.message?.includes('foreign key constraint')) {
+                this.updateBetStatus('Database error - attempting refund...', 'error');
+                try {
+                    // Create a minimal bet record for refund
+                    const refundBet = {
+                        game_id: gameId,
+                        bet_amount: rawAmount,
+                        blue_player: wallet.publicKey.toString(),
+                        escrow_account: escrowPDA.toString(),
+                        status: 'cancelled'
+                    };
+                    await this.processRefunds(refundBet);
+                    this.updateBetStatus('Bet refunded due to error', 'error');
+                } catch (refundError) {
+                    console.error('Refund failed:', refundError);
+                    this.updateBetStatus('Error creating game and refund failed. Please contact support.', 'error');
+                }
+            } else {
+                this.updateBetStatus('Failed to create game: ' + error.message, 'error');
+            }
+            
             this.resetBetState();
         }
     }
