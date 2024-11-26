@@ -1,17 +1,30 @@
 window.SUPABASE_CHECK = {
     async testConnection() {
         try {
-            const { data, error } = await window.gameDatabase
+            // First try to get the version to test connection
+            const { data: versionData, error: versionError } = await window.gameDatabase
                 .from('chess_games')
-                .select('count(*)')
-                .limit(1);
-                
-            if (error) {
-                console.error('Supabase connection test failed:', error);
-                return false;
+                .select('count')
+                .limit(1)
+                .single();
+
+            if (versionError) {
+                // If that fails, try a simpler query
+                const { data, error } = await window.gameDatabase
+                    .from('chess_games')
+                    .select('id')
+                    .limit(1);
+
+                if (error) {
+                    console.error('Supabase connection test failed:', error);
+                    return false;
+                }
+
+                console.log('Supabase connection test successful (fallback):', data);
+                return true;
             }
-            
-            console.log('Supabase connection test successful:', data);
+
+            console.log('Supabase connection test successful:', versionData);
             return true;
         } catch (err) {
             console.error('Supabase test error:', err);

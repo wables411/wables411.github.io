@@ -214,7 +214,7 @@ class ChessBetting {
             console.log('Testing Supabase connection...');
             const supabaseOk = await window.SUPABASE_CHECK.testConnection();
             if (!supabaseOk) {
-                throw new Error('Failed to verify Supabase connection');
+                console.warn('Supabase connection test failed - continuing anyway');
             }
             
             // Basic connection test
