@@ -1381,6 +1381,16 @@ function onPieceClick(event) {
     try {
         if (!checkGameAccess()) return;
         
+        // Check game mode restrictions
+        if (isMultiplayerMode) {
+            if (currentPlayer !== playerColor) {
+                console.log('Not your turn', {currentPlayer, playerColor});
+                return;
+            }
+        } else if (currentGameMode === GameMode.AI && currentPlayer !== 'blue') {
+            return;
+        }
+        
         if (gameState !== 'active' && gameState !== 'check') return;
         
         const clickedPiece = event.target;
@@ -1394,9 +1404,21 @@ function onPieceClick(event) {
         }
         
         const pieceColor = getPieceColor(pieceType);
-        
-        // Simplified turn validation
-        if (pieceColor === playerColor && currentPlayer === 'blue') {
+        const validPlayer = isMultiplayerMode ? 
+            pieceColor === playerColor && currentPlayer === playerColor : 
+            pieceColor === currentPlayer;
+            
+        console.log('Piece clicked:', {
+            row,
+            col, 
+            pieceType,
+            pieceColor,
+            playerColor,
+            currentPlayer,
+            isValidPlayer: validPlayer
+        });
+            
+        if (validPlayer) {
             if (selectedPiece === clickedPiece) {
                 selectedPiece = null;
             } else {
