@@ -816,43 +816,67 @@ class ChessBetting {
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = wallet.publicKey;
     
-            // Add escrow account as signer if it's included in the transaction
-            const escrowSigners = [];
+            // Check for escrow signer
+            let escrowAuthRequired = false;
+            let escrowPubkey = null;
+    
             transaction.instructions.forEach(instruction => {
                 instruction.keys.forEach(key => {
                     if (key.isSigner && !key.pubkey.equals(wallet.publicKey)) {
-                        escrowSigners.push(key.pubkey);
+                        escrowAuthRequired = true;
+                        escrowPubkey = key.pubkey;
                     }
                 });
             });
     
-            // If there are escrow signers, we need to derive their authorities
-            if (escrowSigners.length > 0) {
-                for (const escrowSigner of escrowSigners) {
-                    const escrowAuth = await solanaWeb3.Keypair.fromSeed(
-                        (await solanaWeb3.PublicKey.findProgramAddress(
-                            [Buffer.from(escrowSigner.toBytes())],
-                            this.tokenProgram
-                        ))[0].toBytes()
-                    );
-                    transaction.partialSign(escrowAuth);
+            if (escrowAuthRequired && escrowPubkey) {
+                // Get the game ID - either from current bet or escrow PDA
+                const gameId = this.currentBet.gameId || 'CWBKGK';
+                
+                // Derive the escrow PDA and bump
+                const [escrowPDA, bump] = await solanaWeb3.PublicKey.findProgramAddress(
+                    [Buffer.from(gameId)],
+                    this.tokenProgram
+                );
+    
+                console.log('Transaction requires escrow authority:', {
+                    required: escrowPubkey.toString(),
+                    derived: escrowPDA.toString(),
+                    gameId
+                });
+    
+                // Verify we derived the correct PDA
+                if (!escrowPDA.equals(escrowPubkey)) {
+                    throw new Error('Derived escrow PDA doesn\'t match required signer');
                 }
+    
+                // Create and add PDA authority instruction
+                const authIx = new solanaWeb3.TransactionInstruction({
+                    keys: [
+                        { pubkey: escrowPDA, isSigner: false, isWritable: false },
+                        { pubkey: this.tokenProgram, isSigner: false, isWritable: false }
+                    ],
+                    programId: this.tokenProgram,
+                    data: Buffer.from([bump])
+                });
+    
+                transaction.instructions = [authIx, ...transaction.instructions];
             }
     
             // Sign with wallet
             const signed = await wallet.signTransaction(transaction);
     
-            // Send and confirm
+            console.log('Sending transaction...');
             const signature = await this.connection.sendRawTransaction(
                 signed.serialize(),
                 {
                     skipPreflight: false,
                     preflightCommitment: 'confirmed',
-                    maxRetries: 3
+                    maxRetries: 5
                 }
             );
     
-            // Wait for confirmation
+            console.log('Confirming transaction:', signature);
             const confirmation = await this.connection.confirmTransaction({
                 signature,
                 blockhash,
@@ -863,11 +887,11 @@ class ChessBetting {
                 throw new Error('Transaction failed to confirm: ' + confirmation.value.err);
             }
     
+            console.log('Transaction confirmed successfully');
             return signature;
     
         } catch (error) {
             console.error('Transaction failed:', error);
-            // Add more detailed error information to help debugging
             const errorDetails = {
                 error: error.message,
                 stack: error.stack,
@@ -1035,51 +1059,73 @@ class ChessBetting {
     
     async processRefunds(bet) {
         try {
-            const escrowPDA = new solanaWeb3.PublicKey(bet.escrow_account);
+            console.log('Starting refund process for game:', bet.game_id);
+            
+            // Get escrow PDA
+            const [escrowPDA, escrowBump] = await solanaWeb3.PublicKey.findProgramAddress(
+                [Buffer.from(bet.game_id)],
+                this.tokenProgram
+            );
+    
+            // Get token accounts
             const escrowATA = await this.config.findAssociatedTokenAddress(
                 escrowPDA,
                 this.lawbMint
             );
     
-            // Refund blue player
-            const bluePlayerPubkey = new solanaWeb3.PublicKey(bet.blue_player);
             const bluePlayerATA = await this.config.findAssociatedTokenAddress(
-                bluePlayerPubkey,
+                new solanaWeb3.PublicKey(bet.blue_player),
                 this.lawbMint
             );
     
-            // If game was matched, refund red player too
-            const refundPromises = [];
-            
-            const blueRefundTx = new solanaWeb3.Transaction().add(
-                this.config.createTransferInstruction(
-                    escrowATA,
-                    bluePlayerATA,
-                    escrowPDA,
-                    bet.bet_amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS)
-                )
+            // Create refund instruction for blue player
+            const refundAmount = bet.bet_amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
+            const blueRefundIx = this.config.createTransferInstruction(
+                escrowATA,
+                bluePlayerATA,
+                escrowPDA, // Use escrow PDA as authority
+                refundAmount
             );
-            refundPromises.push(this.sendAndConfirmTransaction(blueRefundTx));
     
+            const blueTx = new solanaWeb3.Transaction();
+            blueTx.add(blueRefundIx);
+            
+            console.log('Processing blue player refund:', {
+                from: escrowATA.toString(),
+                to: bluePlayerATA.toString(),
+                authority: escrowPDA.toString(),
+                amount: refundAmount
+            });
+            
+            await this.sendAndConfirmTransaction(blueTx);
+    
+            // If red player exists, process their refund
             if (bet.red_player) {
-                const redPlayerPubkey = new solanaWeb3.PublicKey(bet.red_player);
                 const redPlayerATA = await this.config.findAssociatedTokenAddress(
-                    redPlayerPubkey,
+                    new solanaWeb3.PublicKey(bet.red_player),
                     this.lawbMint
                 );
     
-                const redRefundTx = new solanaWeb3.Transaction().add(
-                    this.config.createTransferInstruction(
-                        escrowATA,
-                        redPlayerATA,
-                        escrowPDA,
-                        bet.bet_amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS)
-                    )
+                const redRefundIx = this.config.createTransferInstruction(
+                    escrowATA,
+                    redPlayerATA,
+                    escrowPDA, // Use escrow PDA as authority
+                    refundAmount
                 );
-                refundPromises.push(this.sendAndConfirmTransaction(redRefundTx));
+    
+                const redTx = new solanaWeb3.Transaction();
+                redTx.add(redRefundIx);
+                
+                console.log('Processing red player refund:', {
+                    from: escrowATA.toString(),
+                    to: redPlayerATA.toString(),
+                    authority: escrowPDA.toString(),
+                    amount: refundAmount
+                });
+                
+                await this.sendAndConfirmTransaction(redTx);
             }
     
-            await Promise.all(refundPromises);
             return true;
         } catch (error) {
             console.error('Error processing refunds:', error);
