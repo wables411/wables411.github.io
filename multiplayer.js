@@ -312,11 +312,18 @@ class MultiplayerManager {
             if (game.board && game.board.positions) {
                 window.board = JSON.parse(JSON.stringify(game.board.positions));
                 
+                // Only update piece state if it exists
                 if (game.board.pieceState) {
+                    window.pieceState = window.pieceState || {};
                     Object.assign(window.pieceState, game.board.pieceState);
                 }
                 
-                window.placePieces();
+                // Ensure window.placePieces exists before calling
+                if (typeof window.placePieces === 'function') {
+                    window.placePieces();
+                } else {
+                    console.error('placePieces function not found');
+                }
             }
     
             if (game.current_player) {
