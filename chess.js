@@ -36,6 +36,9 @@ let lastMove = null;
 let hoveredSquare = null;
 let selectedDifficulty = null;
 let gameDifficulty = 'easy';
+window.playerColor = null;  // Make playerColor globally accessible
+window.currentPlayer = 'blue';
+window.isMultiplayerMode = false;
 
 // Piece movement tracking
 const pieceState = {
@@ -204,11 +207,12 @@ function canMakeMove(startRow, startCol, endRow, endCol) {
     const color = getPieceColor(piece);
     
     // First check if it's this player's turn
-    if (color !== currentPlayer) return false;
+    if (color !== window.currentPlayer) return false;
     
     // Then check if it's their piece in multiplayer
-    if (isMultiplayerMode) {
-        if (color !== playerColor) return false;
+    if (window.isMultiplayerMode) {
+        if (color !== window.playerColor) return false;
+        if (window.currentPlayer !== window.playerColor) return false;
     }
     
     return canPieceMove(piece, startRow, startCol, endRow, endCol);
@@ -1381,13 +1385,24 @@ function onPieceClick(event) {
     try {
         if (!checkGameAccess()) return;
         
+        // Log current state
+        console.log('Click state:', {
+            isMultiplayerMode: window.isMultiplayerMode,
+            currentPlayer: window.currentPlayer,
+            playerColor: window.playerColor,
+            gameState: gameState
+        });
+
         // Check game mode restrictions
-        if (isMultiplayerMode) {
-            if (currentPlayer !== playerColor) {
-                console.log('Not your turn', {currentPlayer, playerColor});
+        if (window.isMultiplayerMode) {
+            if (window.currentPlayer !== window.playerColor) {
+                console.log('Not your turn:', {
+                    currentPlayer: window.currentPlayer,
+                    playerColor: window.playerColor
+                });
                 return;
             }
-        } else if (currentGameMode === GameMode.AI && currentPlayer !== 'blue') {
+        } else if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') {
             return;
         }
         
@@ -1404,17 +1419,19 @@ function onPieceClick(event) {
         }
         
         const pieceColor = getPieceColor(pieceType);
-        const validPlayer = isMultiplayerMode ? 
-            pieceColor === playerColor && currentPlayer === playerColor : 
-            pieceColor === currentPlayer;
+        
+        // Validate turn in multiplayer mode
+        const validPlayer = window.isMultiplayerMode ? 
+            (pieceColor === window.playerColor && window.currentPlayer === window.playerColor) : 
+            pieceColor === window.currentPlayer;
             
-        console.log('Piece clicked:', {
+        console.log('Piece click validation:', {
             row,
-            col, 
+            col,
             pieceType,
             pieceColor,
-            playerColor,
-            currentPlayer,
+            playerColor: window.playerColor,
+            currentPlayer: window.currentPlayer,
             isValidPlayer: validPlayer
         });
             

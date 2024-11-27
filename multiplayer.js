@@ -209,12 +209,6 @@ class MultiplayerManager {
     }
 
     showGame(color) {
-        console.log('Showing game for color:', color, {
-            gameId: this.gameId,
-            isMultiplayerMode: true,
-            currentGameState: this.currentGameState
-        });
-    
         try {
             const menuEl = document.querySelector('.multiplayer-menu');
             const gameEl = document.getElementById('chess-game');
@@ -226,18 +220,14 @@ class MultiplayerManager {
             window.resetGame();
             window.isMultiplayerMode = true;
             window.playerColor = color;
+            window.currentPlayer = this.currentGameState?.current_player || 'blue';
     
-            // Set current player from game state
-            if (this.currentGameState?.current_player) {
-                window.currentPlayer = this.currentGameState.current_player;
-            } else {
-                window.currentPlayer = 'blue'; // Default to blue for new games
-            }
-    
-            console.log('Setting up game state:', {
+            console.log('Game state snapshot:', {
                 playerColor: color,
                 currentPlayer: window.currentPlayer,
-                gameState: this.currentGameState?.game_state
+                gameId: this.gameId,
+                gameState: this.currentGameState?.game_state,
+                isMyTurn: window.currentPlayer === color
             });
     
             // Initialize piece state
@@ -249,54 +239,91 @@ class MultiplayerManager {
                 lastPawnDoubleMove: null
             };
     
-            // Load board state if available
+            // Load board state
             if (this.currentGameState?.board?.positions) {
                 window.board = JSON.parse(JSON.stringify(this.currentGameState.board.positions));
-                
-                // Only copy piece state if it exists
-                if (this.currentGameState.board.pieceState) {
-                    const savedPieceState = this.currentGameState.board.pieceState;
-                    Object.keys(window.pieceState).forEach(key => {
-                        if (savedPieceState[key] !== undefined) {
-                            window.pieceState[key] = savedPieceState[key];
-                        }
-                    });
-                }
+                console.log('Loaded board state from database');
             } else {
                 window.board = JSON.parse(JSON.stringify(window.initialBoard));
+                console.log('Using initial board state');
             }
     
+            // Place pieces and set up board
             window.placePieces();
             
-            // Set board interactivity based on turn
+            // Set up click handlers and interactivity
             const chessboard = document.getElementById('chessboard');
             if (chessboard) {
                 const isMyTurn = window.currentPlayer === color;
+                
+                // Set board interactivity
                 chessboard.style.pointerEvents = isMyTurn ? 'auto' : 'none';
-                console.log('Setting board interactivity:', {
+                
+                // Clear any existing event listeners
+                const oldPieces = chessboard.getElementsByClassName('piece');
+                Array.from(oldPieces).forEach(piece => {
+                    piece.removeEventListener('click', window.onPieceClick);
+                });
+                
+                // Add new pieces with event listeners
+                const pieces = window.board.map((row, rowIdx) => 
+                    row.map((piece, colIdx) => {
+                        if (piece) {
+                            const pieceElement = document.createElement('div');
+                            pieceElement.className = 'piece';
+                            pieceElement.style.backgroundImage = `url('${window.pieceImages[piece]}')`;
+                            pieceElement.style.left = `${colIdx * 12.5}%`;
+                            pieceElement.style.top = `${rowIdx * 12.5}%`;
+                            pieceElement.setAttribute('data-row', rowIdx);
+                            pieceElement.setAttribute('data-col', colIdx);
+                            
+                            // Only add click handlers to player's pieces
+                            const pieceColor = window.getPieceColor(piece);
+                            if (pieceColor === color) {
+                                pieceElement.addEventListener('click', window.onPieceClick);
+                                pieceElement.style.cursor = 'pointer';
+                            }
+                            
+                            return pieceElement;
+                        }
+                    }).filter(Boolean)
+                ).flat();
+                
+                // Clear board and add new pieces
+                chessboard.innerHTML = '';
+                pieces.forEach(piece => chessboard.appendChild(piece));
+                
+                console.log('Board interaction setup:', {
                     isMyTurn,
                     currentPlayer: window.currentPlayer,
                     playerColor: color,
-                    pointerEvents: isMyTurn ? 'auto' : 'none'
+                    interactive: isMyTurn,
+                    pieceCount: pieces.length
                 });
             }
     
             // Update status display
             const isMyTurn = window.currentPlayer === color;
-            window.updateStatusDisplay(isMyTurn ? "Your turn" : "Opponent's turn");
+            const statusMessage = isMyTurn ? "Your turn" : "Opponent's turn";
+            window.updateStatusDisplay(statusMessage);
             
-            console.log('Game initialization complete:', {
-                playerColor: color,
+            console.log('Game fully initialized:', {
+                color,
                 currentPlayer: window.currentPlayer,
-                isMultiplayerMode: window.isMultiplayerMode,
-                boardState: window.board,
-                pieceState: window.pieceState,
-                interactive: window.currentPlayer === color
+                isMyTurn: window.currentPlayer === color,
+                gameId: this.gameId,
+                boardReady: !!chessboard,
+                statusMessage
             });
     
         } catch (error) {
-            console.error('Error showing game:', error);
-            window.updateStatusDisplay('Error initializing game board');
+            console.error('Error in showGame:', error);
+            console.debug('Game state at error:', {
+                currentGameState: this.currentGameState,
+                playerColor: color,
+                currentPlayer: window.currentPlayer
+            });
+            window.updateStatusDisplay('Error showing game board');
         }
     }
 
