@@ -215,7 +215,7 @@ class MultiplayerManager {
                 isMultiplayerMode: true,
                 currentGameState: this.currentGameState
             });
-    
+        
             const menuEl = document.querySelector('.multiplayer-menu');
             const gameEl = document.getElementById('chess-game');
             
@@ -226,20 +226,18 @@ class MultiplayerManager {
             window.resetGame();
             window.isMultiplayerMode = true;
             window.playerColor = color;
-    
+        
             // Set current player from game state if available
             window.currentPlayer = this.currentGameState?.current_player || 'blue';
-    
+        
             // Load board state from database
             if (this.currentGameState?.board?.positions) {
                 window.board = JSON.parse(JSON.stringify(this.currentGameState.board.positions));
                 console.log('Loaded board state:', window.board);
-                
-                // Directly use placePieces which is now globally available
                 window.placePieces();
             }
             
-            // Set board interactivity
+            // Set board interactivity based on whose turn it is
             const chessboard = document.getElementById('chessboard');
             if (chessboard) {
                 const isMyTurn = window.currentPlayer === color;
@@ -260,8 +258,9 @@ class MultiplayerManager {
                     }
                 });
             }
-    
-            window.updateStatusDisplay(isMyTurn ? "Your turn" : "Opponent's turn");
+        
+            // Update status display based on turn
+            window.updateStatusDisplay(window.currentPlayer === color ? "Your turn" : "Opponent's turn");
             
             console.log('Game setup complete:', {
                 playerColor: color,
@@ -269,7 +268,7 @@ class MultiplayerManager {
                 board: window.board,
                 pieceState: window.pieceState
             });
-    
+        
         } catch (error) {
             console.error('Error in showGame:', error);
             console.log('Debug state:', {
