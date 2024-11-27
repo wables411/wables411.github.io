@@ -1,3 +1,22 @@
+// Global chess state
+window.pieceImages = {
+    'R': 'images/redrook.png', 
+    'N': 'images/redknight.png', 
+    'B': 'images/redbishop.png',
+    'Q': 'images/redqueen.png', 
+    'K': 'images/redking.png', 
+    'P': 'images/redpawn.png',
+    'r': 'images/bluerook.png', 
+    'n': 'images/blueknight.png', 
+    'b': 'images/bluebishop.png',
+    'q': 'images/bluequeen.png', 
+    'k': 'images/blueking.png', 
+    'p': 'images/bluepawn.png'
+};
+
+// Make sure placePieces is globally accessible
+window.placePieces = null; // Will be assigned later
+
 // Game modes and state
 const GameMode = {
     AI: 'ai',
@@ -1368,6 +1387,8 @@ function placePieces() {
         }
     }
 }
+// Make placePieces globally accessible
+window.placePieces = placePieces;
 
 function createPieceElement(piece, row, col) {
     const pieceElement = document.createElement('div');
