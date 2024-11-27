@@ -209,6 +209,12 @@ class MultiplayerManager {
     }
 
     showGame(color) {
+        console.log('Showing game for color:', color, {
+            gameId: this.gameId,
+            isMultiplayerMode: true,
+            currentGameState: this.currentGameState
+        });
+    
         try {
             const menuEl = document.querySelector('.multiplayer-menu');
             const gameEl = document.getElementById('chess-game');
@@ -220,14 +226,18 @@ class MultiplayerManager {
             window.resetGame();
             window.isMultiplayerMode = true;
             window.playerColor = color;
-            window.currentPlayer = this.currentGameState?.current_player || 'blue';
+    
+            // Set current player from game state
+            if (this.currentGameState?.current_player) {
+                window.currentPlayer = this.currentGameState.current_player;
+            } else {
+                window.currentPlayer = 'blue'; // Default to blue for new games
+            }
     
             console.log('Game state snapshot:', {
                 playerColor: color,
                 currentPlayer: window.currentPlayer,
-                gameId: this.gameId,
-                gameState: this.currentGameState?.game_state,
-                isMyTurn: window.currentPlayer === color
+                gameState: this.currentGameState?.game_state
             });
     
             // Initialize piece state
@@ -239,7 +249,7 @@ class MultiplayerManager {
                 lastPawnDoubleMove: null
             };
     
-            // Load board state
+            // Load board state if available
             if (this.currentGameState?.board?.positions) {
                 window.board = JSON.parse(JSON.stringify(this.currentGameState.board.positions));
                 console.log('Loaded board state from database');
@@ -249,33 +259,23 @@ class MultiplayerManager {
             }
     
             // Place pieces and set up board
-            window.placePieces();
-            
-            // Set up click handlers and interactivity
             const chessboard = document.getElementById('chessboard');
             if (chessboard) {
-                const isMyTurn = window.currentPlayer === color;
+                // Clear existing pieces
+                chessboard.innerHTML = '';
                 
-                // Set board interactivity
-                chessboard.style.pointerEvents = isMyTurn ? 'auto' : 'none';
-                
-                // Clear any existing event listeners
-                const oldPieces = chessboard.getElementsByClassName('piece');
-                Array.from(oldPieces).forEach(piece => {
-                    piece.removeEventListener('click', window.onPieceClick);
-                });
-                
-                // Add new pieces with event listeners
-                const pieces = window.board.map((row, rowIdx) => 
-                    row.map((piece, colIdx) => {
+                // Add new pieces based on current board state
+                for (let row = 0; row < 8; row++) {
+                    for (let col = 0; col < 8; col++) {
+                        const piece = window.board[row][col];
                         if (piece) {
                             const pieceElement = document.createElement('div');
                             pieceElement.className = 'piece';
                             pieceElement.style.backgroundImage = `url('${window.pieceImages[piece]}')`;
-                            pieceElement.style.left = `${colIdx * 12.5}%`;
-                            pieceElement.style.top = `${rowIdx * 12.5}%`;
-                            pieceElement.setAttribute('data-row', rowIdx);
-                            pieceElement.setAttribute('data-col', colIdx);
+                            pieceElement.style.left = `${col * 12.5}%`;
+                            pieceElement.style.top = `${row * 12.5}%`;
+                            pieceElement.setAttribute('data-row', row);
+                            pieceElement.setAttribute('data-col', col);
                             
                             // Only add click handlers to player's pieces
                             const pieceColor = window.getPieceColor(piece);
@@ -284,36 +284,33 @@ class MultiplayerManager {
                                 pieceElement.style.cursor = 'pointer';
                             }
                             
-                            return pieceElement;
+                            chessboard.appendChild(pieceElement);
                         }
-                    }).filter(Boolean)
-                ).flat();
-                
-                // Clear board and add new pieces
-                chessboard.innerHTML = '';
-                pieces.forEach(piece => chessboard.appendChild(piece));
-                
-                console.log('Board interaction setup:', {
+                    }
+                }
+    
+                // Set board interactivity based on turn
+                const isMyTurn = window.currentPlayer === color;
+                chessboard.style.pointerEvents = isMyTurn ? 'auto' : 'none';
+                console.log('Board interactivity set:', {
                     isMyTurn,
                     currentPlayer: window.currentPlayer,
                     playerColor: color,
-                    interactive: isMyTurn,
-                    pieceCount: pieces.length
+                    pointerEvents: isMyTurn ? 'auto' : 'none'
                 });
             }
     
             // Update status display
             const isMyTurn = window.currentPlayer === color;
-            const statusMessage = isMyTurn ? "Your turn" : "Opponent's turn";
-            window.updateStatusDisplay(statusMessage);
+            window.updateStatusDisplay(isMyTurn ? "Your turn" : "Opponent's turn");
             
-            console.log('Game fully initialized:', {
-                color,
+            console.log('Game initialization complete:', {
+                playerColor: color,
                 currentPlayer: window.currentPlayer,
-                isMyTurn: window.currentPlayer === color,
-                gameId: this.gameId,
-                boardReady: !!chessboard,
-                statusMessage
+                isMultiplayerMode: window.isMultiplayerMode,
+                boardState: window.board,
+                pieceState: window.pieceState,
+                interactive: isMyTurn
             });
     
         } catch (error) {
@@ -323,7 +320,7 @@ class MultiplayerManager {
                 playerColor: color,
                 currentPlayer: window.currentPlayer
             });
-            window.updateStatusDisplay('Error showing game board');
+            window.updateStatusDisplay('Error initializing game board');
         }
     }
 
