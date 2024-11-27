@@ -227,8 +227,18 @@ class MultiplayerManager {
             window.isMultiplayerMode = true;
             window.playerColor = color;
     
-            // Set current player from game state if available
-            window.currentPlayer = this.currentGameState?.current_player || 'blue';
+            // Set current player from game state
+            if (this.currentGameState?.current_player) {
+                window.currentPlayer = this.currentGameState.current_player;
+            } else {
+                window.currentPlayer = 'blue'; // Default to blue for new games
+            }
+    
+            console.log('Setting up game state:', {
+                playerColor: color,
+                currentPlayer: window.currentPlayer,
+                gameState: this.currentGameState?.game_state
+            });
     
             // Initialize piece state
             window.pieceState = {
@@ -246,7 +256,6 @@ class MultiplayerManager {
                 // Only copy piece state if it exists
                 if (this.currentGameState.board.pieceState) {
                     const savedPieceState = this.currentGameState.board.pieceState;
-                    // Copy only existing properties
                     Object.keys(window.pieceState).forEach(key => {
                         if (savedPieceState[key] !== undefined) {
                             window.pieceState[key] = savedPieceState[key];
@@ -258,39 +267,31 @@ class MultiplayerManager {
             }
     
             window.placePieces();
-    
-            // Enable piece clicking 
+            
+            // Set board interactivity based on turn
             const chessboard = document.getElementById('chessboard');
             if (chessboard) {
-                const isMyTurn = color === window.currentPlayer;
+                const isMyTurn = window.currentPlayer === color;
                 chessboard.style.pointerEvents = isMyTurn ? 'auto' : 'none';
-                
-                // Set up piece handlers
-                const pieces = chessboard.getElementsByClassName('piece');
-                Array.from(pieces).forEach(piece => {
-                    const row = parseInt(piece.getAttribute('data-row'));
-                    const col = parseInt(piece.getAttribute('data-col'));
-                    const pieceType = window.board[row][col];
-                    if (pieceType) {  // Only add handlers to actual pieces
-                        const pieceColor = window.getPieceColor(pieceType);
-                        
-                        if (pieceColor === color) {
-                            piece.style.cursor = 'pointer';
-                            piece.onclick = (e) => window.onPieceClick(e);
-                        }
-                    }
+                console.log('Setting board interactivity:', {
+                    isMyTurn,
+                    currentPlayer: window.currentPlayer,
+                    playerColor: color,
+                    pointerEvents: isMyTurn ? 'auto' : 'none'
                 });
             }
     
-            window.updateStatusDisplay(color === window.currentPlayer ? "Your turn" : "Opponent's turn");
+            // Update status display
+            const isMyTurn = window.currentPlayer === color;
+            window.updateStatusDisplay(isMyTurn ? "Your turn" : "Opponent's turn");
             
-            console.log('Game initialized:', {
+            console.log('Game initialization complete:', {
                 playerColor: color,
                 currentPlayer: window.currentPlayer,
                 isMultiplayerMode: window.isMultiplayerMode,
                 boardState: window.board,
                 pieceState: window.pieceState,
-                interactive: color === window.currentPlayer
+                interactive: window.currentPlayer === color
             });
     
         } catch (error) {
@@ -323,11 +324,11 @@ class MultiplayerManager {
 
     handleUpdate(game) {
         if (!game) return;
-
+    
         try {
             console.log('Processing game update:', game);
             this.currentGameState = game;
-
+    
             if (game.board && game.board.positions) {
                 window.board = JSON.parse(JSON.stringify(game.board.positions));
                 
@@ -337,7 +338,7 @@ class MultiplayerManager {
                 
                 window.placePieces();
             }
-
+    
             if (game.current_player) {
                 window.currentPlayer = game.current_player;
                 const isMyTurn = game.current_player === this.playerColor;
@@ -345,35 +346,41 @@ class MultiplayerManager {
                 const chessboard = document.getElementById('chessboard');
                 if (chessboard) {
                     chessboard.style.pointerEvents = isMyTurn ? 'auto' : 'none';
+                    console.log('Updating board interactivity:', {
+                        isMyTurn,
+                        currentPlayer: game.current_player,
+                        playerColor: this.playerColor,
+                        pointerEvents: isMyTurn ? 'auto' : 'none'
+                    });
                 }
                 
                 window.updateStatusDisplay(isMyTurn ? "Your turn" : "Opponent's turn");
             }
-
+    
             if (game.game_state === 'ended') {
                 const message = game.winner === 'draw' ? 
                     'Game Over - Draw!' : 
                     `Game Over - ${game.winner.charAt(0).toUpperCase() + game.winner.slice(1)} wins!`;
                 window.updateStatusDisplay(message);
-
+    
                 if (window.updateGameResult) {
                     window.updateGameResult(game.winner === this.playerColor ? 'win' : 'loss');
                 }
-
+    
                 if (window.chessBetting && game.bet_amount > 0) {
                     window.chessBetting.processWinner(game.winner);
                 }
-
+    
                 if (window.leaderboardManager) {
                     window.leaderboardManager.loadLeaderboard();
                 }
-
+    
                 const chessboard = document.getElementById('chessboard');
                 if (chessboard) {
                     chessboard.style.pointerEvents = 'none';
                 }
             }
-
+    
         } catch (error) {
             console.error('Update error:', error);
         }
