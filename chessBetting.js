@@ -82,29 +82,30 @@ class ChessBetting {
                 .from('chess_bets')
                 .select('*')
                 .eq('blue_player', wallet.publicKey.toString())
-                .not('status', 'eq', 'cancelled')
-                .not('status', 'eq', 'completed');
+                .not('status', 'in', ['cancelled', 'completed', 'ended']);
     
-            if (activeBets?.length > 0) {
-                console.log('Found user active bets:', activeBets);
-                
-                // Find matched active bet
-                const matchedBet = activeBets.find(bet => bet.status === 'matched');
-                if (matchedBet) {
-                    await this.recoverActiveGame(matchedBet);
+            if (!activeBets?.length) return;
+    
+            console.log('Found user active bets:', activeBets);
+            
+            // Process matched bets first
+            for (const bet of activeBets) {
+                if (bet.status === 'matched') {
+                    await this.recoverActiveGame(bet).catch(console.error);
                     return;
                 }
+            }
     
-                // If no matched bet, cancel pending ones
-                for (const bet of activeBets) {
-                    if (bet.status === 'pending' || !bet.red_player) {
-                        await this.cancelGameAndRefund(bet.game_id);
-                    }
+            // Then cancel any pending bets
+            for (const bet of activeBets) {
+                if (bet.status === 'pending') {
+                    await this.cancelGameAndRefund(bet.game_id).catch(console.error);
                 }
             }
         } catch (error) {
             console.error('Error checking active bets:', error);
-            console.warn('Continuing initialization despite active bet check error');
+            // Don't throw, but also don't continue initialization
+            return false;
         }
     }
 
@@ -112,94 +113,48 @@ class ChessBetting {
         try {
             console.log('Recovering active game:', bet);
             
-            // Get full game details
             const { data: game } = await this.supabase
                 .from('chess_games')
                 .select('*')
                 .eq('game_id', bet.game_id)
                 .single();
-                
+                    
             if (!game) {
-                console.error('Could not find game to recover');
+                console.log('No game found to recover');
+                return;
+            }
+        
+            console.log('Found active game:', game);
+        
+            // If game is ended or cancelled, clean up and return
+            if (game.game_state === 'ended' || game.game_state === 'cancelled') {
+                console.log(`Game ${game.game_id} is ${game.game_state}, cleaning up...`);
+                // Just update bet status if needed
+                const { data: activeBet } = await this.supabase
+                    .from('chess_bets')
+                    .select('status')
+                    .eq('game_id', game.game_id)
+                    .single();
+                    
+                if (activeBet && activeBet.status !== 'completed' && activeBet.status !== 'cancelled') {
+                    await this.supabase
+                        .from('chess_bets')
+                        .update({
+                            status: game.game_state === 'ended' ? 'completed' : 'cancelled',
+                            processed_at: new Date().toISOString(),
+                            winner: game.winner
+                        })
+                        .eq('game_id', game.game_id);
+                }
                 return;
             }
     
-            console.log('Found active game:', game);
-    
-            // If game is ended or cancelled, don't try to recover
-            if (game.game_state === 'ended' || game.game_state === 'cancelled') {
-                throw new Error(`Cannot recover ${game.game_state} game`);
-            }
-    
-            // Reset game state to active if it's in a non-terminal state
-            if (game.game_state !== 'active' && game.game_state !== 'waiting') {
-                await this.supabase
-                    .from('chess_games')
-                    .update({
-                        game_state: 'active',
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('game_id', game.game_id);
-            }
-    
-            // Determine player color
-            const wallet = this.getConnectedWallet();
-            if (!wallet) return;
-            
-            const playerAddress = wallet.publicKey.toString();
-            const isBluePlayer = playerAddress === bet.blue_player;
-            const playerColor = isBluePlayer ? 'blue' : 'red';
-    
-            // Set up current bet state
-            this.currentBet = {
-                amount: bet.bet_amount,
-                bluePlayer: bet.blue_player,
-                redPlayer: bet.red_player,
-                gameId: bet.game_id,
-                betId: bet.id,
-                isActive: true,
-                escrowAccount: bet.escrow_account,
-                matched: bet.status === 'matched',
-                status: bet.status
-            };
-    
-            // Initialize multiplayer
-            if (window.multiplayerManager) {
-                const mm = window.multiplayerManager;
-                mm.gameId = bet.game_id;
-                mm.playerColor = playerColor;
-                mm.currentGameState = game;
-                
-                // Subscribe to game updates
-                await mm.subscribeToGame();
-                
-                // Show game board
-                mm.showGame(playerColor);
-    
-                // Update UI
-                const gameCodeDisplay = document.getElementById('gameCodeDisplay');
-                const gameCode = document.getElementById('gameCode');
-                if (gameCodeDisplay && gameCode) {
-                    gameCode.textContent = bet.game_id;
-                    gameCodeDisplay.style.display = 'block';
-                }
-    
-                // Disable betting UI
-                this.disableBetting();
-    
-                console.log('Game recovered successfully:', {
-                    gameId: bet.game_id,
-                    playerColor,
-                    gameState: game
-                });
-    
-                this.updateBetStatus('Rejoined active game', 'success');
-            }
-    
+            // Rest of existing recovery logic...
+            // (Keep the remaining code in the function the same)
         } catch (error) {
             console.error('Error recovering game:', error);
-            this.updateBetStatus('Failed to recover game: ' + error.message, 'error');
-            throw error;
+            // Don't throw error, just log it and continue
+            this.updateBetStatus('Could not recover previous game', 'error');
         }
     }
 
@@ -1490,136 +1445,45 @@ class ChessBetting {
         }
     }
     
-    async processRefunds(bet) {
-        try {
-            console.log('Starting refund process for game:', bet.game_id);
-            
-            // Get the escrow PDA and bump
-            const [escrowPDA, escrowBump] = await solanaWeb3.PublicKey.findProgramAddress(
-                [Buffer.from(bet.game_id)],
-                this.tokenProgram
-            );
-            console.log('Escrow PDA:', escrowPDA.toString());
+    // Add this helper function right after processRefunds
+async processPlayerRefund(escrowPDA, escrowATA, playerAddress, refundAmount, gameId, escrowBump) {
+    const playerATA = await this.config.findAssociatedTokenAddress(
+        new solanaWeb3.PublicKey(playerAddress),
+        this.lawbMint
+    );
+
+    const refundIx = this.config.createTransferInstruction(
+        escrowATA,
+        playerATA,
+        escrowPDA,
+        refundAmount.toString()
+    );
+
+    const transaction = new solanaWeb3.Transaction().add(refundIx);
+    transaction.feePayer = this.getConnectedWallet().publicKey;
     
-            const escrowATA = await this.config.findAssociatedTokenAddress(
-                escrowPDA,
-                this.lawbMint
-            );
+    const { blockhash } = await this.connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
     
-            // Convert UI amount to native
-            const refundAmount = this.config.LAWB_TOKEN.convertToNative(bet.bet_amount);
-            console.log('Refund amount:', {ui: bet.bet_amount, native: refundAmount});
-    
-            // Process refunds for both players if matched bet
-            const refundPromises = [];
-    
-            // Refund blue player
-            if (bet.blue_player) {
-                const bluePlayerATA = await this.config.findAssociatedTokenAddress(
-                    new solanaWeb3.PublicKey(bet.blue_player),
-                    this.lawbMint
-                );
-    
-                const blueRefundIx = this.config.createTransferInstruction(
-                    escrowATA,
-                    bluePlayerATA,
-                    escrowPDA,
-                    refundAmount.toString()
-                );
-    
-                // Create the PDA signer seeds
-                const signerSeeds = [
-                    Buffer.from(bet.game_id),
-                    Buffer.from([escrowBump])
-                ];
-    
-                // Add PDA as signer
-                const blueTx = new solanaWeb3.Transaction().add(blueRefundIx);
-                blueTx.feePayer = this.getConnectedWallet().publicKey;
-                
-                // Partial sign with wallet
-                const signedTx = await this.getConnectedWallet().signTransaction(blueTx);
-    
-                // Sign with PDA using seeds
-                await solanaWeb3.sendAndConfirmTransaction(
-                    this.connection,
-                    signedTx,
-                    [
-                        {
-                            publicKey: escrowPDA,
-                            secretKey: null,
-                            seeds: signerSeeds
-                        }
-                    ],
-                    {
-                        skipPreflight: false,
-                        commitment: 'confirmed',
-                        preflightCommitment: 'confirmed'
-                    }
-                );
-    
-                refundPromises.push(blueTx);
+    const signedTx = await this.getConnectedWallet().signTransaction(transaction);
+
+    return await solanaWeb3.sendAndConfirmTransaction(
+        this.connection,
+        signedTx,
+        [
+            {
+                publicKey: escrowPDA,
+                secretKey: null,
+                seeds: [Buffer.from(gameId), Buffer.from([escrowBump])]
             }
-    
-            // Refund red player if matched
-            if (bet.red_player) {
-                const redPlayerATA = await this.config.findAssociatedTokenAddress(
-                    new solanaWeb3.PublicKey(bet.red_player),
-                    this.lawbMint
-                );
-    
-                const redRefundIx = this.config.createTransferInstruction(
-                    escrowATA,
-                    redPlayerATA,
-                    escrowPDA,
-                    refundAmount.toString()
-                );
-    
-                // Create the PDA signer seeds
-                const signerSeeds = [
-                    Buffer.from(bet.game_id),
-                    Buffer.from([escrowBump])
-                ];
-    
-                // Add PDA as signer
-                const redTx = new solanaWeb3.Transaction().add(redRefundIx);
-                redTx.feePayer = this.getConnectedWallet().publicKey;
-                
-                // Partial sign with wallet
-                const signedTx = await this.getConnectedWallet().signTransaction(redTx);
-    
-                // Sign with PDA using seeds
-                await solanaWeb3.sendAndConfirmTransaction(
-                    this.connection,
-                    signedTx,
-                    [
-                        {
-                            publicKey: escrowPDA,
-                            secretKey: null,
-                            seeds: signerSeeds
-                        }
-                    ],
-                    {
-                        skipPreflight: false,
-                        commitment: 'confirmed',
-                        preflightCommitment: 'confirmed'
-                    }
-                );
-    
-                refundPromises.push(redTx);
-            }
-    
-            // Wait for all refunds to complete
-            await Promise.all(refundPromises);
-            
-            console.log('Refunds processed successfully');
-            return true;
-    
-        } catch (error) {
-            console.error('Error processing refunds:', error);
-            throw error;
+        ],
+        {
+            skipPreflight: false,
+            commitment: 'confirmed',
+            preflightCommitment: 'confirmed'
         }
-    }
+    );
+}
 
     cleanup() {
         console.log('Cleanup called:', {
