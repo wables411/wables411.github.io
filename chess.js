@@ -579,33 +579,43 @@ window.hasLegalMoves = hasLegalMoves;
 window.getAllLegalMoves = getAllLegalMoves;
 
 // Game end and state management
-function endGame(winner) {
-    gameState = 'ended';
-    const message = winner === 'draw' ? 
-        "Game Over - Draw!" : 
-        `Game Over - ${winner.charAt(0).toUpperCase() + winner.slice(1)} wins!`;
-    
-    updateStatusDisplay(message);
-    
-    // Update leaderboard if available
-    if (typeof window.updateGameResult === 'function') {
-        window.updateGameResult(winner);
-    }
+async function endGame(winner) {
+    try {
+        gameState = 'ended';
+        const message = winner === 'draw' ? 
+            "Game Over - Draw!" : 
+            `Game Over - ${winner.charAt(0).toUpperCase() + winner.slice(1)} wins!`;
+        
+        updateStatusDisplay(message);
+        
+        // Update multiplayer game status first
+        if (window.isMultiplayerMode && window.multiplayerManager) {
+            await window.multiplayerManager.updateGameStatus('completed', winner);
+        }
+        
+        // Process winner payout if betting is active
+        if (window.chessBetting && window.isMultiplayerMode) {
+            try {
+                await window.chessBetting.processWinner(winner);
+            } catch (error) {
+                console.error('Error processing winner:', error);
+                updateStatusDisplay('Error processing winner payout - please contact support');
+            }
+        }
 
-    // Process winner payout if betting is active
-    if (window.chessBetting && window.isMultiplayerMode) {
-        window.chessBetting.processWinner(winner);
-    }
-    
-    // Update online game status if in multiplayer mode
-    if (window.isMultiplayerMode && window.multiplayerManager) {
-        window.multiplayerManager.updateGameStatus('completed', winner);
-    }
-    
-    // Disable board interaction
-    const chessboard = document.getElementById('chessboard');
-    if (chessboard) {
-        chessboard.style.pointerEvents = 'none';
+        // Update leaderboard
+        if (typeof window.updateGameResult === 'function') {
+            window.updateGameResult(winner);
+        }
+        
+        // Disable board interaction
+        const chessboard = document.getElementById('chessboard');
+        if (chessboard) {
+            chessboard.style.pointerEvents = 'none';
+        }
+    } catch (error) {
+        console.error('Error in endGame:', error);
+        updateStatusDisplay('Error ending game - please refresh');
     }
 }
 

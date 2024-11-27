@@ -47,6 +47,32 @@ class ChessBetting {
         this.initRetryCount = 0;
     }
 
+    async cleanupOldGames() {
+        try {
+            const wallet = this.getConnectedWallet();
+            if (!wallet) return;
+    
+            const walletAddress = wallet.publicKey.toString();
+    
+            // Get all games where this wallet is a player
+            const { data: activeGames } = await this.supabase
+                .from('chess_games')
+                .select('*')
+                .or(`blue_player.eq.${walletAddress},red_player.eq.${walletAddress}`)
+                .in('game_state', ['waiting', 'active']);
+    
+            if (!activeGames || activeGames.length === 0) return;
+    
+            // Process each game
+            for (const game of activeGames) {
+                console.log('Cleaning up old game:', game.game_id);
+                await this.cancelGameAndRefund(game.game_id);
+            }
+        } catch (error) {
+            console.error('Error cleaning up old games:', error);
+        }
+    }
+
     async checkForActiveBets() {
         try {
             const wallet = this.getConnectedWallet();
@@ -359,6 +385,60 @@ class ChessBetting {
         }
     }
 
+    async syncBetWithGameState(gameId) {
+        try {
+            // Get current game and bet status
+            const { data: game } = await this.supabase
+                .from('chess_games')
+                .select('*')
+                .eq('game_id', gameId)
+                .single();
+    
+            if (!game) {
+                console.log('No game found to sync');
+                return;
+            }
+    
+            const { data: bet } = await this.supabase
+                .from('chess_bets')
+                .select('*')
+                .eq('game_id', gameId)
+                .single();
+    
+            if (!bet) {
+                console.log('No bet found to sync');
+                return;
+            }
+    
+            // Update bet status based on game state
+            let betStatus = bet.status;
+            if (game.game_state === 'completed') {
+                betStatus = 'completed';
+            } else if (game.game_state === 'cancelled') {
+                betStatus = 'cancelled';
+            } else if (game.red_player) {
+                betStatus = 'matched';
+            }
+    
+            // Update bet if status needs to change
+            if (betStatus !== bet.status) {
+                await this.supabase
+                    .from('chess_bets')
+                    .update({
+                        status: betStatus,
+                        winner: game.winner,
+                        processed_at: game.game_state === 'completed' ? new Date().toISOString() : null
+                    })
+                    .eq('game_id', gameId);
+            }
+    
+            return { game, bet };
+        } catch (error) {
+            console.error('Error syncing bet state:', error);
+            throw error;
+        }
+    }
+
     initializeUI() {
         try {
             console.log('Initializing UI handlers...');
@@ -606,6 +686,9 @@ class ChessBetting {
                 this.updateBetStatus('Please connect your wallet first', 'error');
                 return;
             }
+    
+            // Add this line to clean up old games first
+            await this.cleanupOldGames();
     
             const betInput = document.getElementById('betAmount');
             const rawAmount = betInput ? Number(betInput.value) : 0;
@@ -993,11 +1076,23 @@ class ChessBetting {
     }
 
     async processWinner(winner) {
-        if (!this.currentBet.isActive) return;
+        if (!this.currentBet.isActive) {
+            console.log('No active bet to process');
+            return;
+        }
     
         try {
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
+    
+            // Sync bet with game state first
+            const { game, bet } = await this.syncBetWithGameState(this.currentBet.gameId);
+            
+            // Only process if bet hasn't been processed yet
+            if (bet.status === 'completed') {
+                console.log('Bet already processed');
+                return;
+            }
     
             // Get the escrow PDA and bump
             const [escrowPDA, escrowBump] = await solanaWeb3.PublicKey.findProgramAddress(
@@ -1011,7 +1106,7 @@ class ChessBetting {
             );
     
             // Calculate payouts
-            const totalAmount = this.currentBet.amount * 2; // Both players' bets
+            const totalAmount = this.currentBet.amount * 2;
             const houseFee = Math.floor(totalAmount * this.config.HOUSE_FEE_PERCENTAGE / 100);
             const winnerAmount = totalAmount - houseFee;
     
@@ -1042,58 +1137,15 @@ class ChessBetting {
                 this.lawbMint
             );
     
-            // Create the PDA signer seeds
-            const signerSeeds = [
-                Buffer.from(this.currentBet.gameId),
-                Buffer.from([escrowBump])
-            ];
-    
-            // Winner payout transaction
-            const winnerPayoutIx = this.config.createTransferInstruction(
+            // Process transactions
+            const signature = await this.processPayout(
+                escrowPDA,
                 escrowATA,
                 winnerATA,
-                escrowPDA,
-                nativeWinnerAmount.toString()
-            );
-    
-            // House fee transaction
-            const houseFeeIx = this.config.createTransferInstruction(
-                escrowATA,
                 houseATA,
-                escrowPDA,
-                nativeHouseFee.toString()
-            );
-    
-            // Combine into single transaction
-            const transaction = new solanaWeb3.Transaction()
-                .add(winnerPayoutIx)
-                .add(houseFeeIx);
-    
-            transaction.feePayer = wallet.publicKey;
-            
-            // Get recent blockhash
-            const { blockhash } = await this.connection.getLatestBlockhash();
-            transaction.recentBlockhash = blockhash;
-    
-            // Partial sign with wallet
-            const signedTx = await wallet.signTransaction(transaction);
-    
-            // Send and confirm with PDA signing
-            const signature = await solanaWeb3.sendAndConfirmTransaction(
-                this.connection,
-                signedTx,
-                [
-                    {
-                        publicKey: escrowPDA,
-                        secretKey: null,
-                        seeds: signerSeeds
-                    }
-                ],
-                {
-                    skipPreflight: false,
-                    commitment: 'confirmed',
-                    preflightCommitment: 'confirmed'
-                }
+                nativeWinnerAmount,
+                nativeHouseFee,
+                escrowBump
             );
     
             console.log('Payout transaction confirmed:', signature);
@@ -1112,6 +1164,56 @@ class ChessBetting {
             this.updateBetStatus('Failed to process winner: ' + error.message, 'error');
             throw error;
         }
+    }
+    
+    // Add this helper function for the payout transaction
+    async processPayout(escrowPDA, escrowATA, winnerATA, houseATA, winnerAmount, houseFee, escrowBump) {
+        const wallet = this.getConnectedWallet();
+        if (!wallet) throw new Error('No wallet connected');
+    
+        // Create instructions
+        const winnerPayoutIx = this.config.createTransferInstruction(
+            escrowATA,
+            winnerATA,
+            escrowPDA,
+            winnerAmount.toString()
+        );
+    
+        const houseFeeIx = this.config.createTransferInstruction(
+            escrowATA,
+            houseATA,
+            escrowPDA,
+            houseFee.toString()
+        );
+    
+        // Combine into single transaction
+        const transaction = new solanaWeb3.Transaction()
+            .add(winnerPayoutIx)
+            .add(houseFeeIx);
+    
+        transaction.feePayer = wallet.publicKey;
+        
+        // Get recent blockhash
+        const { blockhash } = await this.connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+    
+        // Sign and send
+        const signedTx = await wallet.signTransaction(transaction);
+        
+        return await this.sendAndConfirmTransaction(
+            this.connection,
+            signedTx,
+            [
+                {
+                    publicKey: escrowPDA,
+                    secretKey: null,
+                    seeds: [
+                        Buffer.from(this.currentBet.gameId),
+                        Buffer.from([escrowBump])
+                    ]
+                }
+            ]
+        );
     }
 
     async updateGameRecord(gameId, winner) {
@@ -1335,48 +1437,43 @@ class ChessBetting {
                 throw new Error('Game not found');
             }
     
-            // Update database records first
-            const [gamesResult, betsResult] = await Promise.all([
-                this.supabase
-                    .from('chess_games')
-                    .update({
-                        game_state: 'cancelled',
-                        updated_at: new Date().toISOString(),
-                        current_player: null,
-                        winner: null
-                    })
-                    .eq('game_id', gameId),
-                
-                this.supabase
+            // Only process cancellation if game isn't already cancelled or ended
+            if (game.game_state !== 'cancelled' && game.game_state !== 'ended') {
+                // Update database records first
+                await Promise.all([
+                    this.supabase
+                        .from('chess_games')
+                        .update({
+                            game_state: 'cancelled',
+                            updated_at: new Date().toISOString(),
+                            current_player: null,
+                            winner: null
+                        })
+                        .eq('game_id', gameId),
+                    
+                    this.supabase
+                        .from('chess_bets')
+                        .update({
+                            status: 'cancelled',
+                            processed_at: new Date().toISOString(),
+                            winner: null
+                        })
+                        .eq('game_id', gameId)
+                ]);
+    
+                // Get bet details and process refunds if needed
+                const { data: bet } = await this.supabase
                     .from('chess_bets')
-                    .update({
-                        status: 'cancelled',
-                        processed_at: new Date().toISOString(),
-                        winner: null
-                    })
+                    .select('*')
                     .eq('game_id', gameId)
-            ]);
+                    .single();
     
-            console.log('Cancel database updates:', {
-                gamesResult,
-                betsResult
-            });
-    
-            // Get bet details
-            const { data: bet } = await this.supabase
-                .from('chess_bets')
-                .select('*')
-                .eq('game_id', gameId)
-                .single();
-    
-            if (!bet) {
-                throw new Error('Bet not found');
+                if (bet && bet.status !== 'refunded') {
+                    await this.processRefunds(bet);
+                }
             }
-    
-            // Process refunds
-            await this.processRefunds(bet);
             
-            // Update UI
+            // Update UI and reset state
             this.updateBetStatus('Game cancelled and refunds processed', 'success');
             this.resetBetState();
     
