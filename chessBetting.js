@@ -100,6 +100,22 @@ class ChessBetting {
     
             console.log('Found active game:', game);
     
+            // If game is ended or cancelled, don't try to recover
+            if (game.game_state === 'ended' || game.game_state === 'cancelled') {
+                throw new Error(`Cannot recover ${game.game_state} game`);
+            }
+    
+            // Reset game state to active if it's in a non-terminal state
+            if (game.game_state !== 'active' && game.game_state !== 'waiting') {
+                await this.supabase
+                    .from('chess_games')
+                    .update({
+                        game_state: 'active',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('game_id', game.game_id);
+            }
+    
             // Determine player color
             const wallet = this.getConnectedWallet();
             if (!wallet) return;
@@ -157,6 +173,7 @@ class ChessBetting {
         } catch (error) {
             console.error('Error recovering game:', error);
             this.updateBetStatus('Failed to recover game: ' + error.message, 'error');
+            throw error;
         }
     }
 
@@ -718,19 +735,25 @@ class ChessBetting {
             const game = games[0];
             console.log('Found game:', game);
     
+            // Check if player is already in the game
+            const walletAddress = wallet.publicKey.toString();
+            if (game.blue_player === walletAddress || game.red_player === walletAddress) {
+                console.log('Player already in game - attempting to rejoin');
+                await this.recoverActiveGame(game);
+                return;
+            }
+    
             // Validate game state
-            if (game.game_state !== 'waiting' && game.game_state !== 'active') {
+            if (game.game_state === 'ended' || game.game_state === 'cancelled') {
                 throw new Error(`Game is ${game.game_state}`);
             }
     
-            if (game.red_player || game.blue_player === wallet.publicKey.toString()) {
-                if (game.blue_player === wallet.publicKey.toString() || game.red_player === wallet.publicKey.toString()) {
-                    // Rejoin existing game
-                    console.log('Rejoining existing game');
-                    await this.recoverActiveGame(game);
-                    return;
-                }
-                throw new Error('Cannot join this game');
+            if (game.game_state !== 'waiting' && game.game_state !== 'active') {
+                throw new Error(`Cannot join game in ${game.game_state} state`);
+            }
+    
+            if (game.red_player) {
+                throw new Error('Game is full');
             }
     
             // Check if there's an active bet
@@ -754,7 +777,7 @@ class ChessBetting {
             const { data: updateData, error: updateError } = await this.supabase
                 .from('chess_games')
                 .update({
-                    red_player: wallet.publicKey.toString(),
+                    red_player: walletAddress,
                     game_state: 'active',
                     updated_at: new Date().toISOString()
                 })
