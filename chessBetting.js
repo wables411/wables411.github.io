@@ -1123,52 +1123,62 @@ class ChessBetting {
     
     // Add this helper function for the payout transaction
     async processPayout(escrowPDA, escrowATA, winnerATA, houseATA, winnerAmount, houseFee, escrowBump) {
-        const wallet = this.getConnectedWallet();
-        if (!wallet) throw new Error('No wallet connected');
+        try {
+            const wallet = this.getConnectedWallet();
+            if (!wallet) throw new Error('No wallet connected');
     
-        // Create instructions
-        const winnerPayoutIx = this.config.createTransferInstruction(
-            escrowATA,
-            winnerATA,
-            escrowPDA,
-            winnerAmount.toString()
-        );
+            // Create instructions
+            const winnerPayoutIx = this.config.createTransferInstruction(
+                escrowATA,
+                winnerATA,
+                escrowPDA,
+                winnerAmount.toString()
+            );
     
-        const houseFeeIx = this.config.createTransferInstruction(
-            escrowATA,
-            houseATA,
-            escrowPDA,
-            houseFee.toString()
-        );
+            const houseFeeIx = this.config.createTransferInstruction(
+                escrowATA,
+                houseATA,
+                escrowPDA,
+                houseFee.toString()
+            );
     
-        // Combine into single transaction
-        const transaction = new solanaWeb3.Transaction()
-            .add(winnerPayoutIx)
-            .add(houseFeeIx);
+            // Create transaction with payer
+            let transaction = new solanaWeb3.Transaction();
+            transaction.add(winnerPayoutIx);
+            transaction.add(houseFeeIx);
+            transaction.feePayer = wallet.publicKey;
     
-        transaction.feePayer = wallet.publicKey;
-        
-        // Get recent blockhash
-        const { blockhash } = await this.connection.getLatestBlockhash();
-        transaction.recentBlockhash = blockhash;
+            // Get latest blockhash
+            const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash('confirmed');
+            transaction.recentBlockhash = blockhash;
     
-        // Sign and send
-        const signedTx = await wallet.signTransaction(transaction);
-        
-        return await this.sendAndConfirmTransaction(
-            this.connection,
-            signedTx,
-            [
-                {
-                    publicKey: escrowPDA,
-                    secretKey: null,
-                    seeds: [
-                        Buffer.from(this.currentBet.gameId),
-                        Buffer.from([escrowBump])
-                    ]
-                }
-            ]
-        );
+            // Sign transaction
+            let signedTx = await wallet.signTransaction(transaction);
+    
+            // Send and confirm
+            const signature = await this.connection.sendRawTransaction(signedTx.serialize(), {
+                skipPreflight: false,
+                maxRetries: 5,
+                preflightCommitment: 'confirmed'
+            });
+    
+            // Wait for confirmation
+            const confirmation = await this.connection.confirmTransaction({
+                signature,
+                blockhash,
+                lastValidBlockHeight
+            }, 'confirmed');
+    
+            if (confirmation.value.err) {
+                throw new Error('Transaction failed to confirm: ' + confirmation.value.err);
+            }
+    
+            return signature;
+    
+        } catch (error) {
+            console.error('Payout error:', error);
+            throw error;
+        }
     }
 
     async updateGameRecord(gameId, winner) {

@@ -302,7 +302,7 @@ class MultiplayerManager {
             .subscribe();
     }
 
-    handleUpdate(game) {
+    async handleUpdate(game) {
         if (!game) return;
     
         try {
@@ -312,13 +312,11 @@ class MultiplayerManager {
             if (game.board && game.board.positions) {
                 window.board = JSON.parse(JSON.stringify(game.board.positions));
                 
-                // Only update piece state if it exists
                 if (game.board.pieceState) {
                     window.pieceState = window.pieceState || {};
                     Object.assign(window.pieceState, game.board.pieceState);
                 }
                 
-                // Ensure window.placePieces exists before calling
                 if (typeof window.placePieces === 'function') {
                     window.placePieces();
                 } else {
@@ -341,27 +339,47 @@ class MultiplayerManager {
                     });
                 }
                 
-                window.updateStatusDisplay(isMyTurn ? "Your turn" : "Opponent's turn");
+                if (game.game_state !== 'ended') {
+                    window.updateStatusDisplay(isMyTurn ? "Your turn" : "Opponent's turn");
+                }
             }
     
             if (game.game_state === 'ended') {
-                const message = game.winner === 'draw' ? 
-                    'Game Over - Draw!' : 
-                    `Game Over - ${game.winner.charAt(0).toUpperCase() + game.winner.slice(1)} wins!`;
-                window.updateStatusDisplay(message);
+                // Determine winner and game result
+                let gameResult;
+                let displayMessage;
     
+                if (game.winner === 'draw') {
+                    gameResult = 'draw';
+                    displayMessage = 'Game Over - Draw!';
+                } else {
+                    gameResult = game.winner === this.playerColor ? 'win' : 'loss';
+                    displayMessage = `Game Over - ${game.winner.charAt(0).toUpperCase() + game.winner.slice(1)} wins!`;
+                }
+    
+                // Update display
+                window.updateStatusDisplay(displayMessage);
+    
+                // Update game result
                 if (window.updateGameResult) {
-                    window.updateGameResult(game.winner === this.playerColor ? 'win' : 'loss');
+                    window.updateGameResult(gameResult);
                 }
     
-                if (window.chessBetting && game.bet_amount > 0) {
-                    window.chessBetting.processWinner(game.winner);
+                // Process betting payouts only for non-draw games
+                if (window.chessBetting && game.bet_amount > 0 && gameResult !== 'draw') {
+                    try {
+                        await window.chessBetting.processWinner(game.winner);
+                    } catch (error) {
+                        console.error('Error processing winner payout:', error);
+                    }
                 }
     
+                // Update leaderboard
                 if (window.leaderboardManager) {
-                    window.leaderboardManager.loadLeaderboard();
+                    await window.leaderboardManager.loadLeaderboard();
                 }
     
+                // Disable board interaction
                 const chessboard = document.getElementById('chessboard');
                 if (chessboard) {
                     chessboard.style.pointerEvents = 'none';
@@ -370,6 +388,13 @@ class MultiplayerManager {
     
         } catch (error) {
             console.error('Update error:', error);
+            // Log detailed error info
+            console.error('Error context:', {
+                gameState: game?.game_state,
+                winner: game?.winner,
+                playerColor: this.playerColor,
+                currentPlayer: game?.current_player
+            });
         }
     }
 
