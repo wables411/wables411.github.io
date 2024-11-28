@@ -1248,8 +1248,8 @@ class ChessBetting {
                 houseFee.toString()
             );
     
-            // Create transaction with payer
-            let transaction = new solanaWeb3.Transaction();
+            // Create transaction
+            const transaction = new solanaWeb3.Transaction();
             transaction.add(winnerPayoutIx);
             transaction.add(houseFeeIx);
             transaction.feePayer = wallet.publicKey;
@@ -1258,15 +1258,33 @@ class ChessBetting {
             const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash('confirmed');
             transaction.recentBlockhash = blockhash;
     
-            // Sign transaction
-            let signedTx = await wallet.signTransaction(transaction);
+            // Create the seeds for the PDA
+            const seeds = [
+                Buffer.from(this.currentBet.gameId),
+                Buffer.from([escrowBump])
+            ];
     
-            // Send and confirm
-            const signature = await this.connection.sendRawTransaction(signedTx.serialize(), {
-                skipPreflight: false,
-                maxRetries: 5,
-                preflightCommitment: 'confirmed'
-            });
+            // Get the PDA signer
+            const pdaSigner = {
+                publicKey: escrowPDA,
+                secretKey: null,
+                seeds: seeds
+            };
+    
+            // Sign and send with both wallet and PDA
+            const signedTx = await wallet.signTransaction(transaction);
+    
+            const signature = await this.connection.sendAndConfirmTransaction(
+                this.connection,
+                signedTx,
+                [pdaSigner],
+                {
+                    skipPreflight: false,
+                    commitment: 'confirmed',
+                    preflightCommitment: 'confirmed',
+                    maxRetries: 5
+                }
+            );
     
             // Wait for confirmation
             const confirmation = await this.connection.confirmTransaction({
