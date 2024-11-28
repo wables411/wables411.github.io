@@ -78,33 +78,70 @@ class ChessBetting {
             const wallet = this.getConnectedWallet();
             if (!wallet) return;
     
-            const { data: activeBets } = await this.supabase
+            // First get all non-terminal bets for this player
+            const { data: activeBets, error } = await this.supabase
                 .from('chess_bets')
                 .select('*')
                 .eq('blue_player', wallet.publicKey.toString())
-                .not('status', 'in', ['cancelled', 'completed', 'ended']);
+                .not('status', 'in', '(cancelled,completed,ended)');
+    
+            if (error) {
+                console.error('Error querying active bets:', error);
+                return false;
+            }
     
             if (!activeBets?.length) return;
     
             console.log('Found user active bets:', activeBets);
             
-            // Process matched bets first
+            // Process each bet
             for (const bet of activeBets) {
-                if (bet.status === 'matched') {
-                    await this.recoverActiveGame(bet).catch(console.error);
+                // Get corresponding game state
+                const { data: game } = await this.supabase
+                    .from('chess_games')
+                    .select('*')
+                    .eq('game_id', bet.game_id)
+                    .single();
+    
+                if (!game) continue;
+    
+                // If game is ended/cancelled, just update bet record to match
+                if (game.game_state === 'ended' || game.game_state === 'cancelled') {
+                    await this.supabase
+                        .from('chess_bets')
+                        .update({
+                            status: game.game_state === 'ended' ? 'completed' : 'cancelled',
+                            processed_at: new Date().toISOString(),
+                            winner: game.winner
+                        })
+                        .eq('game_id', bet.game_id);
+                    continue;
+                }
+    
+                // For active games with matched bets, try to recover
+                if (bet.status === 'matched' && game.game_state === 'active') {
+                    await this.recoverActiveGame(bet).catch(err => {
+                        console.error('Failed to recover active game:', err);
+                    });
                     return;
+                }
+    
+                // For pending bets in waiting state, keep them
+                if (bet.status === 'pending' && game.game_state === 'waiting') {
+                    continue;
+                }
+    
+                // Cancel any other pending bets
+                if (bet.status === 'pending') {
+                    await this.cancelGameAndRefund(bet.game_id).catch(err => {
+                        console.error('Failed to cancel pending bet:', err);
+                    });
                 }
             }
     
-            // Then cancel any pending bets
-            for (const bet of activeBets) {
-                if (bet.status === 'pending') {
-                    await this.cancelGameAndRefund(bet.game_id).catch(console.error);
-                }
-            }
+            return true;
         } catch (error) {
             console.error('Error checking active bets:', error);
-            // Don't throw, but also don't continue initialization
             return false;
         }
     }
