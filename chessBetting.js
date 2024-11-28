@@ -155,7 +155,7 @@ class ChessBetting {
                 .select('*')
                 .eq('game_id', bet.game_id)
                 .single();
-                    
+                        
             if (!game) {
                 console.log('No game found to recover');
                 return;
@@ -172,7 +172,7 @@ class ChessBetting {
                     .select('status')
                     .eq('game_id', game.game_id)
                     .single();
-                    
+                        
                 if (activeBet && activeBet.status !== 'completed' && activeBet.status !== 'cancelled') {
                     await this.supabase
                         .from('chess_bets')
@@ -186,12 +186,67 @@ class ChessBetting {
                 return;
             }
     
-            // Rest of existing recovery logic...
-            // (Keep the remaining code in the function the same)
+            // Reset game state if needed
+            if (game.game_state !== 'active' && game.game_state !== 'waiting') {
+                await this.supabase
+                    .from('chess_games')
+                    .update({
+                        game_state: 'active',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('game_id', game.game_id);
+            }
+    
+            // Determine player color and set current bet state
+            const wallet = this.getConnectedWallet();
+            if (!wallet) return;
+            
+            const playerAddress = wallet.publicKey.toString();
+            const isBluePlayer = playerAddress === bet.blue_player;
+            const playerColor = isBluePlayer ? 'blue' : 'red';
+    
+            this.currentBet = {
+                amount: bet.bet_amount,
+                bluePlayer: bet.blue_player,
+                redPlayer: bet.red_player,
+                gameId: bet.game_id,
+                betId: bet.id,
+                isActive: true,
+                escrowAccount: bet.escrow_account,
+                matched: bet.status === 'matched',
+                status: bet.status
+            };
+    
+            // Initialize multiplayer
+            if (window.multiplayerManager) {
+                const mm = window.multiplayerManager;
+                mm.gameId = bet.game_id;
+                mm.playerColor = playerColor;
+                mm.currentGameState = game;
+                
+                await mm.subscribeToGame();
+                mm.showGame(playerColor);
+    
+                const gameCodeDisplay = document.getElementById('gameCodeDisplay');
+                const gameCode = document.getElementById('gameCode');
+                if (gameCodeDisplay && gameCode) {
+                    gameCode.textContent = bet.game_id;
+                    gameCodeDisplay.style.display = 'block';
+                }
+    
+                this.disableBetting();
+                
+                console.log('Game recovered successfully:', {
+                    gameId: bet.game_id,
+                    playerColor,
+                    gameState: game
+                });
+    
+                this.updateBetStatus('Rejoined active game', 'success');
+            }
         } catch (error) {
             console.error('Error recovering game:', error);
-            // Don't throw error, just log it and continue
-            this.updateBetStatus('Could not recover previous game', 'error');
+            this.updateBetStatus('Could not recover previous game: ' + error.message, 'error');
         }
     }
 
@@ -494,6 +549,20 @@ class ChessBetting {
                     }
                 };
             }
+
+            const auditBtn = document.getElementById('audit-bets');
+        if (auditBtn) {
+            auditBtn.onclick = async () => {
+                try {
+                    this.updateBetStatus('Auditing bets and recovering funds...', 'processing');
+                    await this.auditAndRecoverFunds();
+                    this.updateBetStatus('Audit complete', 'success');
+                } catch (error) {
+                    console.error('Audit failed:', error);
+                    this.updateBetStatus('Audit failed: ' + error.message, 'error');
+                }
+            };
+        }
     
             console.log('UI handlers initialized');
         } catch (error) {
@@ -1532,6 +1601,48 @@ async processPlayerRefund(escrowPDA, escrowATA, playerAddress, refundAmount, gam
     );
 }
 
+async processRefunds(bet) {
+    try {
+        console.log('Starting refund process for game:', bet.game_id);
+        
+        // Get the escrow PDA and bump
+        const [escrowPDA, escrowBump] = await solanaWeb3.PublicKey.findProgramAddress(
+            [Buffer.from(bet.game_id)],
+            this.tokenProgram
+        );
+        console.log('Escrow PDA:', escrowPDA.toString());
+
+        const escrowATA = await this.config.findAssociatedTokenAddress(
+            escrowPDA,
+            this.lawbMint
+        );
+
+        // Convert UI amount to native
+        const refundAmount = this.config.LAWB_TOKEN.convertToNative(bet.bet_amount);
+        console.log('Refund amount:', {ui: bet.bet_amount, native: refundAmount});
+
+        // Process refunds for both players if matched bet
+        const refundPromises = [];
+
+        // Refund blue player
+        if (bet.blue_player) {
+            await this.processPlayerRefund(escrowPDA, escrowATA, bet.blue_player, refundAmount, bet.game_id, escrowBump);
+        }
+
+        // Refund red player if matched
+        if (bet.red_player && bet.status === 'matched') {
+            await this.processPlayerRefund(escrowPDA, escrowATA, bet.red_player, refundAmount, bet.game_id, escrowBump);
+        }
+
+        console.log('Refunds processed successfully');
+        return true;
+
+    } catch (error) {
+        console.error('Error processing refunds:', error);
+        throw error;
+    }
+}
+
     cleanup() {
         console.log('Cleanup called:', {
             isInitialized: this.initialized,
@@ -1564,6 +1675,78 @@ async processPlayerRefund(escrowPDA, escrowATA, playerAddress, refundAmount, gam
             status: 'pending'
         };
     }
+
+    // Add this to chessBetting.js
+async auditAndRecoverFunds() {
+    try {
+        const wallet = this.getConnectedWallet();
+        if (!wallet) return;
+
+        console.log('Starting funds recovery audit...');
+
+        // Get all bets for this user
+        const { data: allBets } = await this.supabase
+            .from('chess_bets')
+            .select('*')
+            .eq('blue_player', wallet.publicKey.toString());
+
+        if (!allBets?.length) {
+            console.log('No bets found for recovery');
+            return;
+        }
+
+        console.log('Found bets to audit:', allBets);
+
+        for (const bet of allBets) {
+            // Get game state
+            const { data: game } = await this.supabase
+                .from('chess_games')
+                .select('*')
+                .eq('game_id', bet.game_id)
+                .single();
+
+            if (!game) {
+                console.log(`No game found for bet ${bet.game_id}`);
+                continue;
+            }
+
+            console.log(`Auditing game ${bet.game_id}:`, {
+                gameState: game.game_state,
+                betStatus: bet.status,
+                escrowAccount: bet.escrow_account
+            });
+
+            // Check escrow account
+            const escrowATA = await this.config.findAssociatedTokenAddress(
+                new solanaWeb3.PublicKey(bet.escrow_account),
+                this.lawbMint
+            );
+
+            try {
+                const balance = await this.connection.getTokenAccountBalance(escrowATA);
+                console.log(`Escrow balance for ${bet.game_id}:`, balance.value.uiAmount);
+
+                // If there are funds but game is ended/cancelled, process refund
+                if (balance.value.uiAmount > 0) {
+                    if (game.game_state === 'ended') {
+                        if (!bet.processed_at) {
+                            console.log(`Processing winner payout for ${bet.game_id}`);
+                            await this.processWinner(game.winner).catch(console.error);
+                        }
+                    } else if (game.game_state === 'cancelled' || bet.status === 'cancelled') {
+                        console.log(`Processing refund for ${bet.game_id}`);
+                        await this.processRefunds(bet).catch(console.error);
+                    }
+                }
+            } catch (error) {
+                console.error(`Error checking escrow for ${bet.game_id}:`, error);
+            }
+        }
+
+    } catch (error) {
+        console.error('Recovery audit failed:', error);
+    }
+}
 }
 
 // Create singleton instance
