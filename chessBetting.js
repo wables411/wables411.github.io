@@ -1217,32 +1217,29 @@ class ChessBetting {
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = wallet.publicKey;
     
-            // CRITICAL: Create PDA seeds exactly as they were for escrow
-            const seeds = [Buffer.from(this.currentBet.gameId)];
-            
-            // Get PDA signer info
-            const [pdaPublicKey] = await solanaWeb3.PublicKey.findProgramAddress(
-                seeds,
-                this.tokenProgram 
-            );
+            // Critical: Get all signers
+            const signers = [];
     
-            // Sign with wallet first
-            transaction.partialSign(wallet);
+            // Add PDA signer if needed
+            if (escrowPDA) {
+                signers.push({
+                    publicKey: escrowPDA,
+                    secretKey: Buffer.from([]), // Empty buffer since it's a PDA
+                });
+            }
     
-            // Send raw transaction with PDA
-            const serializedTx = transaction.serialize({
-                verifySignatures: false
-            });
+            // Sign with connected wallet
+            const signedTx = await wallet.signTransaction(transaction);
     
+            // Send the signed transaction
             const signature = await this.connection.sendRawTransaction(
-                serializedTx,
+                signedTx.serialize(),
                 {
                     skipPreflight: true,
                     maxRetries: 5
                 }
             );
     
-            // Wait for confirmation
             await this.connection.confirmTransaction(signature);
     
             // Update database records
@@ -1266,11 +1263,17 @@ class ChessBetting {
                     .eq('id', this.currentBet.betId)
             ]);
     
+            console.log('Payout completed:', {
+                signature,
+                winner: this.currentBet.winner,
+                amount: winnerAmount.toString()
+            });
+    
             return signature;
     
         } catch (error) {
             console.error('Payout failed:', error);
-            throw error; 
+            throw error;
         }
     }
 
