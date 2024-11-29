@@ -1217,28 +1217,41 @@ class ChessBetting {
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = wallet.publicKey;
     
-            // Critical: Get all signers
-            const signers = [];
+            // Get PDA signer info
+            const programSeed = Buffer.from(this.currentBet.gameId);
+            const seeds = [
+                programSeed,
+                Buffer.from([escrowBump])
+            ];
     
-            // Add PDA signer if needed
-            if (escrowPDA) {
-                signers.push({
-                    publicKey: escrowPDA,
-                    secretKey: Buffer.from([]), // Empty buffer since it's a PDA
-                });
-            }
+            // Add all signers
+            transaction.setSigners(
+                wallet.publicKey,
+                escrowPDA
+            );
     
-            // Sign with connected wallet
+            // Sign with wallet
             const signedTx = await wallet.signTransaction(transaction);
     
-            // Send the signed transaction
-            const signature = await this.connection.sendRawTransaction(
-                signedTx.serialize(),
-                {
-                    skipPreflight: true,
-                    maxRetries: 5
+            // Add PDA signature
+            signedTx.partialSign({
+                publicKey: escrowPDA,
+                secretKey: null,
+                sign: () => {
+                    // PDA signing is handled by the program
+                    return true;
                 }
-            );
+            });
+    
+            // Send transaction
+            const rawTx = signedTx.serialize({
+                requireAllSignatures: false // Important - allow missing PDA sig
+            });
+    
+            const signature = await this.connection.sendRawTransaction(rawTx, {
+                skipPreflight: true,
+                maxRetries: 5
+            });
     
             await this.connection.confirmTransaction(signature);
     
@@ -1262,12 +1275,6 @@ class ChessBetting {
                     })
                     .eq('id', this.currentBet.betId)
             ]);
-    
-            console.log('Payout completed:', {
-                signature,
-                winner: this.currentBet.winner,
-                amount: winnerAmount.toString()
-            });
     
             return signature;
     
