@@ -1192,70 +1192,50 @@ class ChessBetting {
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
     
-            // Create instructions
-            const winnerPayoutIx = this.config.createTransferInstruction(
-                escrowATA,
-                winnerATA,
-                escrowPDA,
-                winnerAmount.toString()
+            // Create transfer instructions
+            const transferToWinnerIx = solanaWeb3.Token.createTransferInstruction(
+                this.tokenProgram, // Token program ID
+                escrowATA,        // Source account (escrow ATA)
+                winnerATA,        // Destination account (winner ATA)
+                escrowPDA,        // Authority (escrow PDA)
+                [],              // Multi-sig signers (none needed)
+                winnerAmount     // Amount to transfer
             );
     
-            const houseFeeIx = this.config.createTransferInstruction(
+            const transferToHouseIx = solanaWeb3.Token.createTransferInstruction(
+                this.tokenProgram,
                 escrowATA,
                 houseATA,
                 escrowPDA,
-                houseFee.toString()
+                [],
+                houseFee
             );
     
             // Create transaction
             const transaction = new solanaWeb3.Transaction()
-                .add(winnerPayoutIx)
-                .add(houseFeeIx);
+                .add(transferToWinnerIx)
+                .add(transferToHouseIx);
     
             // Get latest blockhash
-            const { blockhash } = await this.connection.getLatestBlockhash('confirmed');
+            const { blockhash } = await this.connection.getLatestBlockhash();
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = wallet.publicKey;
     
-            // Get PDA signer info
-            const programSeed = Buffer.from(this.currentBet.gameId);
-            const seeds = [
-                programSeed,
-                Buffer.from([escrowBump])
-            ];
-    
-            // Add all signers
-            transaction.setSigners(
-                wallet.publicKey,
-                escrowPDA
-            );
-    
-            // Sign with wallet
+            // Just sign with wallet directly
             const signedTx = await wallet.signTransaction(transaction);
     
-            // Add PDA signature
-            signedTx.partialSign({
-                publicKey: escrowPDA,
-                secretKey: null,
-                sign: () => {
-                    // PDA signing is handled by the program
-                    return true;
+            // Send and confirm
+            const signature = await this.connection.sendRawTransaction(
+                signedTx.serialize(),
+                {
+                    skipPreflight: true,
+                    maxRetries: 5
                 }
-            });
-    
-            // Send transaction
-            const rawTx = signedTx.serialize({
-                requireAllSignatures: false // Important - allow missing PDA sig
-            });
-    
-            const signature = await this.connection.sendRawTransaction(rawTx, {
-                skipPreflight: true,
-                maxRetries: 5
-            });
+            );
     
             await this.connection.confirmTransaction(signature);
     
-            // Update database records
+            // Update database records 
             await Promise.all([
                 this.supabase
                     .from('chess_games')
