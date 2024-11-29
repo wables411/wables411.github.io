@@ -649,41 +649,12 @@ class ChessBetting {
 
     async createBetEscrow(gameId, amount) {
         try {
-            // Add first log right at the start of the function
-            console.log('LAWB Token config:', {
-                decimals: this.config.LAWB_TOKEN.DECIMALS,
-                minBet: this.config.MIN_BET,
-                maxBet: this.config.MAX_BET
-            });
-    
-            console.log('Creating bet escrow for game:', gameId, 'UI amount:', amount);
-            
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
     
-            // Convert UI amount to native units
-            const nativeAmount = this.config.LAWB_TOKEN.convertToNative(amount);
-            
-            // Add detailed transfer log right here
-            console.log('Transfer details:', {
-                rawAmount: amount,
-                nativeAmount: nativeAmount,
-                nativeAmountString: nativeAmount.toString(),
-                decimals: this.config.LAWB_TOKEN.DECIMALS,
-                calculation: `${amount} * (10 ^ ${this.config.LAWB_TOKEN.DECIMALS})`,
-                actualCalculation: amount * Math.pow(10, this.config.LAWB_TOKEN.DECIMALS)
-            });
-            
-            console.log('Amount conversion:', {
-                uiAmount: amount,
-                nativeAmount: nativeAmount,
-                decimals: this.config.LAWB_TOKEN.DECIMALS
-            });
-    
-            // Generate escrow accounts
+            // Generate escrow PDA
             const escrowPDA = await this.config.findEscrowPDA(gameId);
-            console.log('Escrow PDA:', escrowPDA.toString());
-    
+            
             // Get player and escrow token accounts
             const playerATA = await this.config.findAssociatedTokenAddress(
                 wallet.publicKey,
@@ -695,43 +666,42 @@ class ChessBetting {
                 this.lawbMint
             );
     
-            // Check player's token balance
-            const balance = await this.connection.getTokenAccountBalance(playerATA);
-            console.log('Current balance:', balance.value.amount, 'Required:', nativeAmount);
-            
-            if (BigInt(balance.value.amount) < BigInt(nativeAmount)) {
-                throw new Error(`Insufficient $LAWB balance`);
-            }
+            // Create transaction for SOL transfer to escrow
+            const lamports = await this.connection.getMinimumBalanceForRentExemption(0);
+            const solTransferIx = solanaWeb3.SystemProgram.transfer({
+                fromPubkey: wallet.publicKey,
+                toPubkey: escrowPDA,
+                lamports: lamports + 500000 // Extra SOL for future transaction fees
+            });
     
-            // Create escrow ATA if it doesn't exist
+            // Create escrow ATA if needed
+            let transaction = new solanaWeb3.Transaction().add(solTransferIx);
+            
             const escrowAccount = await this.connection.getAccountInfo(escrowATA);
             if (!escrowAccount) {
-                console.log('Creating escrow token account');
                 const createATAIx = window.SplToken.createAssociatedTokenAccountInstruction(
                     wallet.publicKey,
                     escrowATA,
                     escrowPDA,
-                    this.lawbMint,
-                    this.tokenProgram,
-                    this.associatedTokenProgram
+                    this.lawbMint
                 );
-                
-                const tx = new solanaWeb3.Transaction().add(createATAIx);
-                await this.sendAndConfirmTransaction(tx);
+                transaction.add(createATAIx);
             }
     
-            // Transfer tokens to escrow using the native amount
+            // Convert amount and create token transfer
+            const nativeAmount = this.config.LAWB_TOKEN.convertToNative(amount);
             const transferIx = this.config.createTransferInstruction(
                 playerATA,
                 escrowATA,
                 wallet.publicKey,
-                nativeAmount.toString() // Convert to string to handle large numbers safely
+                nativeAmount.toString()
             );
+            
+            transaction.add(transferIx);
     
-            const transferTx = new solanaWeb3.Transaction().add(transferIx);
-            const signature = await this.sendAndConfirmTransaction(transferTx);
+            // Send and confirm transaction
+            const signature = await this.sendAndConfirmTransaction(transaction);
     
-            console.log('Escrow funded:', signature);
             return { escrowPDA, escrowATA, signature };
     
         } catch (error) {
@@ -1146,6 +1116,9 @@ class ChessBetting {
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
     
+            // Set winner in current bet state
+            this.currentBet.winner = winner;
+    
             // Sync bet with game state first
             const { game, bet } = await this.syncBetWithGameState(this.currentBet.gameId);
             
@@ -1175,14 +1148,6 @@ class ChessBetting {
             const nativeWinnerAmount = this.config.LAWB_TOKEN.convertToNative(winnerAmount);
             const nativeHouseFee = this.config.LAWB_TOKEN.convertToNative(houseFee);
     
-            console.log('Processing winner payout:', {
-                totalAmount,
-                houseFee,
-                winnerAmount,
-                nativeWinnerAmount: nativeWinnerAmount.toString(),
-                nativeHouseFee: nativeHouseFee.toString()
-            });
-    
             // Get winner's token account
             const winnerPubkey = new solanaWeb3.PublicKey(
                 winner === 'blue' ? this.currentBet.bluePlayer : this.currentBet.redPlayer
@@ -1209,16 +1174,10 @@ class ChessBetting {
                 escrowBump
             );
     
-            console.log('Payout transaction confirmed:', signature);
-    
-            // Update records
-            await Promise.all([
-                this.updateGameRecord(this.currentBet.gameId, winner),
-                this.updateBetRecord(this.currentBet.betId, winner)
-            ]);
-    
             this.updateBetStatus(`Winner paid out successfully! Amount: ${winnerAmount} $LAWB`, 'success');
             this.resetBetState();
+    
+            return signature;
     
         } catch (error) {
             console.error('Error processing winner:', error);
@@ -1232,6 +1191,13 @@ class ChessBetting {
         try {
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
+    
+            // Get escrow SOL balance
+            const escrowBalance = await this.connection.getBalance(escrowPDA);
+            
+            // Calculate minimum required for rent
+            const minRent = await this.connection.getMinimumBalanceForRentExemption(0);
+            const solToReturn = escrowBalance - minRent;
     
             // Create instructions
             const winnerPayoutIx = this.config.createTransferInstruction(
@@ -1248,41 +1214,63 @@ class ChessBetting {
                 houseFee.toString()
             );
     
-            // Create transaction
-            const transaction = new solanaWeb3.Transaction();
-            transaction.add(winnerPayoutIx);
-            transaction.add(houseFeeIx);
-            transaction.feePayer = wallet.publicKey;
+            // Create SOL return instruction if there's enough balance
+            const winnerPubkey = new solanaWeb3.PublicKey(
+                this.currentBet.winner === 'blue' ? this.currentBet.bluePlayer : this.currentBet.redPlayer
+            );
+    
+            const solReturnIx = solToReturn > 0 ? 
+                solanaWeb3.SystemProgram.transfer({
+                    fromPubkey: escrowPDA,
+                    toPubkey: winnerPubkey,
+                    lamports: solToReturn
+                }) : null;
+    
+            // Build transaction
+            const transaction = new solanaWeb3.Transaction().add(winnerPayoutIx).add(houseFeeIx);
+            if (solReturnIx) {
+                transaction.add(solReturnIx);
+            }
     
             // Get latest blockhash
             const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash('confirmed');
             transaction.recentBlockhash = blockhash;
+            transaction.feePayer = wallet.publicKey;
     
-            // Create the seeds for the PDA
-            const seeds = [
+            // Create PDA signer info
+            const pdaSeeds = [
                 Buffer.from(this.currentBet.gameId),
                 Buffer.from([escrowBump])
             ];
     
-            // Get the PDA signer
-            const pdaSigner = {
-                publicKey: escrowPDA,
+            const [pdaSigner] = await solanaWeb3.PublicKey.findProgramAddress(
+                [Buffer.from(this.currentBet.gameId)],
+                this.tokenProgram
+            );
+    
+            // Partially sign with wallet
+            const signers = [{
+                publicKey: pdaSigner,
                 secretKey: null,
-                seeds: seeds
-            };
+                seeds: pdaSeeds,
+                programId: this.tokenProgram
+            }];
     
-            // Sign and send with both wallet and PDA
+            // Sign and serialize transaction
             const signedTx = await wallet.signTransaction(transaction);
+            const serializedTx = signedTx.serialize({
+                requireAllSignatures: false,
+                verifySignatures: false
+            });
     
-            const signature = await this.connection.sendAndConfirmTransaction(
-                this.connection,
-                signedTx,
-                [pdaSigner],
+            // Send and confirm transaction with PDA signing
+            const signature = await this.connection.sendTransaction(
+                transaction,
+                [wallet, ...signers],
                 {
-                    skipPreflight: false,
-                    commitment: 'confirmed',
+                    skipPreflight: true,
                     preflightCommitment: 'confirmed',
-                    maxRetries: 5
+                    maxRetries: 3
                 }
             );
     
@@ -1297,10 +1285,54 @@ class ChessBetting {
                 throw new Error('Transaction failed to confirm: ' + confirmation.value.err);
             }
     
-            return signature;
+            // Log success
+            console.log('Payout transaction confirmed:', {
+                signature,
+                winnerAmount: winnerAmount.toString(),
+                houseFee: houseFee.toString(),
+                solReturned: solToReturn > 0 ? solToReturn.toString() : '0'
+            });
+    
+            // Update database records
+            await Promise.all([
+                this.supabase
+                    .from('chess_games')
+                    .update({
+                        game_state: 'completed',
+                        winner: this.currentBet.winner,
+                        processed_at: new Date().toISOString()
+                    })
+                    .eq('game_id', this.currentBet.gameId),
+    
+                this.supabase
+                    .from('chess_bets')
+                    .update({
+                        status: 'completed',
+                        winner: this.currentBet.winner,
+                        processed_at: new Date().toISOString()
+                    })
+                    .eq('id', this.currentBet.betId)
+            ]);
+    
+            return {
+                signature,
+                winnerAmount: winnerAmount.toString(),
+                houseFee: houseFee.toString(),
+                solReturned: solToReturn > 0 ? solToReturn.toString() : '0'
+            };
     
         } catch (error) {
             console.error('Payout error:', error);
+            
+            // Log detailed error info
+            console.error('Payout error details:', {
+                gameId: this.currentBet.gameId,
+                winner: this.currentBet.winner,
+                escrowPDA: escrowPDA.toString(),
+                error: error.message,
+                stack: error.stack
+            });
+            
             throw error;
         }
     }
