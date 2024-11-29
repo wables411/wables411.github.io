@@ -9,8 +9,7 @@ window.SOLANA_CONFIG = {
         commitment: 'confirmed',
         confirmTransactionInitialTimeout: 60000,
         httpHeaders: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.QUICKNODE_API_KEY}`
+            'Content-Type': 'application/json'
         }
     },
     
@@ -19,8 +18,6 @@ window.SOLANA_CONFIG = {
         TRANSFER: 3,
         CLOSE_ACCOUNT: 9
     },
-
-    NATIVE_MINT: new solanaWeb3.PublicKey('So11111111111111111111111111111111111111112'),
 
     getInstructionData(type, amount) {
         const data = Buffer.alloc(9);
@@ -74,7 +71,7 @@ window.SOLANA_CONFIG = {
             
             // Test connection
             const version = await connection.getVersion();
-            console.log('QuickNode connection established', version);
+            console.log('QuickNode connection established');
             return connection;
             
         } catch (error) {
