@@ -1192,36 +1192,41 @@ class ChessBetting {
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
     
-            // Create transfer instructions
-            const transferToWinnerIx = solanaWeb3.Token.createTransferInstruction(
-                this.tokenProgram, // Token program ID
-                escrowATA,        // Source account (escrow ATA)
-                winnerATA,        // Destination account (winner ATA)
-                escrowPDA,        // Authority (escrow PDA)
-                [],              // Multi-sig signers (none needed)
-                winnerAmount     // Amount to transfer
-            );
+            // Create transfer instruction for winner
+            const winnerPayoutIx = new solanaWeb3.TransactionInstruction({
+                keys: [
+                    { pubkey: escrowATA, isSigner: false, isWritable: true }, 
+                    { pubkey: winnerATA, isSigner: false, isWritable: true },
+                    { pubkey: escrowPDA, isSigner: false, isWritable: false },
+                    { pubkey: this.tokenProgram, isSigner: false, isWritable: false }
+                ],
+                programId: this.tokenProgram,
+                data: Buffer.from([3, ...new BN(winnerAmount).toArray('le', 8)])
+            });
     
-            const transferToHouseIx = solanaWeb3.Token.createTransferInstruction(
-                this.tokenProgram,
-                escrowATA,
-                houseATA,
-                escrowPDA,
-                [],
-                houseFee
-            );
+            // Create transfer instruction for house fee
+            const houseFeeIx = new solanaWeb3.TransactionInstruction({
+                keys: [
+                    { pubkey: escrowATA, isSigner: false, isWritable: true },
+                    { pubkey: houseATA, isSigner: false, isWritable: true },
+                    { pubkey: escrowPDA, isSigner: false, isWritable: false },
+                    { pubkey: this.tokenProgram, isSigner: false, isWritable: false }
+                ],
+                programId: this.tokenProgram,
+                data: Buffer.from([3, ...new BN(houseFee).toArray('le', 8)])
+            });
     
             // Create transaction
             const transaction = new solanaWeb3.Transaction()
-                .add(transferToWinnerIx)
-                .add(transferToHouseIx);
+                .add(winnerPayoutIx)
+                .add(houseFeeIx);
     
             // Get latest blockhash
             const { blockhash } = await this.connection.getLatestBlockhash();
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = wallet.publicKey;
     
-            // Just sign with wallet directly
+            // Sign transaction
             const signedTx = await wallet.signTransaction(transaction);
     
             // Send and confirm
@@ -1233,9 +1238,9 @@ class ChessBetting {
                 }
             );
     
-            await this.connection.confirmTransaction(signature);
+            await this.connection.confirmTransaction(signature, 'confirmed');
     
-            // Update database records 
+            // Update database records
             await Promise.all([
                 this.supabase
                     .from('chess_games')
