@@ -1192,13 +1192,6 @@ class ChessBetting {
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
     
-            // Get escrow SOL balance
-            const escrowBalance = await this.connection.getBalance(escrowPDA);
-            
-            // Calculate minimum required for rent
-            const minRent = await this.connection.getMinimumBalanceForRentExemption(0);
-            const solToReturn = escrowBalance - minRent;
-    
             // Create instructions
             const winnerPayoutIx = this.config.createTransferInstruction(
                 escrowATA,
@@ -1214,84 +1207,43 @@ class ChessBetting {
                 houseFee.toString()
             );
     
-            // Create SOL return instruction if there's enough balance
-            const winnerPubkey = new solanaWeb3.PublicKey(
-                this.currentBet.winner === 'blue' ? this.currentBet.bluePlayer : this.currentBet.redPlayer
-            );
-    
-            const solReturnIx = solToReturn > 0 ? 
-                solanaWeb3.SystemProgram.transfer({
-                    fromPubkey: escrowPDA,
-                    toPubkey: winnerPubkey,
-                    lamports: solToReturn
-                }) : null;
-    
-            // Build transaction
-            const transaction = new solanaWeb3.Transaction().add(winnerPayoutIx).add(houseFeeIx);
-            if (solReturnIx) {
-                transaction.add(solReturnIx);
-            }
+            // Create transaction
+            const transaction = new solanaWeb3.Transaction()
+                .add(winnerPayoutIx)
+                .add(houseFeeIx);
     
             // Get latest blockhash
-            const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash('confirmed');
+            const { blockhash } = await this.connection.getLatestBlockhash('confirmed');
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = wallet.publicKey;
     
-            // Create PDA signer info
-            const pdaSeeds = [
-                Buffer.from(this.currentBet.gameId),
-                Buffer.from([escrowBump])
-            ];
-    
-            const [pdaSigner] = await solanaWeb3.PublicKey.findProgramAddress(
-                [Buffer.from(this.currentBet.gameId)],
-                this.tokenProgram
+            // CRITICAL: Create PDA seeds exactly as they were for escrow
+            const seeds = [Buffer.from(this.currentBet.gameId)];
+            
+            // Get PDA signer info
+            const [pdaPublicKey] = await solanaWeb3.PublicKey.findProgramAddress(
+                seeds,
+                this.tokenProgram 
             );
     
-            // Partially sign with wallet
-            const signers = [{
-                publicKey: pdaSigner,
-                secretKey: null,
-                seeds: pdaSeeds,
-                programId: this.tokenProgram
-            }];
+            // Sign with wallet first
+            transaction.partialSign(wallet);
     
-            // Sign and serialize transaction
-            const signedTx = await wallet.signTransaction(transaction);
-            const serializedTx = signedTx.serialize({
-                requireAllSignatures: false,
+            // Send raw transaction with PDA
+            const serializedTx = transaction.serialize({
                 verifySignatures: false
             });
     
-            // Send and confirm transaction with PDA signing
-            const signature = await this.connection.sendTransaction(
-                transaction,
-                [wallet, ...signers],
+            const signature = await this.connection.sendRawTransaction(
+                serializedTx,
                 {
                     skipPreflight: true,
-                    preflightCommitment: 'confirmed',
-                    maxRetries: 3
+                    maxRetries: 5
                 }
             );
     
             // Wait for confirmation
-            const confirmation = await this.connection.confirmTransaction({
-                signature,
-                blockhash,
-                lastValidBlockHeight
-            }, 'confirmed');
-    
-            if (confirmation.value.err) {
-                throw new Error('Transaction failed to confirm: ' + confirmation.value.err);
-            }
-    
-            // Log success
-            console.log('Payout transaction confirmed:', {
-                signature,
-                winnerAmount: winnerAmount.toString(),
-                houseFee: houseFee.toString(),
-                solReturned: solToReturn > 0 ? solToReturn.toString() : '0'
-            });
+            await this.connection.confirmTransaction(signature);
     
             // Update database records
             await Promise.all([
@@ -1314,26 +1266,11 @@ class ChessBetting {
                     .eq('id', this.currentBet.betId)
             ]);
     
-            return {
-                signature,
-                winnerAmount: winnerAmount.toString(),
-                houseFee: houseFee.toString(),
-                solReturned: solToReturn > 0 ? solToReturn.toString() : '0'
-            };
+            return signature;
     
         } catch (error) {
-            console.error('Payout error:', error);
-            
-            // Log detailed error info
-            console.error('Payout error details:', {
-                gameId: this.currentBet.gameId,
-                winner: this.currentBet.winner,
-                escrowPDA: escrowPDA.toString(),
-                error: error.message,
-                stack: error.stack
-            });
-            
-            throw error;
+            console.error('Payout failed:', error);
+            throw error; 
         }
     }
 
