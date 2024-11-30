@@ -697,10 +697,17 @@ class ChessBetting {
             );
             transaction.add(transferIx);
     
+            // Get latest blockhash
+            const { blockhash } = await this.connection.getLatestBlockhash('confirmed');
+            transaction.recentBlockhash = blockhash;
+            transaction.feePayer = wallet.publicKey;
+    
+            // Sign and send transaction
+            const signed = await wallet.signTransaction(transaction);
+    
             // Send and confirm transaction
-            const signature = await this.connection.sendTransaction(
-                transaction,
-                [wallet],
+            const signature = await this.connection.sendRawTransaction(
+                signed.serialize(),
                 {
                     skipPreflight: false,
                     preflightCommitment: 'confirmed',
