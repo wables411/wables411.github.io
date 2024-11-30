@@ -70,45 +70,56 @@ window.BETTING_CONFIG = {
         }
     },
 
-    async findEscrowPDA(gameId) {
+    async findEscrowPDAWithBump(gameId) {
         try {
-            return (await solanaWeb3.PublicKey.findProgramAddress(
+            const [pda, bump] = await solanaWeb3.PublicKey.findProgramAddress(
                 [Buffer.from(gameId)],
                 this.TOKEN_PROGRAM_ID
-            ))[0];
+            );
+            return { pda, bump };
         } catch (error) {
-            console.error('Error finding escrow PDA:', error);
+            console.error('Error finding escrow PDA with bump:', error);
             throw error;
         }
     },
 
-    createTransferInstruction(source, destination, owner, amount) {
+    createTokenTransferInstruction(source, destination, authority, amount) {
         try {
             return window.SplToken.createTransferInstruction(
                 source,
                 destination,
-                owner,
+                authority,
                 amount,
                 [],
                 this.TOKEN_PROGRAM_ID
             );
         } catch (error) {
-            console.error('Error creating transfer instruction:', error);
+            console.error('Error creating token transfer instruction:', error);
             throw error;
         }
     },
 
     validateBetAmount(amount) {
-        console.log('Validating bet amount:', {
-            input: amount,
-            nativeAmount: this.LAWB_TOKEN.convertToNative(amount).toString(),
-            min: this.MIN_BET,
-            max: this.MAX_BET
-        });
-        
-        if (!amount || isNaN(amount)) return false;
-        if (amount < this.MIN_BET) return false;
-        if (amount > this.MAX_BET) return false;
-        return true;
+        try {
+            console.log('Validating bet amount:', {
+                input: amount,
+                nativeAmount: this.LAWB_TOKEN.convertToNative(amount).toString(),
+                min: this.MIN_BET,
+                max: this.MAX_BET
+            });
+            
+            if (!amount || isNaN(amount)) return false;
+            if (amount < this.MIN_BET) return false;
+            if (amount > this.MAX_BET) return false;
+            
+            // Verify we can convert to native amount without issues
+            const nativeAmount = this.LAWB_TOKEN.convertToNative(amount);
+            if (!nativeAmount || nativeAmount <= BigInt(0)) return false;
+            
+            return true;
+        } catch (error) {
+            console.error('Error validating bet amount:', error);
+            return false;
+        }
     }
 };

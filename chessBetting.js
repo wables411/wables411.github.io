@@ -652,10 +652,19 @@ class ChessBetting {
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
     
-            // Generate escrow PDA
-            const escrowPDA = await this.config.findEscrowPDA(gameId);
+            // Generate escrow PDA with explicit seeds
+            const [escrowPDA, escrowBump] = await solanaWeb3.PublicKey.findProgramAddress(
+                [Buffer.from(gameId)],
+                this.tokenProgram
+            );
             
-            // Get player and escrow token accounts
+            console.log('Generated escrow PDA:', {
+                address: escrowPDA.toString(),
+                bump: escrowBump,
+                gameId
+            });
+    
+            // Get token accounts
             const playerATA = await this.config.findAssociatedTokenAddress(
                 wallet.publicKey,
                 this.lawbMint
@@ -666,43 +675,63 @@ class ChessBetting {
                 this.lawbMint
             );
     
-            // Create transaction for SOL transfer to escrow
-            const lamports = await this.connection.getMinimumBalanceForRentExemption(0);
-            const solTransferIx = solanaWeb3.SystemProgram.transfer({
-                fromPubkey: wallet.publicKey,
-                toPubkey: escrowPDA,
-                lamports: lamports + 500000 // Extra SOL for future transaction fees
-            });
+            // Create transaction
+            const transaction = new solanaWeb3.Transaction();
     
-            // Create escrow ATA if needed
-            let transaction = new solanaWeb3.Transaction().add(solTransferIx);
-            
-            const escrowAccount = await this.connection.getAccountInfo(escrowATA);
+            // Add SOL to escrow PDA if needed
+            const escrowAccount = await this.connection.getAccountInfo(escrowPDA);
             if (!escrowAccount) {
-                const createATAIx = window.SplToken.createAssociatedTokenAccountInstruction(
-                    wallet.publicKey,
-                    escrowATA,
-                    escrowPDA,
-                    this.lawbMint
-                );
-                transaction.add(createATAIx);
+                const lamports = await this.connection.getMinimumBalanceForRentExemption(0);
+                const createAccountIx = solanaWeb3.SystemProgram.createAccount({
+                    fromPubkey: wallet.publicKey,
+                    newAccountPubkey: escrowPDA,
+                    lamports: lamports + 500000, // Extra for fees
+                    space: 0,
+                    programId: this.tokenProgram
+                });
+                transaction.add(createAccountIx);
             }
     
-            // Convert amount and create token transfer
+            // Create escrow token account if needed
+            const escrowTokenAccount = await this.connection.getAccountInfo(escrowATA);
+            if (!escrowTokenAccount) {
+                const createTokenAccountIx = window.SplToken.createAssociatedTokenAccountInstruction(
+                    wallet.publicKey,  // Payer
+                    escrowATA,        // Associated token account to create
+                    escrowPDA,        // Token account owner
+                    this.lawbMint     // Token mint
+                );
+                transaction.add(createTokenAccountIx);
+            }
+    
+            // Add token transfer instruction
             const nativeAmount = this.config.LAWB_TOKEN.convertToNative(amount);
-            const transferIx = this.config.createTransferInstruction(
-                playerATA,
-                escrowATA,
-                wallet.publicKey,
-                nativeAmount.toString()
+            const transferIx = window.SplToken.createTransferInstruction(
+                playerATA,           // Source
+                escrowATA,          // Destination 
+                wallet.publicKey,    // Owner
+                BigInt(nativeAmount.toString()),
+                [],                 // No multisig
+                this.tokenProgram
             );
-            
             transaction.add(transferIx);
     
-            // Send and confirm transaction
-            const signature = await this.sendAndConfirmTransaction(transaction);
+            // Send transaction with proper signers
+            const signature = await this.sendAndConfirmTransaction(transaction, [escrowPDA]);
     
-            return { escrowPDA, escrowATA, signature };
+            console.log('Escrow setup complete:', {
+                signature,
+                escrowPDA: escrowPDA.toString(),
+                escrowATA: escrowATA.toString(),
+                amount: nativeAmount.toString()
+            });
+    
+            return { 
+                escrowPDA, 
+                escrowATA, 
+                signature, 
+                escrowBump 
+            };
     
         } catch (error) {
             console.error('Error creating bet escrow:', error);
@@ -1192,55 +1221,119 @@ class ChessBetting {
             const wallet = this.getConnectedWallet();
             if (!wallet) throw new Error('No wallet connected');
     
-            // Create transfer instruction for winner
-            const winnerPayoutIx = new solanaWeb3.TransactionInstruction({
-                keys: [
-                    { pubkey: escrowATA, isSigner: false, isWritable: true }, 
-                    { pubkey: winnerATA, isSigner: false, isWritable: true },
-                    { pubkey: escrowPDA, isSigner: false, isWritable: false },
-                    { pubkey: this.tokenProgram, isSigner: false, isWritable: false }
-                ],
-                programId: this.tokenProgram,
-                data: Buffer.from([3, ...new BN(winnerAmount).toArray('le', 8)])
-            });
-    
-            // Create transfer instruction for house fee
-            const houseFeeIx = new solanaWeb3.TransactionInstruction({
-                keys: [
-                    { pubkey: escrowATA, isSigner: false, isWritable: true },
-                    { pubkey: houseATA, isSigner: false, isWritable: true },
-                    { pubkey: escrowPDA, isSigner: false, isWritable: false },
-                    { pubkey: this.tokenProgram, isSigner: false, isWritable: false }
-                ],
-                programId: this.tokenProgram,
-                data: Buffer.from([3, ...new BN(houseFee).toArray('le', 8)])
+            console.log('Processing payout:', {
+                escrowPDA: escrowPDA.toString(),
+                escrowATA: escrowATA.toString(),
+                winnerATA: winnerATA.toString(),
+                houseATA: houseATA.toString(),
+                winnerAmount: winnerAmount.toString(),
+                houseFee: houseFee.toString()
             });
     
             // Create transaction
-            const transaction = new solanaWeb3.Transaction()
-                .add(winnerPayoutIx)
-                .add(houseFeeIx);
+            const transaction = new solanaWeb3.Transaction();
+    
+            // Winner payout instruction
+            const winnerPayoutIx = new solanaWeb3.TransactionInstruction({
+                programId: this.tokenProgram,
+                keys: [
+                    { pubkey: escrowATA, isSigner: false, isWritable: true },
+                    { pubkey: winnerATA, isSigner: false, isWritable: true },
+                    { pubkey: escrowPDA, isSigner: true, isWritable: false }, // PDA needs to be signer
+                    { pubkey: this.tokenProgram, isSigner: false, isWritable: false }
+                ],
+                data: Buffer.from([
+                    window.SOLANA_CONFIG.TOKEN_INSTRUCTIONS.TRANSFER,
+                    ...new solanaWeb3.BN(winnerAmount.toString()).toArray('le', 8)
+                ])
+            });
+    
+            // House fee instruction
+            const houseFeeIx = new solanaWeb3.TransactionInstruction({
+                programId: this.tokenProgram,
+                keys: [
+                    { pubkey: escrowATA, isSigner: false, isWritable: true },
+                    { pubkey: houseATA, isSigner: false, isWritable: true },
+                    { pubkey: escrowPDA, isSigner: true, isWritable: false }, // PDA needs to be signer
+                    { pubkey: this.tokenProgram, isSigner: false, isWritable: false }
+                ],
+                data: Buffer.from([
+                    window.SOLANA_CONFIG.TOKEN_INSTRUCTIONS.TRANSFER,
+                    ...new solanaWeb3.BN(houseFee.toString()).toArray('le', 8)
+                ])
+            });
+    
+            transaction.add(winnerPayoutIx);
+            transaction.add(houseFeeIx);
     
             // Get latest blockhash
-            const { blockhash } = await this.connection.getLatestBlockhash();
+            const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash('confirmed');
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = wallet.publicKey;
     
-            // Sign transaction
-            const signedTx = await wallet.signTransaction(transaction);
+            // Sign with PDA using seeds
+            const pdaSignerSeeds = [
+                Buffer.from(this.currentBet.gameId),
+                Buffer.from([escrowBump])
+            ];
     
-            // Send and confirm
+            try {
+                transaction.partialSign({
+                    publicKey: escrowPDA,
+                    secretKey: null,
+                    sign: () => {
+                        const messageData = transaction.serializeMessage();
+                        return solanaWeb3.Ed25519Program.createInstructionWithPublicKey({
+                            message: messageData,
+                            publicKey: escrowPDA.toBytes(),
+                            signingFunction: async (message) => {
+                                return await solanaWeb3.Ed25519Program.sign(
+                                    message,
+                                    pdaSignerSeeds
+                                );
+                            }
+                        });
+                    }
+                });
+            } catch (signError) {
+                console.error('Error signing with PDA:', signError);
+                throw new Error('Failed to sign with escrow PDA: ' + signError.message);
+            }
+    
+            // Sign with wallet
+            let signedTx;
+            try {
+                signedTx = await wallet.signTransaction(transaction);
+            } catch (signError) {
+                console.error('Error signing with wallet:', signError);
+                throw new Error('Failed to sign with wallet: ' + signError.message);
+            }
+    
+            // Send and confirm transaction
+            console.log('Sending payout transaction...');
             const signature = await this.connection.sendRawTransaction(
                 signedTx.serialize(),
                 {
                     skipPreflight: true,
-                    maxRetries: 5
+                    maxRetries: 5,
+                    preflightCommitment: 'confirmed'
                 }
             );
     
-            await this.connection.confirmTransaction(signature, 'confirmed');
+            console.log('Awaiting confirmation for:', signature);
+            const confirmation = await this.connection.confirmTransaction({
+                signature,
+                blockhash,
+                lastValidBlockHeight
+            }, 'confirmed');
     
-            // Update database records
+            if (confirmation.value.err) {
+                throw new Error('Transaction failed: ' + confirmation.value.err);
+            }
+    
+            console.log('Payout transaction confirmed:', signature);
+    
+            // Update database records only after successful blockchain transaction
             await Promise.all([
                 this.supabase
                     .from('chess_games')
@@ -1264,7 +1357,27 @@ class ChessBetting {
             return signature;
     
         } catch (error) {
-            console.error('Payout failed:', error);
+            console.error('Payout transaction failed:', error);
+            
+            // Update database to reflect failure
+            await Promise.all([
+                this.supabase
+                    .from('chess_games')
+                    .update({
+                        game_state: 'payout_failed',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('game_id', this.currentBet.gameId),
+    
+                this.supabase
+                    .from('chess_bets')
+                    .update({
+                        status: 'payout_failed',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', this.currentBet.betId)
+            ]);
+    
             throw error;
         }
     }

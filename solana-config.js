@@ -38,25 +38,50 @@ window.SOLANA_CONFIG = {
         });
     },
 
+    createTokenTransferInstruction(source, destination, authority, amount) {
+        return new solanaWeb3.TransactionInstruction({
+            programId: window.SplToken.TOKEN_PROGRAM_ID,
+            keys: [
+                { pubkey: source, isSigner: false, isWritable: true },
+                { pubkey: destination, isSigner: false, isWritable: true },
+                { pubkey: authority, isSigner: true, isWritable: false }
+            ],
+            data: Buffer.from([
+                this.TOKEN_INSTRUCTIONS.TRANSFER,
+                ...new solanaWeb3.BN(amount.toString()).toArray('le', 8)
+            ])
+        });
+    },
+
     // PDA helpers
-    async findEscrowPDA(gameId) {
-        const seeds = [Buffer.from(gameId)];
-        return solanaWeb3.PublicKey.findProgramAddress(
-            seeds, 
-            window.SplToken.TOKEN_PROGRAM_ID
-        );
+    async findEscrowPDAWithBump(gameId) {
+        try {
+            const [pda, bump] = await solanaWeb3.PublicKey.findProgramAddress(
+                [Buffer.from(gameId)],
+                window.SplToken.TOKEN_PROGRAM_ID
+            );
+            return { pda, bump };
+        } catch (error) {
+            console.error('Error finding escrow PDA with bump:', error);
+            throw error;
+        }
     },
 
     async findAssociatedTokenAddress(walletAddress, tokenMintAddress) {
-        const [address] = await solanaWeb3.PublicKey.findProgramAddress(
-            [
-                walletAddress.toBuffer(),
-                window.SplToken.TOKEN_PROGRAM_ID.toBuffer(),
-                tokenMintAddress.toBuffer()
-            ],
-            window.SplToken.ASSOCIATED_TOKEN_PROGRAM_ID
-        );
-        return address;
+        try {
+            const [address] = await solanaWeb3.PublicKey.findProgramAddress(
+                [
+                    walletAddress.toBuffer(),
+                    window.SplToken.TOKEN_PROGRAM_ID.toBuffer(),
+                    tokenMintAddress.toBuffer()
+                ],
+                window.SplToken.ASSOCIATED_TOKEN_PROGRAM_ID
+            );
+            return address;
+        } catch (error) {
+            console.error('Error finding associated token address:', error);
+            throw error;
+        }
     },
 
     async createConnection() {
@@ -81,26 +106,36 @@ window.SOLANA_CONFIG = {
     },
 
     async signAndSendTransaction(connection, transaction, wallet, signers = []) {
-        transaction.recentBlockhash = (
-            await connection.getLatestBlockhash('confirmed')
-        ).blockhash;
+        try {
+            transaction.recentBlockhash = (
+                await connection.getLatestBlockhash('confirmed')
+            ).blockhash;
 
-        transaction.feePayer = wallet.publicKey;
+            transaction.feePayer = wallet.publicKey;
 
-        if (signers.length > 0) {
-            transaction.partialSign(...signers);
-        }
-
-        const signed = await wallet.signTransaction(transaction);
-        const signature = await connection.sendRawTransaction(
-            signed.serialize(),
-            {
-                skipPreflight: true,
-                maxRetries: 5
+            if (signers.length > 0) {
+                transaction.partialSign(...signers);
             }
-        );
 
-        await connection.confirmTransaction(signature);
-        return signature;
+            const signed = await wallet.signTransaction(transaction);
+            const signature = await connection.sendRawTransaction(
+                signed.serialize(),
+                {
+                    skipPreflight: false,
+                    maxRetries: 5,
+                    preflightCommitment: 'confirmed'
+                }
+            );
+
+            const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+            if (confirmation?.value?.err) {
+                throw new Error(`Transaction failed: ${confirmation.value.err}`);
+            }
+
+            return signature;
+        } catch (error) {
+            console.error('Transaction failed:', error);
+            throw error;
+        }
     }
 };
