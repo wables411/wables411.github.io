@@ -1072,10 +1072,20 @@ function onSquareClick(row, col) {
             const piece = window.board[startRow][startCol];
             
             if (canPieceMove(piece, startRow, startCol, row, col)) {
-                if (piece.toLowerCase() === 'p' && (row === 0 || row === 7)) {
-                    promptPawnPromotion(startRow, startCol, row, col);
+                if (window.isMultiplayerMode && window.multiplayerManager) {
+                    // For multiplayer, use the multiplayer manager's move function
+                    if (piece.toLowerCase() === 'p' && (row === 0 || row === 7)) {
+                        promptPawnPromotion(startRow, startCol, row, col, true);
+                    } else {
+                        window.multiplayerManager.makeMove(startRow, startCol, row, col);
+                    }
                 } else {
-                    executeMove(startRow, startCol, row, col);
+                    // For single player, use the normal move execution
+                    if (piece.toLowerCase() === 'p' && (row === 0 || row === 7)) {
+                        promptPawnPromotion(startRow, startCol, row, col);
+                    } else {
+                        executeMove(startRow, startCol, row, col);
+                    }
                 }
             }
             
@@ -1096,7 +1106,7 @@ window.highlightSquare = highlightSquare;
 window.removeHighlights = removeHighlights;
 window.onSquareClick = onSquareClick;
 
-function promptPawnPromotion(startRow, startCol, endRow, endCol) {
+function promptPawnPromotion(startRow, startCol, endRow, endCol, isMultiplayer = false) {
     const promotionPieces = ['q', 'r', 'n', 'b'];
     const color = window.isMultiplayerMode ? window.playerColor : window.currentPlayer;
     
@@ -1122,7 +1132,11 @@ function promptPawnPromotion(startRow, startCol, endRow, endCol) {
         pieceButton.style.cursor = 'pointer';
         
         pieceButton.onclick = () => {
-            executeMove(startRow, startCol, endRow, endCol, promotedPiece);
+            if (isMultiplayer && window.multiplayerManager) {
+                window.multiplayerManager.makeMove(startRow, startCol, endRow, endCol, promotedPiece);
+            } else {
+                executeMove(startRow, startCol, endRow, endCol, promotedPiece);
+            }
             dialog.remove();
         };
         
