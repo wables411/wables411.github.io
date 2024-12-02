@@ -6,6 +6,8 @@ class MultiplayerManager {
         this.subscription = null;
         this.currentGameState = null;
         this.isMultiplayerMode = true;
+        this.isProcessingMove = false;
+        this.selectedPiece = null;
         this.initializeEventListeners();
         console.log('MultiplayerManager initialized');
     }
@@ -41,6 +43,90 @@ class MultiplayerManager {
                 if (status) status.style.display = 'none';
             };
         }
+
+        // Set up global click handlers for the chessboard
+        const chessboard = document.getElementById('chessboard');
+        if (chessboard) {
+            chessboard.addEventListener('click', (e) => this.handleBoardClick(e));
+        }
+    }
+
+    handleBoardClick(e) {
+        if (!this.isMyTurn() || this.isProcessingMove) return;
+
+        const piece = e.target.closest('.piece');
+        const square = e.target.closest('.highlight');
+
+        if (piece) {
+            const row = parseInt(piece.getAttribute('data-row'));
+            const col = parseInt(piece.getAttribute('data-col'));
+            this.handlePieceClick(row, col);
+        } else if (square && this.selectedPiece) {
+            const row = parseInt(square.getAttribute('data-row'));
+            const col = parseInt(square.getAttribute('data-col'));
+            this.handleSquareClick(row, col);
+        }
+    }
+
+    handlePieceClick(row, col) {
+        const piece = window.board[row][col];
+        if (!piece) return;
+
+        const pieceColor = window.getPieceColor(piece);
+        if (pieceColor !== this.playerColor) return;
+
+        // Clear existing highlights
+        window.clearHighlights();
+
+        // If clicking the same piece, deselect it
+        if (this.selectedPiece && this.selectedPiece.row === row && this.selectedPiece.col === col) {
+            this.selectedPiece = null;
+            return;
+        }
+
+        // Select the new piece and show valid moves
+        this.selectedPiece = { row, col };
+        window.showValidMoves(row, col);
+    }
+
+    async handleSquareClick(row, col) {
+        if (!this.selectedPiece) return;
+
+        const startRow = this.selectedPiece.row;
+        const startCol = this.selectedPiece.col;
+        const piece = window.board[startRow][startCol];
+
+        // Check if it's a pawn promotion
+        const isPromotion = this.isPawnPromotion(piece, row);
+        let promotionPiece = null;
+
+        if (isPromotion) {
+            promotionPiece = await this.handlePawnPromotion();
+            if (!promotionPiece) return; // User cancelled promotion
+        }
+
+        await this.makeMove(startRow, startCol, row, col, promotionPiece);
+        this.selectedPiece = null;
+        window.clearHighlights();
+    }
+
+    isPawnPromotion(piece, targetRow) {
+        return (piece.toLowerCase() === 'p' && 
+                ((this.playerColor === 'white' && targetRow === 0) || 
+                 (this.playerColor === 'black' && targetRow === 7)));
+    }
+
+    handlePawnPromotion() {
+        return new Promise((resolve) => {
+            const options = ['q', 'r', 'n', 'b'];
+            const choice = window.prompt('Choose promotion piece (Q/R/N/B):', 'Q');
+            if (!choice) {
+                resolve(null);
+                return;
+            }
+            const piece = choice.toLowerCase().charAt(0);
+            resolve(options.includes(piece) ? piece : 'q');
+        });
     }
 
     async createGameWithBet() {
@@ -97,8 +183,8 @@ class MultiplayerManager {
             this.gameId = gameId;
             this.playerColor = 'blue';
             this.currentGameState = data[0];
-            this.subscribeToGame();
-            this.showGame('blue');
+            await this.subscribeToGame();
+            await this.showGame('blue');
 
             // Show game code
             const gameCodeDisplay = document.getElementById('gameCodeDisplay');
@@ -115,6 +201,10 @@ class MultiplayerManager {
         }
     }
 
+    isMyTurn() {
+        return this.currentGameState?.current_player === this.playerColor;
+    }
+
     async joinGameByCode(code) {
         try {
             const player = localStorage.getItem('currentPlayer');
@@ -125,18 +215,12 @@ class MultiplayerManager {
     
             console.log('Attempting to join game:', code);
     
-            // First get the game without state filter
             const { data: games, error: queryError } = await this.supabase
                 .from('chess_games')
                 .select('*')
                 .eq('game_id', code.toUpperCase());
     
-            if (queryError) {
-                console.error('Game query error:', queryError);
-                throw new Error('Failed to query game');
-            }
-    
-            if (!games || games.length === 0) {
+            if (queryError || !games?.length) {
                 alert('Game not found');
                 return;
             }
@@ -144,20 +228,18 @@ class MultiplayerManager {
             const game = games[0];
             console.log('Found game:', game);
     
-            // Validate game state
             if (game.game_state !== 'waiting' && game.game_state !== 'active') {
                 alert(`Game is ${game.game_state}`);
                 return;
             }
     
             if (game.red_player === player || game.blue_player === player) {
-                // This player is already in the game - rejoin
                 console.log('Rejoining existing game');
                 this.gameId = game.game_id;
                 this.playerColor = game.blue_player === player ? 'blue' : 'red';
                 this.currentGameState = game;
-                this.subscribeToGame();
-                this.showGame(this.playerColor);
+                await this.subscribeToGame();
+                await this.showGame(this.playerColor);
                 return;
             }
     
@@ -166,7 +248,6 @@ class MultiplayerManager {
                 return;
             }
     
-            // Check if this is a betting game
             if (game.bet_amount > 0) {
                 if (window.chessBetting) {
                     console.log('Joining betting game');
@@ -177,7 +258,6 @@ class MultiplayerManager {
                 }
             }
     
-            // Handle non-betting game join
             const { data: updateData, error: updateError } = await this.supabase
                 .from('chess_games')
                 .update({
@@ -189,18 +269,15 @@ class MultiplayerManager {
                 .select()
                 .single();
     
-            if (updateError) {
-                console.error('Game update error:', updateError);
-                throw new Error('Failed to join game');
-            }
+            if (updateError) throw new Error('Failed to join game');
     
             console.log('Successfully joined game:', updateData);
     
             this.gameId = game.game_id;
             this.playerColor = 'red';
             this.currentGameState = updateData;
-            this.subscribeToGame();
-            this.showGame('red');
+            await this.subscribeToGame();
+            await this.showGame('red');
     
         } catch (error) {
             console.error('Join game error:', error);
@@ -226,47 +303,23 @@ class MultiplayerManager {
             window.resetGame();
             window.isMultiplayerMode = true;
             window.playerColor = color;
-        
-            // Set current player from game state if available
             window.currentPlayer = this.currentGameState?.current_player || 'blue';
         
-            // Load board state from database
+            // Load and display board state
             if (this.currentGameState?.board?.positions) {
                 window.board = JSON.parse(JSON.stringify(this.currentGameState.board.positions));
                 console.log('Loaded board state:', window.board);
-                window.placePieces();
             }
+
+            window.placePieces();
+            this.updateBoardInteractivity();
             
-            // Set board interactivity based on whose turn it is
-            const chessboard = document.getElementById('chessboard');
-            if (chessboard) {
-                const isMyTurn = window.currentPlayer === color;
-                chessboard.style.pointerEvents = isMyTurn ? 'auto' : 'none';
-                
-                // Update click handlers after pieces are placed
-                const pieces = chessboard.getElementsByClassName('piece');
-                Array.from(pieces).forEach(piece => {
-                    const row = parseInt(piece.getAttribute('data-row'));
-                    const col = parseInt(piece.getAttribute('data-col'));
-                    const pieceType = window.board[row][col];
-                    if (pieceType) {
-                        const pieceColor = window.getPieceColor(pieceType);
-                        if (pieceColor === color) {
-                            piece.style.cursor = 'pointer';
-                            piece.onclick = window.onPieceClick;
-                        }
-                    }
-                });
-            }
-        
-            // Update status display based on turn
-            window.updateStatusDisplay(window.currentPlayer === color ? "Your turn" : "Opponent's turn");
+            window.updateStatusDisplay(this.isMyTurn() ? "Your turn" : "Opponent's turn");
             
             console.log('Game setup complete:', {
                 playerColor: color,
                 currentPlayer: window.currentPlayer,
-                board: window.board,
-                pieceState: window.pieceState
+                board: window.board
             });
         
         } catch (error) {
@@ -280,7 +333,27 @@ class MultiplayerManager {
         }
     }
 
-    subscribeToGame() {
+    updateBoardInteractivity() {
+        const chessboard = document.getElementById('chessboard');
+        if (!chessboard) return;
+
+        const isMyTurn = this.isMyTurn();
+        chessboard.style.pointerEvents = isMyTurn ? 'auto' : 'none';
+        
+        // Update piece cursors
+        const pieces = chessboard.getElementsByClassName('piece');
+        Array.from(pieces).forEach(piece => {
+            const row = parseInt(piece.getAttribute('data-row'));
+            const col = parseInt(piece.getAttribute('data-col'));
+            const pieceType = window.board[row][col];
+            if (pieceType) {
+                const pieceColor = window.getPieceColor(pieceType);
+                piece.style.cursor = (isMyTurn && pieceColor === this.playerColor) ? 'pointer' : 'default';
+            }
+        });
+    }
+
+    async subscribeToGame() {
         if (this.subscription) {
             this.subscription.unsubscribe();
         }
@@ -309,86 +382,26 @@ class MultiplayerManager {
             console.log('Processing game update:', game);
             this.currentGameState = game;
     
-            if (game.board && game.board.positions) {
+            if (game.board?.positions) {
                 window.board = JSON.parse(JSON.stringify(game.board.positions));
-                
-                if (game.board.pieceState) {
-                    window.pieceState = window.pieceState || {};
-                    Object.assign(window.pieceState, game.board.pieceState);
-                }
-                
-                if (typeof window.placePieces === 'function') {
-                    window.placePieces();
-                } else {
-                    console.error('placePieces function not found');
-                }
+                window.placePieces();
             }
     
             if (game.current_player) {
                 window.currentPlayer = game.current_player;
-                const isMyTurn = game.current_player === this.playerColor;
-                
-                const chessboard = document.getElementById('chessboard');
-                if (chessboard) {
-                    chessboard.style.pointerEvents = isMyTurn ? 'auto' : 'none';
-                    console.log('Updating board interactivity:', {
-                        isMyTurn,
-                        currentPlayer: game.current_player,
-                        playerColor: this.playerColor,
-                        pointerEvents: isMyTurn ? 'auto' : 'none'
-                    });
-                }
+                this.updateBoardInteractivity();
                 
                 if (game.game_state !== 'ended') {
-                    window.updateStatusDisplay(isMyTurn ? "Your turn" : "Opponent's turn");
+                    window.updateStatusDisplay(this.isMyTurn() ? "Your turn" : "Opponent's turn");
                 }
             }
     
             if (game.game_state === 'ended') {
-                // Determine winner and game result
-                let gameResult;
-                let displayMessage;
-    
-                if (game.winner === 'draw') {
-                    gameResult = 'draw';
-                    displayMessage = 'Game Over - Draw!';
-                } else {
-                    gameResult = game.winner === this.playerColor ? 'win' : 'loss';
-                    displayMessage = `Game Over - ${game.winner.charAt(0).toUpperCase() + game.winner.slice(1)} wins!`;
-                }
-    
-                // Update display
-                window.updateStatusDisplay(displayMessage);
-    
-                // Update game result
-                if (window.updateGameResult) {
-                    window.updateGameResult(gameResult);
-                }
-    
-                // Process betting payouts only for non-draw games
-                if (window.chessBetting && game.bet_amount > 0 && gameResult !== 'draw') {
-                    try {
-                        await window.chessBetting.processWinner(game.winner);
-                    } catch (error) {
-                        console.error('Error processing winner payout:', error);
-                    }
-                }
-    
-                // Update leaderboard
-                if (window.leaderboardManager) {
-                    await window.leaderboardManager.loadLeaderboard();
-                }
-    
-                // Disable board interaction
-                const chessboard = document.getElementById('chessboard');
-                if (chessboard) {
-                    chessboard.style.pointerEvents = 'none';
-                }
+                await this.handleGameEnd(game);
             }
     
         } catch (error) {
             console.error('Update error:', error);
-            // Log detailed error info
             console.error('Error context:', {
                 gameState: game?.game_state,
                 winner: game?.winner,
@@ -398,30 +411,66 @@ class MultiplayerManager {
         }
     }
 
+    async handleGameEnd(game) {
+        try {
+            let gameResult;
+            let displayMessage;
+
+            if (game.winner === 'draw') {
+                gameResult = 'draw';
+                displayMessage = 'Game Over - Draw!';
+            } else {
+                gameResult = game.winner === this.playerColor ? 'win' : 'loss';
+                displayMessage = `Game Over - ${game.winner.charAt(0).toUpperCase() + game.winner.slice(1)} wins!`;
+            }
+
+            window.updateStatusDisplay(displayMessage);
+
+            if (window.updateGameResult) {
+                window.updateGameResult(gameResult);
+            }
+
+            if (window.chessBetting && game.bet_amount > 0 && gameResult !== 'draw') {
+                try {
+                    await window.chessBetting.processWinner(game.winner);
+                } catch (error) {
+                    console.error('Error processing winner payout:', error);
+                }
+            }
+
+            if (window.leaderboardManager) {
+                await window.leaderboardManager.loadLeaderboard();
+            }
+
+            const chessboard = document.getElementById('chessboard');
+            if (chessboard) {
+                chessboard.style.pointerEvents = 'none';
+            }
+        } catch (error) {
+            console.error('Error handling game end:', error);
+        }
+    }
+
     async makeMove(startRow, startCol, endRow, endCol, promotion = null) {
-        if (!this.gameId) return false;
+        if (!this.gameId || this.isProcessingMove || !this.isMyTurn()) return false;
 
         try {
-            console.log('Attempting move:', {
+            this.isProcessingMove = true;
+            
+            console.log('Processing move:', {
                 startRow, 
                 startCol, 
                 endRow, 
                 endCol,
+                promotion,
                 playerColor: this.playerColor,
-                currentPlayer: this.currentGameState?.current_player
+                currentPlayer: window.currentPlayer
             });
-
-            // Verify it's player's turn
-            if (this.currentGameState?.current_player !== this.playerColor) {
-                console.log('Not player\'s turn');
-                return false;
-            }
 
             const newBoard = JSON.parse(JSON.stringify(window.board));
             newBoard[endRow][endCol] = promotion || newBoard[startRow][startCol];
             newBoard[startRow][startCol] = null;
 
-            // Check for game ending conditions
             window.board = newBoard;
             const nextPlayer = this.playerColor === 'blue' ? 'red' : 'blue';
             let gameEndState = null;
@@ -438,20 +487,18 @@ class MultiplayerManager {
                 };
             }
 
-            const boardState = {
-                positions: newBoard,
-                pieceState: window.pieceState
-            };
-
             const updateData = {
-                board: boardState,
+                board: {
+                    positions: newBoard,
+                    pieceState: window.pieceState || {}
+                },
                 current_player: nextPlayer,
                 last_move: {
                     startRow,
                     startCol,
                     endRow,
                     endCol,
-                    piece: window.board[startRow][startCol],
+                    piece: newBoard[endRow][endCol],
                     promotion
                 },
                 updated_at: new Date().toISOString()
@@ -464,19 +511,22 @@ class MultiplayerManager {
             const { error } = await this.supabase
                 .from('chess_games')
                 .update(updateData)
-                .eq('game_id', this.gameId)
-                .select();
+                .eq('game_id', this.gameId);
 
             if (error) throw error;
 
+            // Update local state after successful database update
             window.board = newBoard;
             window.placePieces();
+            window.updateStatusDisplay("Opponent's turn");
 
             return true;
 
         } catch (error) {
             console.error('Move error:', error);
             return false;
+        } finally {
+            this.isProcessingMove = false;
         }
     }
 
@@ -512,6 +562,7 @@ class MultiplayerManager {
         this.gameId = null;
         this.playerColor = null;
         this.currentGameState = null;
+        this.selectedPiece = null;
         
         const menuEl = document.querySelector('.multiplayer-menu');
         const gameEl = document.getElementById('chess-game');
