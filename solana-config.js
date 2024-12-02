@@ -12,8 +12,7 @@ window.SOLANA_CONFIG = {
             'Content-Type': 'application/json'
         }
     },
-    
-    // For transfer instructions
+
     TOKEN_INSTRUCTIONS: {
         TRANSFER: 3,
         CLOSE_ACCOUNT: 9
@@ -34,7 +33,7 @@ window.SOLANA_CONFIG = {
                 { pubkey: owner, isSigner: true, isWritable: false }
             ],
             programId: window.SplToken.TOKEN_PROGRAM_ID,
-            data: this.getInstructionData(this.TOKEN_INSTRUCTIONS.TRANSFER, amount)
+            data: Buffer.from([3, ...new solanaWeb3.BN(amount.toString()).toArray('le', 8)])
         });
     },
 
@@ -53,7 +52,6 @@ window.SOLANA_CONFIG = {
         });
     },
 
-    // PDA helpers
     async findEscrowPDAWithBump(gameId) {
         try {
             const [pda, bump] = await solanaWeb3.PublicKey.findProgramAddress(
@@ -107,28 +105,33 @@ window.SOLANA_CONFIG = {
 
     async signAndSendTransaction(connection, transaction, wallet, signers = []) {
         try {
-            transaction.recentBlockhash = (
-                await connection.getLatestBlockhash('confirmed')
-            ).blockhash;
-
+            // Get fresh blockhash
+            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+            transaction.recentBlockhash = blockhash;
             transaction.feePayer = wallet.publicKey;
 
             if (signers.length > 0) {
                 transaction.partialSign(...signers);
             }
 
+            // Sign with wallet
             const signed = await wallet.signTransaction(transaction);
-            const signature = await connection.sendRawTransaction(
-                signed.serialize(),
-                {
-                    skipPreflight: false,
-                    maxRetries: 5,
-                    preflightCommitment: 'confirmed'
-                }
-            );
 
-            const confirmation = await connection.confirmTransaction(signature, 'confirmed');
-            if (confirmation?.value?.err) {
+            // Send and confirm
+            const signature = await connection.sendRawTransaction(signed.serialize(), {
+                skipPreflight: false,
+                preflightCommitment: 'confirmed',
+                maxRetries: 3
+            });
+
+            // Wait for confirmation
+            const confirmation = await connection.confirmTransaction({
+                signature,
+                blockhash,
+                lastValidBlockHeight
+            }, 'confirmed');
+
+            if (confirmation.value.err) {
                 throw new Error(`Transaction failed: ${confirmation.value.err}`);
             }
 

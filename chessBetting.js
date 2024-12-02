@@ -47,6 +47,19 @@ class ChessBetting {
         this.initRetryCount = 0;
     }
 
+    async findEscrowPDAWithBump(gameId) {
+        try {
+            const [pda, bump] = await solanaWeb3.PublicKey.findProgramAddress(
+                [Buffer.from(gameId)],
+                this.tokenProgram
+            );
+            return { pda, bump };
+        } catch (error) {
+            console.error('Error finding escrow PDA with bump:', error);
+            throw error;
+        }
+    }
+
     async cleanupOldGames() {
         try {
             const wallet = this.getConnectedWallet();
@@ -1060,7 +1073,7 @@ class ChessBetting {
         }
     }
 
-    handleBetUpdate(payload) {
+    async handleBetUpdate(payload) {
         try {
             const bet = payload.new;
             console.log('Received bet update:', bet);
@@ -1086,24 +1099,25 @@ class ChessBetting {
                     // Initialize game for blue player (creator)
                     if (window.multiplayerManager) {
                         const mm = window.multiplayerManager;
+                        
+                        // Get game state before showing game
+                        const { data: gameState } = await this.supabase
+                            .from('chess_games')
+                            .select('*')
+                            .eq('game_id', bet.game_id)
+                            .single();
+                            
                         console.log('Setting up multiplayer game for player 1:', {
                             gameId: bet.game_id,
                             playerColor: 'blue'
                         });
                         
-                        // Set game properties
                         mm.gameId = bet.game_id;
                         mm.playerColor = 'blue';
-                        
-                        // Subscribe to updates
-                        console.log('Subscribing to game updates for player 1');
-                        mm.subscribeToGame();
-                        
-                        // Show game board
-                        console.log('Showing game board for player 1');
+                        mm.currentGameState = gameState;
+                        await mm.subscribeToGame();
                         mm.showGame('blue');
                         
-                        // Verify game state
                         console.log('Checking game initialization:', {
                             gameId: mm.gameId,
                             playerColor: mm.playerColor,
@@ -1158,10 +1172,7 @@ class ChessBetting {
             }
     
             // Get the escrow PDA and bump
-            const [escrowPDA, escrowBump] = await solanaWeb3.PublicKey.findProgramAddress(
-                [Buffer.from(this.currentBet.gameId)],
-                this.tokenProgram
-            );
+            const { pda: escrowPDA, bump: escrowBump } = await this.config.findEscrowPDAWithBump(this.currentBet.gameId);
     
             const escrowATA = await this.config.findAssociatedTokenAddress(
                 escrowPDA,
@@ -1227,40 +1238,65 @@ class ChessBetting {
                 winnerATA: winnerATA.toString(),
                 houseATA: houseATA.toString(),
                 winnerAmount: winnerAmount.toString(),
-                houseFee: houseFee.toString()
+                houseFee: houseFee.toString(),
+                escrowBump
             });
     
             // Create new transaction
             const transaction = new solanaWeb3.Transaction();
     
-            // Add winner payout instruction
-            const winnerPayoutIx = window.SplToken.createTransferInstruction(
-                escrowATA,           // Source
-                winnerATA,          // Destination
-                wallet.publicKey,    // Authority (game creator)
-                BigInt(winnerAmount.toString())
-            );
+            // Add winner payout instruction with PDA as authority
+            const winnerPayoutIx = new solanaWeb3.TransactionInstruction({
+                keys: [
+                    { pubkey: escrowATA, isSigner: false, isWritable: true },
+                    { pubkey: winnerATA, isSigner: false, isWritable: true },
+                    { pubkey: escrowPDA, isSigner: true, isWritable: false }
+                ],
+                programId: this.tokenProgram,
+                data: Buffer.from([
+                    3,  // Transfer instruction
+                    ...new solanaWeb3.BN(winnerAmount.toString()).toArray('le', 8)
+                ])
+            });
             transaction.add(winnerPayoutIx);
     
-            // Add house fee instruction
-            const houseFeeIx = window.SplToken.createTransferInstruction(
-                escrowATA,           // Source
-                houseATA,           // Destination
-                wallet.publicKey,    // Authority (game creator)
-                BigInt(houseFee.toString())
-            );
+            // Add house fee instruction with PDA as authority
+            const houseFeeIx = new solanaWeb3.TransactionInstruction({
+                keys: [
+                    { pubkey: escrowATA, isSigner: false, isWritable: true },
+                    { pubkey: houseATA, isSigner: false, isWritable: true },
+                    { pubkey: escrowPDA, isSigner: true, isWritable: false }
+                ],
+                programId: this.tokenProgram,
+                data: Buffer.from([
+                    3,  // Transfer instruction
+                    ...new solanaWeb3.BN(houseFee.toString()).toArray('le', 8)
+                ])
+            });
             transaction.add(houseFeeIx);
     
             // Get latest blockhash
-            const { blockhash } = await this.connection.getLatestBlockhash('confirmed');
+            const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash('confirmed');
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = wallet.publicKey;
+            
+            // Sign with PDA using correct seeds
+            transaction.partialSign({
+                publicKey: escrowPDA,
+                secretKey: null,
+                sign: () => {},
+                seeds: [
+                    Buffer.from(this.currentBet.gameId),
+                    Buffer.from([escrowBump])
+                ]
+            });
     
-            // Send and confirm transaction
+            // Sign with wallet
+            const signed = await wallet.signTransaction(transaction);
+    
             console.log('Sending payout transaction...');
-            const signature = await this.connection.sendTransaction(
-                transaction,
-                [wallet],
+            const signature = await this.connection.sendRawTransaction(
+                signed.serialize(),
                 {
                     skipPreflight: false,
                     preflightCommitment: 'confirmed',
@@ -1268,12 +1304,15 @@ class ChessBetting {
                 }
             );
     
-            console.log('Awaiting confirmation for:', signature);
-            await this.connection.confirmTransaction(signature, 'confirmed');
+            await this.connection.confirmTransaction({
+                signature,
+                blockhash,
+                lastValidBlockHeight
+            }, 'confirmed');
     
             console.log('Payout transaction confirmed:', signature);
     
-            // Update database records only after successful blockchain transaction
+            // Update database records
             await Promise.all([
                 this.supabase
                     .from('chess_games')
@@ -1298,26 +1337,6 @@ class ChessBetting {
     
         } catch (error) {
             console.error('Payout transaction failed:', error);
-            
-            // Update database to reflect failure
-            await Promise.all([
-                this.supabase
-                    .from('chess_games')
-                    .update({
-                        game_state: 'payout_failed',
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('game_id', this.currentBet.gameId),
-    
-                this.supabase
-                    .from('chess_bets')
-                    .update({
-                        status: 'payout_failed',
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', this.currentBet.betId)
-            ]);
-    
             throw error;
         }
     }

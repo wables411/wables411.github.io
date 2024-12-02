@@ -1,27 +1,3 @@
-// First define the Supabase check
-window.SUPABASE_CHECK = {
-    async testConnection() {
-        try {
-            const { data, error } = await window.gameDatabase
-                .from('chess_games')
-                .select('id')
-                .limit(1);
-
-            if (error) {
-                console.error('Supabase connection test failed:', error);
-                return false;
-            }
-
-            console.log('Supabase connection test successful:', data);
-            return true;
-        } catch (err) {
-            console.error('Supabase test error:', err);
-            return false;
-        }
-    }
-};
-
-// Then define the betting config
 window.BETTING_CONFIG = {
     // Token config
     LAWB_TOKEN: {
@@ -57,13 +33,15 @@ window.BETTING_CONFIG = {
             const mint = typeof tokenMintAddress === 'string' ? 
                 new solanaWeb3.PublicKey(tokenMintAddress) : tokenMintAddress;
 
-            return window.SplToken.getAssociatedTokenAddress(
-                mint,
-                wallet,
-                false,
-                this.TOKEN_PROGRAM_ID,
+            const [address] = await solanaWeb3.PublicKey.findProgramAddress(
+                [
+                    wallet.toBuffer(),
+                    this.TOKEN_PROGRAM_ID.toBuffer(),
+                    mint.toBuffer()
+                ],
                 this.ASSOCIATED_TOKEN_PROGRAM_ID
             );
+            return address;
         } catch (error) {
             console.error('Error finding associated token address:', error);
             throw error;
@@ -83,43 +61,50 @@ window.BETTING_CONFIG = {
         }
     },
 
-    createTokenTransferInstruction(source, destination, authority, amount) {
+    createTransferInstruction(source, destination, authority, amount) {
         try {
-            return window.SplToken.createTransferInstruction(
-                source,
-                destination,
-                authority,
-                amount,
-                [],
-                this.TOKEN_PROGRAM_ID
-            );
+            return new solanaWeb3.TransactionInstruction({
+                keys: [
+                    { pubkey: source, isSigner: false, isWritable: true },
+                    { pubkey: destination, isSigner: false, isWritable: true },
+                    { pubkey: authority, isSigner: true, isWritable: false }
+                ],
+                programId: this.TOKEN_PROGRAM_ID,
+                data: Buffer.from([3, ...new solanaWeb3.BN(amount.toString()).toArray('le', 8)])
+            });
         } catch (error) {
-            console.error('Error creating token transfer instruction:', error);
+            console.error('Error creating transfer instruction:', error);
             throw error;
         }
     },
 
+    createAssociatedTokenAccountInstruction(payer, associatedToken, owner, mint) {
+        return new solanaWeb3.TransactionInstruction({
+            keys: [
+                { pubkey: payer, isSigner: true, isWritable: true },
+                { pubkey: associatedToken, isSigner: false, isWritable: true },
+                { pubkey: owner, isSigner: false, isWritable: false },
+                { pubkey: mint, isSigner: false, isWritable: false },
+                { pubkey: this.SYSTEM_PROGRAM_ID, isSigner: false, isWritable: false },
+                { pubkey: this.TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+                { pubkey: solanaWeb3.SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false }
+            ],
+            programId: this.ASSOCIATED_TOKEN_PROGRAM_ID,
+            data: Buffer.from([])
+        });
+    },
+
     validateBetAmount(amount) {
-        try {
-            console.log('Validating bet amount:', {
-                input: amount,
-                nativeAmount: this.LAWB_TOKEN.convertToNative(amount).toString(),
-                min: this.MIN_BET,
-                max: this.MAX_BET
-            });
-            
-            if (!amount || isNaN(amount)) return false;
-            if (amount < this.MIN_BET) return false;
-            if (amount > this.MAX_BET) return false;
-            
-            // Verify we can convert to native amount without issues
-            const nativeAmount = this.LAWB_TOKEN.convertToNative(amount);
-            if (!nativeAmount || nativeAmount <= BigInt(0)) return false;
-            
-            return true;
-        } catch (error) {
-            console.error('Error validating bet amount:', error);
-            return false;
-        }
+        console.log('Validating bet amount:', {
+            input: amount,
+            nativeAmount: this.LAWB_TOKEN.convertToNative(amount).toString(),
+            min: this.MIN_BET,
+            max: this.MAX_BET
+        });
+        
+        if (!amount || isNaN(amount)) return false;
+        if (amount < this.MIN_BET) return false;
+        if (amount > this.MAX_BET) return false;
+        return true;
     }
 };
