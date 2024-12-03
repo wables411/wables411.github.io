@@ -13,19 +13,16 @@ class MultiplayerManager {
     }
 
     initializeEventListeners() {
-        // Create game with bet
         const createGameWithBetBtn = document.getElementById('create-game-with-bet');
         if (createGameWithBetBtn) {
             createGameWithBetBtn.onclick = () => this.createGameWithBet();
         }
 
-        // Create game without bet
         const createGameNoBetBtn = document.getElementById('create-game-no-bet');
         if (createGameNoBetBtn) {
             createGameNoBetBtn.onclick = () => this.createGame();
         }
 
-        // Join game
         const joinGameBtn = document.getElementById('join-game');
         if (joinGameBtn) {
             joinGameBtn.onclick = () => {
@@ -44,7 +41,6 @@ class MultiplayerManager {
             };
         }
 
-        // Set up global click handlers for the chessboard
         const chessboard = document.getElementById('chessboard');
         if (chessboard) {
             chessboard.addEventListener('click', (e) => this.handleBoardClick(e));
@@ -75,18 +71,23 @@ class MultiplayerManager {
         const pieceColor = window.getPieceColor(piece);
         if (pieceColor !== this.playerColor) return;
 
-        // Clear existing highlights
-        window.clearHighlights();
+        window.removeHighlights();
 
-        // If clicking the same piece, deselect it
         if (this.selectedPiece && this.selectedPiece.row === row && this.selectedPiece.col === col) {
             this.selectedPiece = null;
             return;
         }
 
-        // Select the new piece and show valid moves
         this.selectedPiece = { row, col };
-        window.showValidMoves(row, col);
+        if (typeof window.getValidMoves === 'function' && typeof window.highlightSquare === 'function') {
+            const validMoves = window.getValidMoves(row, col);
+            if (validMoves) {
+                validMoves.forEach(move => {
+                    const isCapture = !!window.board[move.row][move.col];
+                    window.highlightSquare(move.row, move.col, isCapture);
+                });
+            }
+        }
     }
 
     async handleSquareClick(row, col) {
@@ -96,24 +97,22 @@ class MultiplayerManager {
         const startCol = this.selectedPiece.col;
         const piece = window.board[startRow][startCol];
 
-        // Check if it's a pawn promotion
-        const isPromotion = this.isPawnPromotion(piece, row);
-        let promotionPiece = null;
-
-        if (isPromotion) {
-            promotionPiece = await this.handlePawnPromotion();
-            if (!promotionPiece) return; // User cancelled promotion
+        if (this.isPawnPromotion(piece, row)) {
+            const promotionPiece = await this.handlePawnPromotion();
+            if (!promotionPiece) return;
+            await this.makeMove(startRow, startCol, row, col, promotionPiece);
+        } else {
+            await this.makeMove(startRow, startCol, row, col);
         }
 
-        await this.makeMove(startRow, startCol, row, col, promotionPiece);
         this.selectedPiece = null;
-        window.clearHighlights();
+        window.removeHighlights();
     }
 
     isPawnPromotion(piece, targetRow) {
         return (piece.toLowerCase() === 'p' && 
-                ((this.playerColor === 'white' && targetRow === 0) || 
-                 (this.playerColor === 'black' && targetRow === 7)));
+                ((this.playerColor === 'blue' && targetRow === 0) || 
+                 (this.playerColor === 'red' && targetRow === 7)));
     }
 
     handlePawnPromotion() {
@@ -159,7 +158,6 @@ class MultiplayerManager {
             const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
             console.log('Creating new game:', gameId);
 
-            // Create initial game state
             const boardState = {
                 positions: JSON.parse(JSON.stringify(window.initialBoard)),
                 pieceState: window.pieceState || {}
@@ -186,7 +184,6 @@ class MultiplayerManager {
             await this.subscribeToGame();
             await this.showGame('blue');
 
-            // Show game code
             const gameCodeDisplay = document.getElementById('gameCodeDisplay');
             const gameCode = document.getElementById('gameCode');
             if (gameCodeDisplay && gameCode) {
@@ -257,7 +254,7 @@ class MultiplayerManager {
                     return;
                 }
             }
-    
+
             const { data: updateData, error: updateError } = await this.supabase
                 .from('chess_games')
                 .update({
@@ -299,13 +296,11 @@ class MultiplayerManager {
             if (menuEl) menuEl.style.display = 'none';
             if (gameEl) gameEl.style.display = 'block';
             
-            // Initialize game state
             window.resetGame();
             window.isMultiplayerMode = true;
             window.playerColor = color;
             window.currentPlayer = this.currentGameState?.current_player || 'blue';
         
-            // Load and display board state
             if (this.currentGameState?.board?.positions) {
                 window.board = JSON.parse(JSON.stringify(this.currentGameState.board.positions));
                 console.log('Loaded board state:', window.board);
@@ -340,7 +335,6 @@ class MultiplayerManager {
         const isMyTurn = this.isMyTurn();
         chessboard.style.pointerEvents = isMyTurn ? 'auto' : 'none';
         
-        // Update piece cursors
         const pieces = chessboard.getElementsByClassName('piece');
         Array.from(pieces).forEach(piece => {
             const row = parseInt(piece.getAttribute('data-row'));
@@ -475,12 +469,12 @@ class MultiplayerManager {
             const nextPlayer = this.playerColor === 'blue' ? 'red' : 'blue';
             let gameEndState = null;
 
-            if (window.isCheckmate(nextPlayer)) {
+            if (window.isCheckmate && window.isCheckmate(nextPlayer)) {
                 gameEndState = {
                     game_state: 'ended',
                     winner: this.playerColor
                 };
-            } else if (window.isStalemate(nextPlayer)) {
+            } else if (window.isStalemate && window.isStalemate(nextPlayer)) {
                 gameEndState = {
                     game_state: 'ended',
                     winner: 'draw'
@@ -515,7 +509,6 @@ class MultiplayerManager {
 
             if (error) throw error;
 
-            // Update local state after successful database update
             window.board = newBoard;
             window.placePieces();
             window.updateStatusDisplay("Opponent's turn");

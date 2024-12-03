@@ -1055,6 +1055,9 @@ function removeHighlights() {
     highlights.forEach(highlight => highlight.remove());
 }
 
+window.removeHighlights = removeHighlights;
+window.clearHighlights = removeHighlights; 
+
 function onSquareClick(row, col) {
     try {
         // Check game mode restrictions
