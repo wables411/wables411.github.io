@@ -1,13 +1,41 @@
+// First define the Supabase check
+window.SUPABASE_CHECK = {
+    async testConnection() {
+        try {
+            const { data, error } = await window.gameDatabase
+                .from('chess_games')
+                .select('id')
+                .limit(1);
+
+            if (error) {
+                console.error('Supabase connection test failed:', error);
+                return false;
+            }
+
+            console.log('Supabase connection test successful:', data);
+            return true;
+        } catch (err) {
+            console.error('Supabase test error:', err);
+            return false;
+        }
+    }
+};
+
+// Then define the betting config
 window.BETTING_CONFIG = {
     // Token config
     LAWB_TOKEN: {
         MINT: new solanaWeb3.PublicKey('65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6'),
         DECIMALS: 9,
         convertToNative: function(uiAmount) {
-            return BigInt(Math.round(uiAmount * Math.pow(10, this.DECIMALS)));
+            // Fix: Don't multiply by Math.pow(10, this.DECIMALS)
+            // Just return the UI amount directly as BigInt
+            return BigInt(uiAmount);
         },
         convertToUi: function(nativeAmount) {
-            return Number(nativeAmount) / Math.pow(10, this.DECIMALS);
+            // Fix: Don't divide by Math.pow(10, this.DECIMALS)
+            // Just return the native amount as a Number
+            return Number(nativeAmount);
         }
     },
 
@@ -24,35 +52,50 @@ window.BETTING_CONFIG = {
     ASSOCIATED_TOKEN_PROGRAM_ID: window.SplToken.ASSOCIATED_TOKEN_PROGRAM_ID,
     SYSTEM_PROGRAM_ID: solanaWeb3.SystemProgram.programId,
 
-    // Helper functions
-    async findAssociatedTokenAddress(walletAddress, tokenMintAddress) {
-        try {
-            const wallet = typeof walletAddress === 'string' ? 
-                new solanaWeb3.PublicKey(walletAddress) : walletAddress;
-            
-            const mint = typeof tokenMintAddress === 'string' ? 
-                new solanaWeb3.PublicKey(tokenMintAddress) : tokenMintAddress;
+    TOKEN_INSTRUCTIONS: {
+        TRANSFER: 3,
+        CLOSE_ACCOUNT: 9
+    },
 
-            const [address] = await solanaWeb3.PublicKey.findProgramAddress(
-                [
-                    wallet.toBuffer(),
-                    this.TOKEN_PROGRAM_ID.toBuffer(),
-                    mint.toBuffer()
-                ],
-                this.ASSOCIATED_TOKEN_PROGRAM_ID
-            );
-            return address;
-        } catch (error) {
-            console.error('Error finding associated token address:', error);
-            throw error;
-        }
+    getInstructionData(type, amount) {
+        const data = Buffer.alloc(9);
+        data.writeUInt8(type, 0);
+        data.writeBigUInt64LE(BigInt(amount.toString()), 1);
+        return data;
+    },
+
+    createTransferInstruction(source, destination, owner, amount) {
+        return new solanaWeb3.TransactionInstruction({
+            keys: [
+                { pubkey: source, isSigner: false, isWritable: true },
+                { pubkey: destination, isSigner: false, isWritable: true },
+                { pubkey: owner, isSigner: true, isWritable: false }
+            ],
+            programId: window.SplToken.TOKEN_PROGRAM_ID,
+            data: Buffer.from([3, ...new solanaWeb3.BN(amount.toString()).toArray('le', 8)])
+        });
+    },
+
+    createTokenTransferInstruction(source, destination, authority, amount) {
+        return new solanaWeb3.TransactionInstruction({
+            programId: window.SplToken.TOKEN_PROGRAM_ID,
+            keys: [
+                { pubkey: source, isSigner: false, isWritable: true },
+                { pubkey: destination, isSigner: false, isWritable: true },
+                { pubkey: authority, isSigner: true, isWritable: false }
+            ],
+            data: Buffer.from([
+                this.TOKEN_INSTRUCTIONS.TRANSFER,
+                ...new solanaWeb3.BN(amount.toString()).toArray('le', 8)
+            ])
+        });
     },
 
     async findEscrowPDAWithBump(gameId) {
         try {
             const [pda, bump] = await solanaWeb3.PublicKey.findProgramAddress(
                 [Buffer.from(gameId)],
-                this.TOKEN_PROGRAM_ID
+                window.SplToken.TOKEN_PROGRAM_ID
             );
             return { pda, bump };
         } catch (error) {
@@ -61,37 +104,21 @@ window.BETTING_CONFIG = {
         }
     },
 
-    createTransferInstruction(source, destination, authority, amount) {
+    async findAssociatedTokenAddress(walletAddress, tokenMintAddress) {
         try {
-            return new solanaWeb3.TransactionInstruction({
-                keys: [
-                    { pubkey: source, isSigner: false, isWritable: true },
-                    { pubkey: destination, isSigner: false, isWritable: true },
-                    { pubkey: authority, isSigner: true, isWritable: false }
+            const [address] = await solanaWeb3.PublicKey.findProgramAddress(
+                [
+                    walletAddress.toBuffer(),
+                    window.SplToken.TOKEN_PROGRAM_ID.toBuffer(),
+                    tokenMintAddress.toBuffer()
                 ],
-                programId: this.TOKEN_PROGRAM_ID,
-                data: Buffer.from([3, ...new solanaWeb3.BN(amount.toString()).toArray('le', 8)])
-            });
+                window.SplToken.ASSOCIATED_TOKEN_PROGRAM_ID
+            );
+            return address;
         } catch (error) {
-            console.error('Error creating transfer instruction:', error);
+            console.error('Error finding associated token address:', error);
             throw error;
         }
-    },
-
-    createAssociatedTokenAccountInstruction(payer, associatedToken, owner, mint) {
-        return new solanaWeb3.TransactionInstruction({
-            keys: [
-                { pubkey: payer, isSigner: true, isWritable: true },
-                { pubkey: associatedToken, isSigner: false, isWritable: true },
-                { pubkey: owner, isSigner: false, isWritable: false },
-                { pubkey: mint, isSigner: false, isWritable: false },
-                { pubkey: this.SYSTEM_PROGRAM_ID, isSigner: false, isWritable: false },
-                { pubkey: this.TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-                { pubkey: solanaWeb3.SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false }
-            ],
-            programId: this.ASSOCIATED_TOKEN_PROGRAM_ID,
-            data: Buffer.from([])
-        });
     },
 
     validateBetAmount(amount) {
