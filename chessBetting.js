@@ -917,8 +917,12 @@ class ChessBetting {
         try {
             const wallet = this.getConnectedWallet();
             if (!wallet?.publicKey) return;
-
+    
+            // Add debug logs
+            console.log('Account info received:', accountInfo);
             const balance = await this.parseTokenAccountBalance(accountInfo);
+            console.log('Parsed balance:', balance);
+            console.log('Minimum required:', this.config.MIN_BET);
             
             const betInput = document.getElementById('betAmount');
             const createGameBtn = document.getElementById('create-game-with-bet');
@@ -926,6 +930,11 @@ class ChessBetting {
             if (betInput && createGameBtn) {
                 const currentBet = Number(betInput.value);
                 const hasMinimumBalance = balance >= this.config.MIN_BET;
+                
+                // Add more debug logs
+                console.log('Current bet:', currentBet);
+                console.log('Has minimum balance:', hasMinimumBalance);
+                console.log('Balance:', balance);
                 
                 createGameBtn.disabled = !hasMinimumBalance || balance < currentBet;
                 
@@ -937,7 +946,7 @@ class ChessBetting {
                     this.updateBetStatus('', 'info');
                 }
             }
-
+    
             return balance;
         } catch (error) {
             console.error('Error handling balance update:', error);
@@ -946,17 +955,36 @@ class ChessBetting {
     }
 
     parseTokenAccountBalance(accountInfo) {
+        console.log('Parsing balance from:', accountInfo);
+        
+        if (!accountInfo) return 0;
+        
         const data = accountInfo.data || accountInfo;
         if (!data) return 0;
         
         try {
-            const amount = data.parsed ? 
-                data.parsed.info.tokenAmount.uiAmount :
-                data.amount / Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
+            if (data.parsed?.info?.tokenAmount) {
+                console.log('Parsed token amount:', data.parsed.info.tokenAmount);
+                return Number(data.parsed.info.tokenAmount.uiAmount);
+            }
             
-            return Number(amount);
+            if (data.amount) {
+                const amount = data.amount / Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
+                console.log('Raw amount converted:', amount);
+                return Number(amount);
+            }
+            
+            // Try accessing buffer data if available
+            if (data.buffer) {
+                console.log('Buffer data found, attempting to parse');
+                // Add specific buffer parsing logic if needed
+            }
+            
+            console.log('No recognized balance format found');
+            return 0;
         } catch (error) {
             console.error('Error parsing token balance:', error);
+            console.log('Account info structure:', JSON.stringify(accountInfo, null, 2));
             return 0;
         }
     }
