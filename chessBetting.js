@@ -1263,6 +1263,97 @@ class ChessBetting {
             throw error;
         }
     }
+
+    async handleCreateGameWithBet() {
+        try {
+            const betAmount = Number(document.getElementById('betAmount').value);
+            if (!this.validateBetAmount(betAmount)) {
+                return;
+            }
+    
+            const wallet = this.getConnectedWallet();
+            if (!wallet) {
+                throw new Error('No wallet connected');
+            }
+    
+            // Generate a random game ID
+            const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
+            
+            // Create escrow and get its info
+            const escrowSetup = await this.createBetEscrow(gameId, betAmount);
+            
+            // Initial board state
+            const boardState = {
+                positions: JSON.parse(JSON.stringify(window.initialBoard)),
+                pieceState: window.pieceState || {}
+            };
+    
+            // Create game and bet records
+            const [gameResult, betResult] = await Promise.all([
+                this.supabase
+                    .from('chess_games')
+                    .insert({
+                        game_id: gameId,
+                        blue_player: wallet.publicKey.toString(),
+                        board: boardState,
+                        piece_state: window.pieceState || {},
+                        game_state: 'waiting',
+                        current_player: 'blue',
+                        bet_amount: betAmount
+                    })
+                    .select(),
+    
+                this.supabase
+                    .from('chess_bets')
+                    .insert({
+                        game_id: gameId,
+                        blue_player: wallet.publicKey.toString(),
+                        bet_amount: betAmount,
+                        status: 'pending',
+                        escrow_bump: escrowSetup.escrowBump
+                    })
+                    .select()
+            ]);
+    
+            if (gameResult.error) throw gameResult.error;
+            if (betResult.error) throw betResult.error;
+    
+            // Update current bet state
+            this.currentBet = {
+                amount: betAmount,
+                bluePlayer: wallet.publicKey.toString(),
+                gameId: gameId,
+                betId: betResult.data[0].id,
+                isActive: true,
+                escrowAccount: escrowSetup.escrowATA,
+                matched: false,
+                status: 'pending',
+                escrowBump: escrowSetup.escrowBump
+            };
+    
+            // Update UI
+            this.disableBetting();
+            
+            const gameCodeDisplay = document.getElementById('gameCodeDisplay');
+            const gameCode = document.getElementById('gameCode');
+            if (gameCodeDisplay && gameCode) {
+                gameCode.textContent = gameId;
+                gameCodeDisplay.style.display = 'block';
+            }
+    
+            if (window.multiplayerManager) {
+                await window.multiplayerManager.showGame('blue');
+            }
+    
+            this.updateBetStatus('Game created with bet! Share the code to start playing', 'success');
+            return gameId;
+    
+        } catch (error) {
+            console.error('Error creating game with bet:', error);
+            this.updateBetStatus('Failed to create game: ' + error.message, 'error');
+            throw error;
+        }
+    }
     
     async handleBetUpdate(bet) {
         if (!bet || bet.game_id !== this.currentBet.gameId) return;
