@@ -959,32 +959,67 @@ class ChessBetting {
         
         if (!accountInfo) return 0;
         
-        const data = accountInfo.data || accountInfo;
-        if (!data) return 0;
-        
         try {
-            if (data.parsed?.info?.tokenAmount) {
-                console.log('Parsed token amount:', data.parsed.info.tokenAmount);
-                return Number(data.parsed.info.tokenAmount.uiAmount);
+            // Handle case where we get a TokenAccountBalanceResult directly
+            if (accountInfo.value) {
+                const rawAmount = accountInfo.value.amount;
+                const decimals = accountInfo.value.decimals || this.config.LAWB_TOKEN.DECIMALS;
+                const amount = Number(rawAmount) / Math.pow(10, decimals);
+                console.log('Parsed from TokenAccountBalanceResult:', amount);
+                return amount;
             }
-            
-            if (data.amount) {
-                const amount = data.amount / Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
-                console.log('Raw amount converted:', amount);
-                return Number(amount);
+    
+            // Handle parsed account info
+            if (accountInfo.data?.parsed?.info?.tokenAmount) {
+                const parsedAmount = accountInfo.data.parsed.info.tokenAmount;
+                console.log('Using parsed token amount:', parsedAmount);
+                return Number(parsedAmount.uiAmount || 0);
             }
-            
-            // Try accessing buffer data if available
-            if (data.buffer) {
-                console.log('Buffer data found, attempting to parse');
-                // Add specific buffer parsing logic if needed
+    
+            // Handle Buffer account data
+            if (accountInfo.data instanceof Buffer || accountInfo.data instanceof Uint8Array) {
+                console.log('Parsing raw buffer data');
+                const dataBuffer = accountInfo.data;
+                
+                // Token Account Data Layout:
+                // - Mint: Pubkey (32)
+                // - Owner: Pubkey (32)
+                // - Amount: u64 (8)
+                // - Delegate Option: 1
+                // - Delegate: Pubkey? (32)
+                // - State: 1
+                // - Is Native Option: 1
+                // - Is Native: Option<u64> (8)
+                // - Delegated Amount: u64 (8)
+                // - Close Authority Option: 1
+                // - Close Authority: Pubkey? (32)
+                
+                const amountBuffer = dataBuffer.slice(64, 72);
+                const amount = BigInt('0x' + Buffer.from(amountBuffer).toString('hex'));
+                const uiAmount = Number(amount) / Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
+                
+                console.log('Parsed from buffer:', {
+                    rawAmount: amount.toString(),
+                    decimals: this.config.LAWB_TOKEN.DECIMALS,
+                    uiAmount: uiAmount
+                });
+                
+                return uiAmount;
             }
-            
-            console.log('No recognized balance format found');
+    
+            // Handle web3.js parsed account info
+            if (accountInfo.data?.amount) {
+                const amount = Number(accountInfo.data.amount) / Math.pow(10, this.config.LAWB_TOKEN.DECIMALS);
+                console.log('Parsed from web3.js account info:', amount);
+                return amount;
+            }
+    
+            console.log('No recognized balance format found:', accountInfo);
             return 0;
+    
         } catch (error) {
             console.error('Error parsing token balance:', error);
-            console.log('Account info structure:', JSON.stringify(accountInfo, null, 2));
+            console.error('Account info:', accountInfo);
             return 0;
         }
     }
