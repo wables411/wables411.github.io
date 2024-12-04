@@ -1018,6 +1018,239 @@ class ChessBetting {
         }
     }
 
+    async verifySetup() {
+        try {
+            // Verify database connection
+            const dbConnected = await window.SUPABASE_CHECK.testConnection();
+            if (!dbConnected) {
+                throw new Error('Database connection failed');
+            }
+    
+            // Verify wallet connection
+            const wallet = this.getConnectedWallet();
+            if (!wallet) {
+                throw new Error('No wallet connected');
+            }
+    
+            // Verify token account exists
+            const ata = await this.config.findAssociatedTokenAddress(
+                wallet.publicKey,
+                this.lawbMint
+            );
+            const accountInfo = await this.connection.getAccountInfo(ata);
+            if (!accountInfo) {
+                throw new Error('Token account not found');
+            }
+    
+            return true;
+        } catch (error) {
+            console.error('Setup verification failed:', error);
+            throw error;
+        }
+    }
+    
+    async checkForActiveBets() {
+        try {
+            const wallet = this.getConnectedWallet();
+            if (!wallet) return;
+    
+            const { data: activeBets } = await this.supabase
+                .from('chess_bets')
+                .select('*')
+                .or(`blue_player.eq.${wallet.publicKey.toString()},red_player.eq.${wallet.publicKey.toString()})`)
+                .not('status', 'in', '(completed,cancelled)');
+    
+            if (activeBets?.length) {
+                // Found active bet, restore state
+                const activeBet = activeBets[0];
+                this.currentBet = {
+                    amount: activeBet.bet_amount,
+                    bluePlayer: activeBet.blue_player,
+                    redPlayer: activeBet.red_player,
+                    gameId: activeBet.game_id,
+                    betId: activeBet.id,
+                    isActive: true,
+                    matched: activeBet.status === 'matched',
+                    status: activeBet.status,
+                    escrowBump: activeBet.escrow_bump
+                };
+    
+                this.disableBetting();
+                this.updateBetStatus(`Active bet found: ${activeBet.bet_amount} $LAWB`, 'info');
+            }
+        } catch (error) {
+            console.error('Error checking active bets:', error);
+            throw error;
+        }
+    }
+    
+    async initializeBalanceChecking() {
+        try {
+            const wallet = this.getConnectedWallet();
+            if (!wallet) return;
+    
+            const ata = await this.config.findAssociatedTokenAddress(
+                wallet.publicKey,
+                this.lawbMint
+            );
+    
+            // Get initial balance
+            const accountInfo = await this.connection.getAccountInfo(ata);
+            if (accountInfo) {
+                await this.handleBalanceUpdate(accountInfo);
+            }
+    
+            // Subscribe to balance changes
+            this.subscriptions.balance = this.connection.onAccountChange(
+                ata,
+                this.handleBalanceUpdate.bind(this),
+                'confirmed'
+            );
+    
+        } catch (error) {
+            console.error('Error initializing balance checking:', error);
+            throw error;
+        }
+    }
+    
+    async initializeSubscriptions() {
+        try {
+            // Subscribe to bet updates
+            this.subscriptions.betUpdates = this.supabase
+                .channel('betting_updates')
+                .on('postgres_changes', 
+                    { event: '*', schema: 'public', table: 'chess_bets' },
+                    (payload) => {
+                        if (payload.new?.game_id === this.currentBet.gameId) {
+                            // Handle bet updates
+                            this.handleBetUpdate(payload.new);
+                        }
+                    }
+                )
+                .subscribe();
+    
+            // Subscribe to game updates
+            this.subscriptions.gameUpdates = this.supabase
+                .channel('game_updates')
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'chess_games' },
+                    (payload) => {
+                        if (payload.new?.game_id === this.currentBet.gameId) {
+                            // Handle game updates
+                            this.handleGameUpdate(payload.new);
+                        }
+                    }
+                )
+                .subscribe();
+    
+        } catch (error) {
+            console.error('Error initializing subscriptions:', error);
+            throw error;
+        }
+    }
+    
+    initializeUI() {
+        try {
+            // Initialize bet input handling
+            const betInput = document.getElementById('betAmount');
+            if (betInput) {
+                betInput.addEventListener('input', (e) => {
+                    const amount = Number(e.target.value);
+                    if (this.validateBetAmount(amount, false)) {
+                        const fee = Math.floor(amount * this.config.HOUSE_FEE_PERCENTAGE / 100);
+                        const potential = (amount * 2) - (amount * 2 * this.config.HOUSE_FEE_PERCENTAGE / 100);
+                        
+                        document.getElementById('feeAmount').textContent = fee.toFixed(2);
+                        document.getElementById('potentialWin').textContent = potential.toFixed(2);
+                    }
+                });
+            }
+    
+            // Initialize game code copying
+            const gameCode = document.getElementById('gameCode');
+            if (gameCode) {
+                gameCode.addEventListener('click', () => {
+                    navigator.clipboard.writeText(gameCode.textContent)
+                        .then(() => {
+                            const notification = document.getElementById('copyNotification');
+                            if (notification) {
+                                notification.style.display = 'block';
+                                setTimeout(() => notification.style.display = 'none', 2000);
+                            }
+                        });
+                });
+            }
+    
+            // Initialize bet cancellation
+            const cancelGameBetBtn = document.getElementById('cancel-game-bet');
+            if (cancelGameBetBtn) {
+                cancelGameBetBtn.addEventListener('click', async () => {
+                    if (this.currentBet.isActive) {
+                        try {
+                            await this.cancelGameAndRefund(this.currentBet.gameId);
+                        } catch (error) {
+                            console.error('Failed to cancel game:', error);
+                            this.updateBetStatus('Failed to cancel game: ' + error.message, 'error');
+                        }
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error initializing UI:', error);
+            throw error;
+        }
+    }
+    
+    async handleBetUpdate(bet) {
+        if (!bet || bet.game_id !== this.currentBet.gameId) return;
+    
+        try {
+            // Update current bet state
+            this.currentBet.matched = bet.status === 'matched';
+            this.currentBet.status = bet.status;
+            this.currentBet.redPlayer = bet.red_player;
+    
+            // Update UI based on status
+            switch (bet.status) {
+                case 'matched':
+                    this.updateBetStatus('Bet matched! Game starting...', 'success');
+                    break;
+                case 'completed':
+                    this.updateBetStatus('Bet completed', 'success');
+                    this.resetBetState();
+                    break;
+                case 'cancelled':
+                    this.updateBetStatus('Bet cancelled', 'info');
+                    this.resetBetState();
+                    break;
+                default:
+                    this.updateBetStatus(`Bet status: ${bet.status}`, 'info');
+            }
+        } catch (error) {
+            console.error('Error handling bet update:', error);
+        }
+    }
+    
+    async handleGameUpdate(game) {
+        if (!game || game.game_id !== this.currentBet.gameId) return;
+    
+        try {
+            // Handle game state changes
+            switch (game.game_state) {
+                case 'completed':
+                    if (game.winner) {
+                        await this.processWinner(game.winner);
+                    }
+                    break;
+                case 'cancelled':
+                    await this.cancelGameAndRefund(game.game_id);
+                    break;
+            }
+        } catch (error) {
+            console.error('Error handling game update:', error);
+        }
+    }
+
     cleanup() {
         console.log('Cleanup called:', {
             isInitialized: this.initialized,
