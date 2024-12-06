@@ -8,112 +8,6 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="chess.css">
     <style>
-        /* Enhanced Betting Styles */
-        .betting-container {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            border: 1px solid rgba(32, 1, 1, 0.3);
-        }
-
-        .betting-ui {
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        .betting-ui h3 {
-            font-family: Impact, sans-serif;
-            color: #FF0000;
-            text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
-            margin-bottom: 15px;
-        }
-
-        .bet-input {
-            margin: 15px 0;
-        }
-
-        .bet-input label {
-            display: block;
-            margin-bottom: 8px;
-            color: white;
-        }
-
-        .bet-input input {
-            width: 100%;
-            padding: 8px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 0, 0, 0.3);
-            color: white;
-            border-radius: 4px;
-            font-family: monospace;
-        }
-
-        .fee-info, .total-info {
-            font-size: 0.9em;
-            color: #aaa;
-            margin: 5px 0;
-            font-family: monospace;
-        }
-
-        .bet-button {
-            background: linear-gradient(45deg, #FF0000, #CC0000);
-            border: none;
-            padding: 10px 20px;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: Impact, sans-serif;
-            width: 100%;
-            margin: 5px 0;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .bet-button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
-        }
-
-        .bet-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .multiplayer-options {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin: 15px 0;
-        }
-
-        .bet-status {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 4px;
-            text-align: center;
-            font-family: monospace;
-        }
-
-        .bet-status.error {
-            background: rgba(255, 0, 0, 0.2);
-            border: 1px solid rgba(255, 0, 0, 0.3);
-            color: #ff6b6b;
-        }
-
-        .bet-status.success {
-            background: rgba(0, 255, 0, 0.2);
-            border: 1px solid rgba(0, 255, 0, 0.3);
-            color: #32CD32;
-        }
-
-        .bet-status.processing {
-            background: rgba(255, 255, 0, 0.2);
-            border: 1px solid rgba(255, 255, 0, 0.3);
-            color: #ffd700;
-        }
-
         .join-game-container {
             margin: 20px 0;
             display: flex;
@@ -249,6 +143,7 @@
             </div>
             <div id="imageDisplay"></div>
             <div id="imageGallery" class="image-container"></div>
+            
             <!-- Chess Game Section -->
             <div class="section-container game-section">
                 <h2 class="section-title">LAWB CHESS</h2>
@@ -274,7 +169,6 @@
                         </table>
                     </div>
                 </div>
-
                 <!-- Game Mode Selection -->
                 <div class="game-mode-selection">
                     <button id="ai-mode" class="mode-btn selected">single player</button>
@@ -296,40 +190,9 @@
                     <div class="multiplayer-menu" style="display: none;">
                         <h2 class="section-title">PvP</h2>
                         
-                        <!-- Betting Container -->
-                        <div id="betting-container" class="betting-container" style="display: none;">
-                            <div class="betting-ui">
-                                <h3>$LAWB BETTING</h3>
-                                <div class="bet-input">
-                                    <label>Bet Amount ($LAWB):</label>
-                                    <input 
-                                        type="number" 
-                                        id="betAmount" 
-                                        min="100" 
-                                        max="5000000" 
-                                        step="100" 
-                                        value="100"
-                                        placeholder="Enter bet amount"
-                                    >
-                                    <p class="fee-info">House Fee (5%): <span id="feeAmount">5</span> $LAWB</p>
-                                    <p class="total-info">Potential Win: <span id="potentialWin">195</span> $LAWB</p>
-                                </div>
-                                <div class="multiplayer-options">
-                                    <button id="create-game-with-bet" class="bet-button">Create Game with Bet</button>
-                                    <button id="create-game-no-bet" class="multiplayer-btn">Create Game without Bet</button>
-                                </div>
-                                <div id="betStatus" class="bet-status"></div>
-                            </div>
-                            
-                            <!-- Game Code Display -->
-                            <div id="gameCodeDisplay" class="game-code-display">
-                                <h4>Share this code with opponent:</h4>
-                                <div class="game-code" id="gameCode"></div>
-                            </div>
-                        </div>
-
                         <!-- Join Game Container -->
                         <div class="join-game-container">
+                            <button class="multiplayer-btn" id="create-game">Create Game</button>
                             <input 
                                 type="text" 
                                 id="game-code-input" 
@@ -338,6 +201,12 @@
                                 autocomplete="off"
                             >
                             <button class="multiplayer-btn" id="join-game">Join Game</button>
+                        </div>
+
+                        <!-- Game Code Display -->
+                        <div id="gameCodeDisplay" class="game-code-display">
+                            <h4>Share this code with opponent:</h4>
+                            <div class="game-code" id="gameCode"></div>
                         </div>
 
                         <div id="matchmaking-status" style="display: none;">
@@ -364,223 +233,112 @@
         </div>
     </div>
     
-    <!-- Admin Controls -->
-    <div class="admin-controls">
-        <button id="cancel-game-bet" class="admin-btn">⚠️ Cancel Active Bet</button>
-    </div>
-
-    
     <!-- Copy Notification -->
     <div id="copyNotification" class="copy-notification">
         Code copied to clipboard!
     </div>
 
-<!-- Load Dependencies First -->
-<!-- Buffer and BN.js for Solana -->
-<script src="https://bundle.run/buffer@6.0.3"></script>
-<script src="https://cdn.jsdelivr.net/npm/bn.js@5.2.1/lib/bn.js"></script>
-<script>
-    window.Buffer = buffer.Buffer;
-</script>
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-<!-- Solana Core Dependencies -->
-<script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
-<script src="https://unpkg.com/@solana/spl-token@0.3.9/lib/index.iife.min.js"></script>
+    <!-- Initialize Core Systems -->
+    <script>
+        // Initialize Supabase
+        try {
+            if (!window.gameDatabase) {
+                window.gameDatabase = window.supabase.createClient(
+                    'https://roxwocgknkiqnsgiojgz.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
+                );
+            }
+        } catch (error) {
+            console.error('Error initializing Supabase:', error);
+        }
+    </script>
 
-<!-- Initialize SPL Token Program -->
-<script>
-    window.SplToken = {
-        TOKEN_PROGRAM_ID: new solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
-        ASSOCIATED_TOKEN_PROGRAM_ID: new solanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'),
-        getAssociatedTokenAddress: async function(mint, owner, allowOwnerOffCurve = false) {
-            return (await solanaWeb3.PublicKey.findProgramAddress(
-                [
-                    owner.toBuffer(),
-                    this.TOKEN_PROGRAM_ID.toBuffer(),
-                    mint.toBuffer()
-                ],
-                this.ASSOCIATED_TOKEN_PROGRAM_ID
-            ))[0];
-        },
-        createTransferInstruction: function(source, destination, owner, amount) {
-            return new solanaWeb3.TransactionInstruction({
-                keys: [
-                    { pubkey: source, isSigner: false, isWritable: true },
-                    { pubkey: destination, isSigner: false, isWritable: true },
-                    { pubkey: owner, isSigner: true, isWritable: false }
-                ],
-                programId: this.TOKEN_PROGRAM_ID,
-                data: Buffer.from([3, ...new BN(amount).toArray('le', 8)])
-            });
-        },
-        createAssociatedTokenAccountInstruction: function(payer, associatedToken, owner, mint) {
-            return new solanaWeb3.TransactionInstruction({
-                keys: [
-                    { pubkey: payer, isSigner: true, isWritable: true },
-                    { pubkey: associatedToken, isSigner: false, isWritable: true },
-                    { pubkey: owner, isSigner: false, isWritable: false },
-                    { pubkey: mint, isSigner: false, isWritable: false },
-                    { pubkey: solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
-                    { pubkey: this.TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-                    { pubkey: solanaWeb3.SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false }
-                ],
-                programId: this.ASSOCIATED_TOKEN_PROGRAM_ID,
-                data: Buffer.from([])
+    <!-- Load Game Scripts in Order -->
+    <script src="loadImages.js"></script>
+    <script src="leaderboard.js"></script>
+    <script src="multiplayer.js"></script>
+    <script src="chess.js"></script>
+
+    <!-- Initialize Game Systems -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const elements = {
+            aiModeBtn: document.getElementById('ai-mode'),
+            multiplayerModeBtn: document.getElementById('multiplayer-mode'),
+            difficultyScreen: document.getElementById('difficulty-screen'),
+            multiplayerMenu: document.querySelector('.multiplayer-menu'),
+            gameCodeInput: document.getElementById('game-code-input'),
+            gameCodeDisplay: document.getElementById('gameCode'),
+            joinGameBtn: document.getElementById('join-game'),
+            createGameBtn: document.getElementById('create-game'),
+            statusElement: document.getElementById('status')
+        };
+
+        // Initialize mode switching
+        if (elements.multiplayerModeBtn) {
+            elements.multiplayerModeBtn.addEventListener('click', () => {
+                console.log('Activating multiplayer mode');
+                elements.aiModeBtn?.classList.remove('selected');
+                elements.multiplayerModeBtn.classList.add('selected');
+                elements.difficultyScreen.style.display = 'none';
+                elements.multiplayerMenu.style.display = 'block';
             });
         }
-    };
-</script>
 
-<!-- Wallet Adapters -->
-<script src="https://unpkg.com/@solana/wallet-adapter-base@0.9.23/lib/index.iife.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.1.1/lib/index.iife.min.js"></script>
-
-<!-- Supabase -->
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
-<!-- Initialize Core Systems -->
-<script>
-    // Initialize Supabase
-    try {
-        if (!window.gameDatabase) {
-            window.gameDatabase = window.supabase.createClient(
-                'https://roxwocgknkiqnsgiojgz.supabase.co',
-                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
-            );
-        }
-    } catch (error) {
-        console.error('Error initializing Supabase:', error);
-    }
-</script>
-
-<!-- Load Game Scripts in Order -->
-<script src="solana-config.js"></script>
-<script src="betting-init-queue.js"></script>
-<script src="betting-config.js"></script>
-<script src="chessBetting.js"></script>
-<script src="loadImages.js"></script>
-<script src="leaderboard.js"></script>
-<script src="multiplayer.js"></script>
-<script src="chess.js"></script>
-
-<!-- Initialize Game Systems -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const elements = {
-        aiModeBtn: document.getElementById('ai-mode'),
-        multiplayerModeBtn: document.getElementById('multiplayer-mode'),
-        difficultyScreen: document.getElementById('difficulty-screen'),
-        multiplayerMenu: document.querySelector('.multiplayer-menu'),
-        bettingContainer: document.getElementById('betting-container'),
-        betInput: document.getElementById('betAmount'),
-        gameCodeInput: document.getElementById('game-code-input'),
-        gameCodeDisplay: document.getElementById('gameCode'),
-        joinGameBtn: document.getElementById('join-game'),
-        statusElement: document.getElementById('status'),
-        betStatus: document.getElementById('betStatus')
-    };
-
-    // Initialize mode switching
-    if (elements.multiplayerModeBtn) {
-        elements.multiplayerModeBtn.addEventListener('click', () => {
-            console.log('Activating multiplayer mode');
-            elements.aiModeBtn?.classList.remove('selected');
-            elements.multiplayerModeBtn.classList.add('selected');
-            elements.difficultyScreen.style.display = 'none';
-            elements.multiplayerMenu.style.display = 'block';
-            elements.bettingContainer.style.display = 'block';
-        });
-    }
-
-    if (elements.aiModeBtn) {
-        elements.aiModeBtn.addEventListener('click', () => {
-            console.log('Activating AI mode');
-            elements.multiplayerModeBtn?.classList.remove('selected');
-            elements.aiModeBtn.classList.add('selected');
-            elements.difficultyScreen.style.display = 'flex';
-            elements.multiplayerMenu.style.display = 'none';
-            elements.bettingContainer.style.display = 'none';
-        });
-    }
-
-    // Initialize bet calculations
-    if (elements.betInput) {
-        elements.betInput.addEventListener('input', function() {
-            const amount = Number(this.value);
-            const fee = (amount * 0.05);
-            const potentialWin = (amount * 2) - (amount * 2 * 0.05);
-            
-            document.getElementById('feeAmount').textContent = fee.toFixed(2);
-            document.getElementById('potentialWin').textContent = potentialWin.toFixed(2);
-        });
-    }
-
-    // Initialize game code functionality
-    if (elements.gameCodeDisplay) {
-        elements.gameCodeDisplay.addEventListener('click', function() {
-            navigator.clipboard.writeText(this.textContent).then(() => {
-                const notification = document.getElementById('copyNotification');
-                notification.style.display = 'block';
-                setTimeout(() => notification.style.display = 'none', 2000);
+        if (elements.aiModeBtn) {
+            elements.aiModeBtn.addEventListener('click', () => {
+                console.log('Activating AI mode');
+                elements.multiplayerModeBtn?.classList.remove('selected');
+                elements.aiModeBtn.classList.add('selected');
+                elements.difficultyScreen.style.display = 'flex';
+                elements.multiplayerMenu.style.display = 'none';
             });
-        });
-    }
+        }
 
-    if (elements.gameCodeInput) {
-        elements.gameCodeInput.addEventListener('input', function() {
-            this.value = this.value.toUpperCase();
-            if (this.value.length > 6) {
-                this.value = this.value.slice(0, 6);
-            }
-        });
-    }
+        // Initialize game code functionality
+        if (elements.gameCodeDisplay) {
+            elements.gameCodeDisplay.addEventListener('click', function() {
+                navigator.clipboard.writeText(this.textContent).then(() => {
+                    const notification = document.getElementById('copyNotification');
+                    notification.style.display = 'block';
+                    setTimeout(() => notification.style.display = 'none', 2000);
+                });
+            });
+        }
 
-    if (elements.joinGameBtn) {
-        elements.joinGameBtn.addEventListener('click', () => {
-            const gameCode = elements.gameCodeInput?.value?.trim();
-            if (!gameCode) {
-                alert('Please enter a game code');
-                return;
-            }
-            if (window.multiplayerManager) {
-                window.multiplayerManager.joinGameByCode(gameCode);
-            }
-        });
-    }
-
-    // Hide betting UI initially
-    if (elements.bettingContainer) {
-        elements.bettingContainer.style.display = 'none';
-    }
-
-    // Initialize betting system when wallet connects
-    const initInterval = setInterval(async () => {
-        const wallet = window.solflare?.isConnected ? window.solflare : 
-                      window.solana?.isConnected ? window.solana : null;
-                      
-        if (wallet) {
-            clearInterval(initInterval);
-            console.log('Wallet connected:', wallet.publicKey.toString());
-            
-            try {
-                if (!window.chessBetting.initialized) {
-                    await window.chessBetting.init().catch(error => {
-                        console.error('Betting initialization failed:', error);
-                        if (elements.betStatus) {
-                            elements.betStatus.textContent = 'Betting system unavailable';
-                            elements.betStatus.className = 'bet-status error';
-                        }
-                    });
+        if (elements.gameCodeInput) {
+            elements.gameCodeInput.addEventListener('input', function() {
+                this.value = this.value.toUpperCase();
+                if (this.value.length > 6) {
+                    this.value = this.value.slice(0, 6);
                 }
-            } catch (error) {
-                console.error('Initialization error:', error);
-                if (elements.statusElement) {
-                    elements.statusElement.textContent = 'Error initializing game systems';
-                }
-            }
+            });
         }
-    }, 1000);
-});
-</script>
+
+        if (elements.createGameBtn) {
+            elements.createGameBtn.addEventListener('click', () => {
+                if (window.multiplayerManager) {
+                    window.multiplayerManager.createGame();
+                }
+            });
+        }
+
+        if (elements.joinGameBtn) {
+            elements.joinGameBtn.addEventListener('click', () => {
+                const gameCode = elements.gameCodeInput?.value?.trim();
+                if (!gameCode) {
+                    alert('Please enter a game code');
+                    return;
+                }
+                if (window.multiplayerManager) {
+                    window.multiplayerManager.joinGameByCode(gameCode);
+                }
+            });
+        }
+    });
+    </script>
 </body>
 </html>

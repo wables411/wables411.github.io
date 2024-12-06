@@ -13,16 +13,6 @@ class MultiplayerManager {
     }
 
     initializeEventListeners() {
-        const createGameWithBetBtn = document.getElementById('create-game-with-bet');
-        if (createGameWithBetBtn) {
-            createGameWithBetBtn.onclick = () => this.createGameWithBet();
-        }
-
-        const createGameNoBetBtn = document.getElementById('create-game-no-bet');
-        if (createGameNoBetBtn) {
-            createGameNoBetBtn.onclick = () => this.createGame();
-        }
-
         const joinGameBtn = document.getElementById('join-game');
         if (joinGameBtn) {
             joinGameBtn.onclick = () => {
@@ -128,25 +118,6 @@ class MultiplayerManager {
         });
     }
 
-    async createGameWithBet() {
-        try {
-            const player = localStorage.getItem('currentPlayer');
-            if (!player) {
-                alert('Connect wallet first');
-                return;
-            }
-
-            if (window.chessBetting) {
-                await window.chessBetting.handleCreateGameWithBet();
-            } else {
-                alert('Betting system not initialized');
-            }
-        } catch (error) {
-            console.error('Error creating game with bet:', error);
-            alert('Failed to create game with bet');
-        }
-    }
-
     async createGame() {
         try {
             const player = localStorage.getItem('currentPlayer');
@@ -171,8 +142,7 @@ class MultiplayerManager {
                     board: boardState,
                     piece_state: window.pieceState || {},
                     game_state: 'waiting',
-                    current_player: 'blue',
-                    bet_amount: 0
+                    current_player: 'blue'
                 })
                 .select();
 
@@ -243,16 +213,6 @@ class MultiplayerManager {
             if (game.red_player) {
                 alert('Game already has both players');
                 return;
-            }
-    
-            if (game.bet_amount > 0) {
-                if (window.chessBetting) {
-                    console.log('Joining betting game');
-                    return await window.chessBetting.handleJoinGame(code);
-                } else {
-                    alert('Betting system not initialized');
-                    return;
-                }
             }
 
             const { data: updateData, error: updateError } = await this.supabase
@@ -422,14 +382,6 @@ class MultiplayerManager {
 
             if (window.updateGameResult) {
                 window.updateGameResult(gameResult);
-            }
-
-            if (window.chessBetting && game.bet_amount > 0 && gameResult !== 'draw') {
-                try {
-                    await window.chessBetting.processWinner(game.winner);
-                } catch (error) {
-                    console.error('Error processing winner payout:', error);
-                }
             }
 
             if (window.leaderboardManager) {
