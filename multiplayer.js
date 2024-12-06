@@ -1,5 +1,10 @@
 class MultiplayerManager {
     constructor() {
+        if (!window.gameDatabase) {
+            console.error('Game database not initialized');
+            return;
+        }
+    
         this.supabase = window.gameDatabase;
         this.gameId = null;
         this.playerColor = null;
@@ -8,20 +13,27 @@ class MultiplayerManager {
         this.isMultiplayerMode = true;
         this.isProcessingMove = false;
         this.selectedPiece = null;
-        this.initializeEventListeners();
-        console.log('MultiplayerManager initialized');
-    }
-
-    initializeEventListeners() {
+    
+        // Initialize create game button
+        const createGameBtn = document.getElementById('create-game');
+        if (createGameBtn) {
+            createGameBtn.onclick = () => this.createGame();
+        }
+    
+        // Initialize join game button
         const joinGameBtn = document.getElementById('join-game');
         if (joinGameBtn) {
             joinGameBtn.onclick = () => {
                 const code = document.getElementById('game-code-input')?.value?.trim();
-                if (code) this.joinGameByCode(code);
-                else alert('Please enter a game code');
+                if (code) {
+                    this.joinGameByCode(code);
+                } else {
+                    alert('Please enter a game code');
+                }
             };
         }
-
+    
+        // Initialize cancel button
         const cancelBtn = document.getElementById('cancel-matchmaking');
         if (cancelBtn) {
             cancelBtn.onclick = () => {
@@ -30,73 +42,132 @@ class MultiplayerManager {
                 if (status) status.style.display = 'none';
             };
         }
-
+    
+        // Initialize chessboard click handling
         const chessboard = document.getElementById('chessboard');
         if (chessboard) {
-            chessboard.addEventListener('click', (e) => this.handleBoardClick(e));
+            chessboard.addEventListener('click', (e) => {
+                console.log('Chessboard clicked');
+                
+                // Don't process clicks if it's not player's turn
+                if (!this.isMyTurn() || this.isProcessingMove) {
+                    console.log('Not player turn or processing move');
+                    return;
+                }
+    
+                const piece = e.target.closest('.piece');
+                const square = e.target.closest('.highlight');
+                
+                if (piece) {
+                    const row = parseInt(piece.getAttribute('data-row'));
+                    const col = parseInt(piece.getAttribute('data-col'));
+                    console.log('Piece clicked:', { row, col });
+                    this.handlePieceClick(row, col);
+                } else if (square && this.selectedPiece) {
+                    const row = parseInt(square.getAttribute('data-row'));
+                    const col = parseInt(square.getAttribute('data-col'));
+                    console.log('Square clicked:', { row, col });
+                    this.handleSquareClick(row, col);
+                }
+            });
         }
-    }
-
-    handleBoardClick(e) {
-        if (!this.isMyTurn() || this.isProcessingMove) return;
-
-        const piece = e.target.closest('.piece');
-        const square = e.target.closest('.highlight');
-
-        if (piece) {
-            const row = parseInt(piece.getAttribute('data-row'));
-            const col = parseInt(piece.getAttribute('data-col'));
-            this.handlePieceClick(row, col);
-        } else if (square && this.selectedPiece) {
-            const row = parseInt(square.getAttribute('data-row'));
-            const col = parseInt(square.getAttribute('data-col'));
-            this.handleSquareClick(row, col);
-        }
+    
+        console.log('MultiplayerManager initialized with config:', {
+            isMultiplayerMode: this.isMultiplayerMode,
+            database: !!this.supabase,
+            chessboard: !!chessboard
+        });
     }
 
     handlePieceClick(row, col) {
-        const piece = window.board[row][col];
-        if (!piece) return;
-
-        const pieceColor = window.getPieceColor(piece);
-        if (pieceColor !== this.playerColor) return;
-
-        window.removeHighlights();
-
-        if (this.selectedPiece && this.selectedPiece.row === row && this.selectedPiece.col === col) {
-            this.selectedPiece = null;
-            return;
-        }
-
-        this.selectedPiece = { row, col };
-        if (typeof window.getValidMoves === 'function' && typeof window.highlightSquare === 'function') {
-            const validMoves = window.getValidMoves(row, col);
-            if (validMoves) {
-                validMoves.forEach(move => {
-                    const isCapture = !!window.board[move.row][move.col];
-                    window.highlightSquare(move.row, move.col, isCapture);
-                });
+        try {
+            console.log('Handling piece click:', { row, col, playerColor: this.playerColor });
+            
+            const piece = window.board[row][col];
+            if (!piece) {
+                console.log('No piece at clicked position');
+                return;
             }
+    
+            const pieceColor = window.getPieceColor(piece);
+            console.log('Piece color:', pieceColor);
+            
+            if (pieceColor !== this.playerColor) {
+                console.log('Not your piece');
+                return;
+            }
+    
+            if (!this.isMyTurn()) {
+                console.log('Not your turn');
+                return;
+            }
+    
+            window.removeHighlights();
+    
+            if (this.selectedPiece && this.selectedPiece.row === row && this.selectedPiece.col === col) {
+                console.log('Deselecting piece');
+                this.selectedPiece = null;
+                return;
+            }
+    
+            this.selectedPiece = { row, col };
+            console.log('Selected piece:', this.selectedPiece);
+            
+            // Show valid moves
+            for (let endRow = 0; endRow < 8; endRow++) {
+                for (let endCol = 0; endCol < 8; endCol++) {
+                    if (window.canPieceMove(piece, row, col, endRow, endCol)) {
+                        const target = window.board[endRow][endCol];
+                        window.highlightSquare(endRow, endCol, !!target);
+                    }
+                }
+            }
+            
+        } catch (error) {
+            console.error('Error in handlePieceClick:', error);
         }
     }
-
-    async handleSquareClick(row, col) {
-        if (!this.selectedPiece) return;
-
-        const startRow = this.selectedPiece.row;
-        const startCol = this.selectedPiece.col;
-        const piece = window.board[startRow][startCol];
-
-        if (this.isPawnPromotion(piece, row)) {
-            const promotionPiece = await this.handlePawnPromotion();
-            if (!promotionPiece) return;
-            await this.makeMove(startRow, startCol, row, col, promotionPiece);
-        } else {
-            await this.makeMove(startRow, startCol, row, col);
+    
+    handleSquareClick(row, col) {
+        try {
+            console.log('Handling square click:', { row, col });
+            
+            if (!this.selectedPiece) {
+                console.log('No piece selected');
+                return;
+            }
+    
+            if (!this.isMyTurn()) {
+                console.log('Not your turn');
+                return;
+            }
+    
+            const startRow = this.selectedPiece.row;
+            const startCol = this.selectedPiece.col;
+            const piece = window.board[startRow][startCol];
+    
+            console.log('Attempting move:', {
+                piece,
+                from: { row: startRow, col: startCol },
+                to: { row, col }
+            });
+    
+            if (window.canPieceMove(piece, startRow, startCol, row, col)) {
+                if (this.isPawnPromotion(piece, row)) {
+                    this.handlePawnPromotion(startRow, startCol, row, col);
+                } else {
+                    this.makeMove(startRow, startCol, row, col);
+                }
+            } else {
+                console.log('Invalid move');
+            }
+    
+            this.selectedPiece = null;
+            window.removeHighlights();
+            
+        } catch (error) {
+            console.error('Error in handleSquareClick:', error);
         }
-
-        this.selectedPiece = null;
-        window.removeHighlights();
     }
 
     isPawnPromotion(piece, targetRow) {
