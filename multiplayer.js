@@ -83,7 +83,22 @@ class MultiplayerManager {
         try {
             console.log('Handling piece click:', { row, col, playerColor: this.playerColor });
             
+            // Validate board state
+            if (!window.board) {
+                console.error('Board state is missing');
+                window.resetGame();
+                return;
+            }
+                
+            // Validate coordinates
+            if (row < 0 || row >= 8 || col < 0 || col >= 8) {
+                console.error('Invalid coordinates:', {row, col});
+                return;
+            }
+                
             const piece = window.board[row][col];
+            console.log('Clicked position piece:', piece);
+                
             if (!piece) {
                 console.log('No piece at clicked position');
                 return;
@@ -125,6 +140,13 @@ class MultiplayerManager {
             
         } catch (error) {
             console.error('Error in handlePieceClick:', error);
+            // Try to recover board state
+            if (this.currentGameState?.board?.positions) {
+                window.board = JSON.parse(JSON.stringify(this.currentGameState.board.positions));
+                window.placePieces();
+            }
+            window.removeHighlights();
+            this.selectedPiece = null;
         }
     }
     
@@ -470,9 +492,18 @@ class MultiplayerManager {
 
     async makeMove(startRow, startCol, endRow, endCol, promotion = null) {
         if (!this.gameId || this.isProcessingMove || !this.isMyTurn()) return false;
-
+    
         try {
             this.isProcessingMove = true;
+            
+            // Validate move parameters
+            if (!window.board || !window.board[startRow] || !window.board[startRow][startCol]) {
+                throw new Error('Invalid start position');
+            }
+    
+            if (endRow < 0 || endRow >= 8 || endCol < 0 || endCol >= 8) {
+                throw new Error('Invalid end position');
+            }
             
             console.log('Processing move:', {
                 startRow, 
@@ -483,15 +514,21 @@ class MultiplayerManager {
                 playerColor: this.playerColor,
                 currentPlayer: window.currentPlayer
             });
-
+    
             const newBoard = JSON.parse(JSON.stringify(window.board));
-            newBoard[endRow][endCol] = promotion || newBoard[startRow][startCol];
+            const movingPiece = newBoard[startRow][startCol];
+            
+            if (!movingPiece) {
+                throw new Error('No piece at start position');
+            }
+    
+            newBoard[endRow][endCol] = promotion || movingPiece;
             newBoard[startRow][startCol] = null;
-
+    
             window.board = newBoard;
             const nextPlayer = this.playerColor === 'blue' ? 'red' : 'blue';
             let gameEndState = null;
-
+    
             if (window.isCheckmate && window.isCheckmate(nextPlayer)) {
                 gameEndState = {
                     game_state: 'ended',
@@ -503,7 +540,7 @@ class MultiplayerManager {
                     winner: 'draw'
                 };
             }
-
+    
             const updateData = {
                 board: {
                     positions: newBoard,
@@ -520,29 +557,40 @@ class MultiplayerManager {
                 },
                 updated_at: new Date().toISOString()
             };
-
+    
             if (gameEndState) {
                 Object.assign(updateData, gameEndState);
             }
-
+    
             const { error } = await this.supabase
                 .from('chess_games')
                 .update(updateData)
                 .eq('game_id', this.gameId);
-
-            if (error) throw error;
-
+    
+            if (error) {
+                throw error;
+            }
+    
             window.board = newBoard;
             window.placePieces();
             window.updateStatusDisplay("Opponent's turn");
-
+    
             return true;
-
+    
         } catch (error) {
             console.error('Move error:', error);
+            
+            // Recover board state
+            if (this.currentGameState?.board?.positions) {
+                window.board = JSON.parse(JSON.stringify(this.currentGameState.board.positions));
+                window.placePieces();
+            }
+            
             return false;
         } finally {
             this.isProcessingMove = false;
+            window.removeHighlights();
+            this.selectedPiece = null;
         }
     }
 
