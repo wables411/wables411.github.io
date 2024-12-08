@@ -1,12 +1,34 @@
+// Add Web3 for EVM chain interaction
 const supabase = window.gameDatabase;
 
 let leaderboardManagerInstance = null;
 
-// Function to check if a string is a valid Solana wallet address
+// Function to check if a string is a valid wallet address
 function isValidSolanaAddress(address) {
-    // Solana addresses are 44 characters long and base58 encoded
     return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
 }
+
+function isValidEVMAddress(address) {
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
+}
+
+function isValidWalletAddress(address, chainType) {
+    return chainType === 'evm' ? isValidEVMAddress(address) : isValidSolanaAddress(address);
+}
+
+const WALLET_CONNECT_TIMEOUT = 30000; // 30 seconds
+const SANKO_CHAIN_ID = '0x7CC'; // 1996 in hex
+const SANKO_CHAIN_CONFIG = {
+    chainId: SANKO_CHAIN_ID,
+    chainName: 'Sanko',
+    nativeCurrency: {
+        name: 'DMT',
+        symbol: 'DMT',
+        decimals: 18
+    },
+    rpcUrls: ['https://mainnet.sanko.xyz'],
+    blockExplorerUrls: ['https://explorer.sanko.xyz/']
+};
 
 class WalletConnector {
     constructor() {
@@ -15,56 +37,17 @@ class WalletConnector {
             solflare: window.solflare,
             magicEden: window.magicEden
         };
+        // Handle EVM provider separately
+        this.evmProvider = window.ethereum;
     }
 
     async connectWallet(walletType) {
         try {
-            const wallet = this.supportedWallets[walletType];
-            
-            if (!wallet) {
-                const walletUrls = {
-                    phantom: 'https://phantom.app/',
-                    solflare: 'https://solflare.com/',
-                    magicEden: 'https://magiceden.io/'
-                };
-                
-                window.open(walletUrls[walletType], '_blank');
-                throw new Error(`Please install ${walletType} wallet`);
-            }
-
-            let response;
-            if (walletType === 'solflare') {
-                if (!wallet.isConnected) {
-                    response = await wallet.connect();
-                }
-                response = { publicKey: wallet.publicKey };
+            if (walletType === 'sanko') {
+                return await this.connectEVMWallet();
             } else {
-                response = await wallet.connect();
+                return await this.connectSolanaWallet(walletType);
             }
-
-            const walletAddress = response.publicKey.toString();
-            console.log(`Connected ${walletType} wallet:`, walletAddress);
-            
-            // Save wallet info
-            localStorage.setItem('currentPlayer', walletAddress);
-            localStorage.setItem('walletType', walletType);
-            
-            // Update UI
-            this.updateWalletUI(walletAddress);
-            
-            // Show difficulty screen
-            const difficultyScreen = document.getElementById('difficulty-screen');
-            if (difficultyScreen) {
-                difficultyScreen.style.display = 'flex';
-            }
-
-            // Update status
-            const statusElement = document.getElementById('status');
-            if (statusElement) {
-                statusElement.textContent = 'Select difficulty to play';
-            }
-
-            return walletAddress;
         } catch (error) {
             console.error(`Error connecting ${walletType} wallet:`, error);
             alert(`Failed to connect ${walletType} wallet. Please try again.`);
@@ -72,41 +55,224 @@ class WalletConnector {
         }
     }
 
-    updateWalletUI(walletAddress) {
+    async connectEVMWallet() {
+        if (!this.evmProvider) {
+            window.open('https://tools.sanko.xyz/', '_blank');
+            throw new Error('Please install a Web3 wallet that supports Sanko chain');
+        }
+
+        try {
+            // Request account access
+            const accounts = await this.evmProvider.request({ 
+                method: 'eth_requestAccounts' 
+            });
+
+            // Check if we're on the correct chain
+            const chainId = await this.evmProvider.request({ 
+                method: 'eth_chainId' 
+            });
+
+            if (chainId !== SANKO_CHAIN_ID) {
+                try {
+                    // Try to switch to Sanko network
+                    await this.evmProvider.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: SANKO_CHAIN_ID }],
+                    });
+                } catch (switchError) {
+                    // If the chain hasn't been added, add it
+                    if (switchError.code === 4902) {
+                        await this.evmProvider.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [SANKO_CHAIN_CONFIG],
+                        });
+                    } else {
+                        throw switchError;
+                    }
+                }
+            }
+
+            const walletAddress = accounts[0];
+            
+            // Save wallet info
+            localStorage.setItem('currentPlayer', walletAddress);
+            localStorage.setItem('walletType', 'sanko');
+            localStorage.setItem('chainType', 'evm');
+            
+            // Update UI
+            this.updateWalletUI(walletAddress, 'sanko');
+            
+            // Setup EVM event listeners
+            this.setupEVMEventListeners();
+
+            return walletAddress;
+        } catch (error) {
+            console.error('EVM wallet connection error:', error);
+            throw error;
+        }
+    }
+
+    async connectSolanaWallet(walletType) {
+        const wallet = this.supportedWallets[walletType];
+        
+        if (!wallet) {
+            const walletUrls = {
+                phantom: 'https://phantom.app/',
+                solflare: 'https://solflare.com/',
+                magicEden: 'https://magiceden.io/'
+            };
+            
+            window.open(walletUrls[walletType], '_blank');
+            throw new Error(`Please install ${walletType} wallet`);
+        }
+
+        let response;
+        if (walletType === 'solflare') {
+            if (!wallet.isConnected) {
+                response = await wallet.connect();
+            }
+            response = { publicKey: wallet.publicKey };
+        } else {
+            response = await wallet.connect();
+        }
+
+        const walletAddress = response.publicKey.toString();
+        
+        // Save wallet info
+        localStorage.setItem('currentPlayer', walletAddress);
+        localStorage.setItem('walletType', walletType);
+        localStorage.setItem('chainType', 'solana');
+        
+        // Update UI
+        this.updateWalletUI(walletAddress, walletType);
+        
+        return walletAddress;
+    }
+
+    setupEVMEventListeners() {
+        if (!this.evmProvider) return;
+
+        this.evmProvider.on('accountsChanged', (accounts) => {
+            if (accounts.length === 0) {
+                this.disconnectWallet();
+            } else {
+                const currentWalletType = localStorage.getItem('walletType');
+                if (currentWalletType === 'sanko') {
+                    this.updateWalletUI(accounts[0], 'sanko');
+                    localStorage.setItem('currentPlayer', accounts[0]);
+                }
+            }
+        });
+
+        this.evmProvider.on('chainChanged', (chainId) => {
+            if (chainId !== SANKO_CHAIN_ID) {
+                this.disconnectWallet();
+                alert('Please switch to Sanko network');
+            }
+        });
+    }
+
+    updateWalletUI(walletAddress, walletType) {
         // Hide all connect buttons
         document.querySelectorAll('.wallet-btn').forEach(btn => {
             btn.style.display = 'none';
         });
         
-        // Show wallet address
+        // Show wallet address with chain indicator
         const addressDisplay = document.getElementById('wallet-address');
         if (addressDisplay) {
             addressDisplay.style.display = 'block';
-            addressDisplay.textContent = `Connected: ${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`;
+            const chainIndicator = walletType === 'sanko' ? '[DMT]' : '[SOL]';
+            addressDisplay.textContent = `Connected ${chainIndicator}: ${this.formatAddress(walletAddress)}`;
         }
+
+        // Show difficulty screen
+        const difficultyScreen = document.getElementById('difficulty-screen');
+        if (difficultyScreen) {
+            difficultyScreen.style.display = 'flex';
+        }
+
+        // Update status
+        const statusElement = document.getElementById('status');
+        if (statusElement) {
+            statusElement.textContent = 'Select difficulty to play';
+        }
+    }
+
+    disconnectWallet() {
+        localStorage.removeItem('currentPlayer');
+        localStorage.removeItem('walletType');
+        localStorage.removeItem('chainType');
+        
+        // Show all wallet buttons
+        document.querySelectorAll('.wallet-btn').forEach(btn => {
+            btn.style.display = 'block';
+        });
+        
+        // Hide wallet address
+        const addressDisplay = document.getElementById('wallet-address');
+        if (addressDisplay) {
+            addressDisplay.style.display = 'none';
+        }
+
+        // Hide difficulty screen
+        const difficultyScreen = document.getElementById('difficulty-screen');
+        if (difficultyScreen) {
+            difficultyScreen.style.display = 'none';
+        }
+
+        // Update status
+        const statusElement = document.getElementById('status');
+        if (statusElement) {
+            statusElement.textContent = 'Connect to play';
+        }
+    }
+
+    formatAddress(address) {
+        if (!address) return '';
+        return `${address.slice(0, 4)}...${address.slice(-4)}`;
     }
 
     async reconnectWallet() {
         const savedWalletType = localStorage.getItem('walletType');
         const savedAddress = localStorage.getItem('currentPlayer');
         
-        if (savedWalletType && savedAddress) {
-            const wallet = this.supportedWallets[savedWalletType];
-            if (wallet) {
-                try {
-                    if (savedWalletType === 'solflare') {
-                        if (!wallet.isConnected) {
-                            await wallet.connect();
-                        }
-                    }
-                    this.updateWalletUI(savedAddress);
+        if (!savedWalletType || !savedAddress) return false;
+
+        try {
+            if (savedWalletType === 'sanko') {
+                if (!this.evmProvider) return false;
+                
+                const accounts = await this.evmProvider.request({ 
+                    method: 'eth_accounts' 
+                });
+                
+                const chainId = await this.evmProvider.request({ 
+                    method: 'eth_chainId' 
+                });
+
+                if (accounts.length > 0 && 
+                    accounts[0].toLowerCase() === savedAddress.toLowerCase() && 
+                    chainId === SANKO_CHAIN_ID) {
+                    this.updateWalletUI(savedAddress, 'sanko');
+                    this.setupEVMEventListeners();
                     return true;
-                } catch (error) {
-                    console.error('Error reconnecting wallet:', error);
-                    localStorage.removeItem('currentPlayer');
-                    localStorage.removeItem('walletType');
                 }
+            } else {
+                const wallet = this.supportedWallets[savedWalletType];
+                if (!wallet) return false;
+
+                if (savedWalletType === 'solflare') {
+                    if (!wallet.isConnected) {
+                        await wallet.connect();
+                    }
+                }
+                this.updateWalletUI(savedAddress, savedWalletType);
+                return true;
             }
+        } catch (error) {
+            console.error('Error reconnecting wallet:', error);
+            this.disconnectWallet();
         }
         return false;
     }
@@ -143,9 +309,15 @@ class LeaderboardManager {
     }
 
     async updateScore(walletAddress, gameResult) {
-        if (!walletAddress || !isValidSolanaAddress(walletAddress)) {
+        const chainType = localStorage.getItem('chainType');
+        if (!walletAddress || !isValidWalletAddress(walletAddress, chainType)) {
             console.error('Invalid wallet address');
             return;
+        }
+
+        // Convert EVM addresses to lowercase for consistency
+        if (chainType === 'evm') {
+            walletAddress = walletAddress.toLowerCase();
         }
 
         console.log(`Updating score for ${walletAddress} with result: ${gameResult}`);
@@ -165,11 +337,13 @@ class LeaderboardManager {
             // Prepare the record
             const record = {
                 username: walletAddress,
+                chain_type: chainType,
                 wins: (existingRecord?.wins || 0) + (gameResult === 'win' ? 1 : 0),
                 losses: (existingRecord?.losses || 0) + (gameResult === 'loss' ? 1 : 0),
                 draws: (existingRecord?.draws || 0) + (gameResult === 'draw' ? 1 : 0),
                 totalGames: (existingRecord?.totalGames || 0) + 1,
-                points: (existingRecord?.points || 0) + (gameResult === 'win' ? 3 : gameResult === 'draw' ? 1 : 0)
+                points: (existingRecord?.points || 0) + (gameResult === 'win' ? 3 : gameResult === 'draw' ? 1 : 0),
+                updated_at: new Date().toISOString()
             };
 
             console.log('Upserting record:', record);
@@ -204,10 +378,14 @@ class LeaderboardManager {
                 throw error;
             }
             
-            // Filter wallet addresses on the client side instead
-            const validData = data ? data.filter(player => 
-                isValidSolanaAddress(player.username)
-            ) : [];
+            // Filter valid addresses for both chains
+            const validData = data ? data.filter(player => {
+                if (player.chain_type === 'evm') {
+                    return isValidEVMAddress(player.username);
+                } else {
+                    return isValidSolanaAddress(player.username);
+                }
+            }) : [];
             
             return validData;
         } catch (error) {
@@ -227,15 +405,21 @@ class LeaderboardManager {
             const topPlayers = await this.getTopPlayers();
             console.log('Displaying top players:', topPlayers);
             
-            tbody.innerHTML = topPlayers.map((player, index) => `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${this.formatAddress(player.username)}</td>
-                    <td>${player.points}</td>
-                    <td>${player.wins}/${player.losses}/${player.draws}</td>
-                    <td>${player.totalGames}</td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = topPlayers.map((player, index) => {
+                const chainIndicator = player.chain_type === 'evm' ? '[DMT]' : '[SOL]';
+                const username = player.chain_type === 'evm' ? 
+                    player.username.toLowerCase() : player.username;
+                    
+                return `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${chainIndicator} ${this.formatAddress(username)}</td>
+                        <td>${player.points}</td>
+                        <td>${player.wins}/${player.losses}/${player.draws}</td>
+                        <td>${player.totalGames}</td>
+                    </tr>
+                `;
+            }).join('');
         } catch (error) {
             console.error('Error displaying leaderboard:', error);
         }
@@ -273,7 +457,8 @@ function initializeWalletConnection() {
     const wallets = [
         { name: 'Phantom', type: 'phantom', color: '#AB9FF2' },
         { name: 'Solflare', type: 'solflare', color: '#FC822B' },
-        { name: 'Magic Eden', type: 'magicEden', color: '#E42575' }
+        { name: 'Magic Eden', type: 'magicEden', color: '#E42575' },
+        { name: 'Sanko', type: 'sanko', color: '#4CAF50' }
     ];
 
     wallets.forEach(wallet => {
