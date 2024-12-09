@@ -310,58 +310,66 @@ class LeaderboardManager {
 
     async updateScore(walletAddress, gameResult) {
         const chainType = localStorage.getItem('chainType');
-        if (!walletAddress || !isValidWalletAddress(walletAddress, chainType)) {
-            console.error('Invalid wallet address');
+        console.log('Attempting to update score:', {
+            walletAddress,
+            chainType,
+            gameResult
+        });
+    
+        if (!walletAddress) {
+            console.error('No wallet address provided');
             return;
         }
-
+    
         // Convert EVM addresses to lowercase for consistency
         if (chainType === 'evm') {
             walletAddress = walletAddress.toLowerCase();
         }
-
-        console.log(`Updating score for ${walletAddress} with result: ${gameResult}`);
-
+    
         try {
             // First try to get existing record
             const { data: existingRecord, error: fetchError } = await supabase
                 .from('leaderboard')
-                .select('*')
+                .select()
                 .eq('username', walletAddress)
-                .single();
+                .maybeSingle();
                 
-            if (fetchError && fetchError.code !== 'PGRST116') {
-                throw fetchError;
-            }
-
-            // Prepare the record
+            console.log('Fetch result:', { existingRecord, fetchError });
+    
+            // Prepare the record - using camelCase to match database columns
             const record = {
                 username: walletAddress,
-                chain_type: chainType,
+                chain_type: chainType || 'evm',
                 wins: (existingRecord?.wins || 0) + (gameResult === 'win' ? 1 : 0),
                 losses: (existingRecord?.losses || 0) + (gameResult === 'loss' ? 1 : 0),
                 draws: (existingRecord?.draws || 0) + (gameResult === 'draw' ? 1 : 0),
-                totalGames: (existingRecord?.totalGames || 0) + 1,
+                totalGames: (existingRecord?.totalGames || 0) + 1,  // Changed from total_games to totalGames
                 points: (existingRecord?.points || 0) + (gameResult === 'win' ? 3 : gameResult === 'draw' ? 1 : 0),
-                updated_at: new Date().toISOString()
+                created_at: existingRecord?.created_at || new Date().toISOString()
             };
-
-            console.log('Upserting record:', record);
-
-            const { error: upsertError } = await supabase
+    
+            console.log('Attempting to upsert record:', record);
+    
+            const { data: upsertData, error: upsertError } = await supabase
                 .from('leaderboard')
-                .upsert(record, { 
-                    onConflict: 'username',
-                    returning: 'minimal'
-                });
-
-            if (upsertError) throw upsertError;
-
-            console.log('Successfully updated leaderboard');
+                .upsert(record)
+                .select();
+    
+            if (upsertError) {
+                console.error('Upsert error:', upsertError);
+                throw upsertError;
+            }
+    
+            console.log('Upsert successful:', upsertData);
             await this.loadLeaderboard();
-
+    
         } catch (error) {
             console.error('Error updating score:', error);
+            console.error('Error details:', {
+                message: error.message,
+                details: error.details,
+                hint: error.hint
+            });
         }
     }
 
