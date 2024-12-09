@@ -1212,6 +1212,180 @@ function makeAIMove() {
     }
 }
 
+// Pawn structure analysis
+function hasFriendlyPawnNeighbor(row, col) {
+    const piece = window.board[row][col];
+    if (!piece || piece.toLowerCase() !== 'p') return false;
+    
+    const color = getPieceColor(piece);
+    const files = [col - 1, col + 1];
+    
+    return files.some(file => {
+        if (file < 0 || file >= 8) return false;
+        const neighbor = window.board[row][file];
+        return neighbor && 
+               neighbor.toLowerCase() === 'p' && 
+               getPieceColor(neighbor) === color;
+    });
+}
+
+function isPassedPawn(row, col, color) {
+    const piece = window.board[row][col];
+    if (!piece || piece.toLowerCase() !== 'p') return false;
+    
+    const direction = color === 'red' ? 1 : -1;
+    const enemyColor = color === 'red' ? 'blue' : 'red';
+    
+    // Check if there are any enemy pawns in front of this pawn
+    // (including diagonally) that could block its advance
+    for (let r = row + direction; r >= 0 && r < 8; r += direction) {
+        for (let c = col - 1; c <= col + 1; c++) {
+            if (c < 0 || c >= 8) continue;
+            const square = window.board[r][c];
+            if (square && 
+                square.toLowerCase() === 'p' && 
+                getPieceColor(square) === enemyColor) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+// Additional positional evaluation helpers
+function getPieceSquareValue(piece, row, col, isEndgame) {
+    const tables = {
+        'p': [ // Pawn
+            [0,  0,  0,  0,  0,  0,  0,  0],
+            [50, 50, 50, 50, 50, 50, 50, 50],
+            [10, 10, 20, 30, 30, 20, 10, 10],
+            [5,  5, 10, 25, 25, 10,  5,  5],
+            [0,  0,  0, 20, 20,  0,  0,  0],
+            [5, -5,-10,  0,  0,-10, -5,  5],
+            [5, 10, 10,-20,-20, 10, 10,  5],
+            [0,  0,  0,  0,  0,  0,  0,  0]
+        ],
+        'n': [ // Knight
+            [-50,-40,-30,-30,-30,-30,-40,-50],
+            [-40,-20,  0,  0,  0,  0,-20,-40],
+            [-30,  0, 10, 15, 15, 10,  0,-30],
+            [-30,  5, 15, 20, 20, 15,  5,-30],
+            [-30,  0, 15, 20, 20, 15,  0,-30],
+            [-30,  5, 10, 15, 15, 10,  5,-30],
+            [-40,-20,  0,  5,  5,  0,-20,-40],
+            [-50,-40,-30,-30,-30,-30,-40,-50]
+        ],
+        'b': [ // Bishop
+            [-20,-10,-10,-10,-10,-10,-10,-20],
+            [-10,  0,  0,  0,  0,  0,  0,-10],
+            [-10,  0,  5, 10, 10,  5,  0,-10],
+            [-10,  5,  5, 10, 10,  5,  5,-10],
+            [-10,  0, 10, 10, 10, 10,  0,-10],
+            [-10, 10, 10, 10, 10, 10, 10,-10],
+            [-10,  5,  0,  0,  0,  0,  5,-10],
+            [-20,-10,-10,-10,-10,-10,-10,-20]
+        ],
+        'r': [ // Rook
+            [0,  0,  0,  0,  0,  0,  0,  0],
+            [5, 10, 10, 10, 10, 10, 10,  5],
+            [-5,  0,  0,  0,  0,  0,  0, -5],
+            [-5,  0,  0,  0,  0,  0,  0, -5],
+            [-5,  0,  0,  0,  0,  0,  0, -5],
+            [-5,  0,  0,  0,  0,  0,  0, -5],
+            [-5,  0,  0,  0,  0,  0,  0, -5],
+            [0,  0,  0,  5,  5,  0,  0,  0]
+        ],
+        'q': [ // Queen
+            [-20,-10,-10, -5, -5,-10,-10,-20],
+            [-10,  0,  0,  0,  0,  0,  0,-10],
+            [-10,  0,  5,  5,  5,  5,  0,-10],
+            [-5,   0,  5,  5,  5,  5,  0, -5],
+            [0,    0,  5,  5,  5,  5,  0, -5],
+            [-10,  5,  5,  5,  5,  5,  0,-10],
+            [-10,  0,  5,  0,  0,  0,  0,-10],
+            [-20,-10,-10, -5, -5,-10,-10,-20]
+        ],
+        'k': [ // King middlegame
+            [-30,-40,-40,-50,-50,-40,-40,-30],
+            [-30,-40,-40,-50,-50,-40,-40,-30],
+            [-30,-40,-40,-50,-50,-40,-40,-30],
+            [-30,-40,-40,-50,-50,-40,-40,-30],
+            [-20,-30,-30,-40,-40,-30,-30,-20],
+            [-10,-20,-20,-20,-20,-20,-20,-10],
+            [20, 20,  0,  0,  0,  0, 20, 20],
+            [20, 30, 10,  0,  0, 10, 30, 20]
+        ],
+        'k_endgame': [ // King endgame
+            [-50,-40,-30,-20,-20,-30,-40,-50],
+            [-30,-20,-10,  0,  0,-10,-20,-30],
+            [-30,-10, 20, 30, 30, 20,-10,-30],
+            [-30,-10, 30, 40, 40, 30,-10,-30],
+            [-30,-10, 30, 40, 40, 30,-10,-30],
+            [-30,-10, 20, 30, 30, 20,-10,-30],
+            [-30,-30,  0,  0,  0,  0,-30,-30],
+            [-50,-30,-30,-30,-30,-30,-30,-50]
+        ]
+    };
+
+    const pieceType = piece.toLowerCase();
+    let table = tables[pieceType];
+    
+    if (pieceType === 'k' && isEndgame) {
+        table = tables.k_endgame;
+    }
+
+    if (!table) return 0;
+
+    // For red pieces, flip the board perspective
+    const adjustedRow = getPieceColor(piece) === 'red' ? row : 7 - row;
+    return table[adjustedRow][col];
+}
+
+// Development and piece coordination
+function isPieceTrapped(row, col) {
+    const piece = window.board[row][col];
+    if (!piece) return false;
+    
+    const moves = getAllLegalMoves(getPieceColor(piece)).filter(
+        move => move.startRow === row && move.startCol === col
+    );
+    
+    return moves.length === 0;
+}
+
+// Development scoring
+function calculateDevelopmentScore(color) {
+    let score = 0;
+    const backRank = color === 'red' ? 0 : 7;
+    
+    // Check if minor pieces have moved from starting squares
+    const minorPieces = color === 'red' ? ['N', 'B'] : ['n', 'b'];
+    for (let col of [1, 2, 5, 6]) {
+        if (window.board[backRank][col] !== minorPieces[col <= 2 ? 1 : 0]) {
+            score += 10; // Bonus for developed minor pieces
+        }
+    }
+    
+    // Penalize undeveloped pieces in late game
+    if (!isEarlyGame()) {
+        for (let col = 0; col < 8; col++) {
+            const piece = window.board[backRank][col];
+            if (piece && piece.toLowerCase() !== 'k' && piece.toLowerCase() !== 'r') {
+                score -= 20; // Penalty for pieces still on back rank
+            }
+        }
+    }
+    
+    return score;
+}
+
+// Make these functions globally available
+window.hasFriendlyPawnNeighbor = hasFriendlyPawnNeighbor;
+window.isPassedPawn = isPassedPawn;
+window.getPieceSquareValue = getPieceSquareValue;
+window.isPieceTrapped = isPieceTrapped;
+window.calculateDevelopmentScore = calculateDevelopmentScore;
+
 function addMoveToHistory(piece, startRow, startCol, endRow, endCol, capturedPiece) {
     try {
         const moveText = `${getPieceName(piece)} ${coordsToAlgebraic(startRow, startCol)} to ${coordsToAlgebraic(endRow, endCol)}${capturedPiece ? ' captures ' + getPieceName(capturedPiece) : ''}`;
