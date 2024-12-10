@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>$lawb shop</title>
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@latest"></script>
-    <script>
-        const { createClient } = supabase;
-    </script>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>$lawb shop</title>
+        <link rel="icon" href="favicon.ico" type="image/x-icon">
+        <link rel="stylesheet" href="style.css">
+        <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+        <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+        <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+        <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@latest"></script>
+        <script>
+            const { createClient } = supabase;
+        </script>
     <style>
         .shop-container {
             max-width: 1200px;
@@ -107,11 +108,12 @@
     <div class="shop-container">
         <div class="product-card">
             <img src="images/plushie.jpg" alt="LAWB Plushie" class="product-image">
+            <img src="images/redplushy.jpg" alt="LAWB Plushie" class="product-image">
             <h2 class="product-title">🦞 Lawbster Plushy 🦞</h2>
             <div class="product-description">
                 <p>Red vs Blue</p>
-                <p>Limited to 100 per color </p>
-                <p>All proceeds directed towards $LAWB marketting wallet</p>
+                <p>Limited to 100 Lawbsters per color </p>
+                <p>shipping included</p>
             </div>
             <div class="price-container">
                 <div class="price-tag">0.5 SOL</div>
@@ -121,6 +123,6 @@
         </div>
     </div>
 
-    <script src="checkout.js"></script>
+    <script type="text/babel" src="checkout.js"></script>
 </body>
 </html>
