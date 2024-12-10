@@ -11,8 +11,72 @@ const CheckoutComponent = () => {
     const [selectedColor, setSelectedColor] = React.useState(null);
     const [showColorChoice, setShowColorChoice] = React.useState(false);
     const [paymentType, setPaymentType] = React.useState(null);
+    const [showWalletModal, setShowWalletModal] = React.useState(false);
 
-    const connectWallet = async () => {
+    const WalletModal = () => (
+        <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000
+        }}>
+            <div style={{
+                backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                padding: '20px',
+                borderRadius: '10px',
+                maxWidth: '400px',
+                width: '90%'
+            }}>
+                <h3 style={{
+                    color: 'white',
+                    textAlign: 'center',
+                    marginBottom: '20px'
+                }}>Select Wallet</h3>
+                
+                <button
+                    onClick={connectPhantom}
+                    style={{
+                        ...styles.button,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '10px'
+                    }}>
+                    Phantom
+                </button>
+                
+                <button
+                    onClick={connectSolflare}
+                    style={{
+                        ...styles.button,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '10px'
+                    }}>
+                    Solflare
+                </button>
+                
+                <button
+                    onClick={() => setShowWalletModal(false)}
+                    style={{
+                        ...styles.button,
+                        backgroundColor: '#666',
+                        marginTop: '20px'
+                    }}>
+                    Cancel
+                </button>
+            </div>
+        </div>
+    );
+
+    const connectPhantom = async () => {
         try {
             if (!window.solana) {
                 alert('Please install Phantom wallet');
@@ -22,9 +86,27 @@ const CheckoutComponent = () => {
             setPublicKey(response.publicKey.toString());
             setWalletConnected(true);
             setShowColorChoice(true);
+            setShowWalletModal(false);
         } catch (err) {
             console.error(err);
-            alert('Failed to connect wallet');
+            alert('Failed to connect Phantom wallet');
+        }
+    };
+
+    const connectSolflare = async () => {
+        try {
+            if (!window.solflare) {
+                alert('Please install Solflare wallet');
+                return;
+            }
+            const response = await window.solflare.connect();
+            setPublicKey(response.publicKey.toString());
+            setWalletConnected(true);
+            setShowColorChoice(true);
+            setShowWalletModal(false);
+        } catch (err) {
+            console.error(err);
+            alert('Failed to connect Solflare wallet');
         }
     };
 
@@ -55,7 +137,9 @@ const CheckoutComponent = () => {
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = new solanaWeb3.PublicKey(publicKey);
 
-            const signed = await window.solana.signTransaction(transaction);
+            // Modify this part to handle different wallet types
+            const provider = window.solana || window.solflare;
+            const signed = await provider.signTransaction(transaction);
             const signature = await connection.sendRawTransaction(signed.serialize());
             const confirmation = await connection.confirmTransaction(signature);
             
@@ -176,7 +260,7 @@ const CheckoutComponent = () => {
             
             {!walletConnected ? (
                 <button 
-                    onClick={connectWallet} 
+                    onClick={() => setShowWalletModal(true)} 
                     style={styles.button}>
                     Connect Wallet
                 </button>
@@ -281,6 +365,7 @@ const CheckoutComponent = () => {
                     </button>
                 </form>
             ) : null}
+            {showWalletModal && <WalletModal />}
         </div>
     );
 };
