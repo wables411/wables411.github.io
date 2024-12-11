@@ -125,6 +125,28 @@ function coordsToAlgebraic(row, col) {
     return `${String.fromCharCode(97 + col)}${8 - row}`;
 }
 
+function getPieceType(piece) {
+    return piece.toLowerCase();
+}
+
+function getDistanceToFriendlyKing(row, col, color) {
+    const kingPiece = color === 'blue' ? 'k' : 'K';
+    let kingRow, kingCol;
+    
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (window.board[r][c] === kingPiece) {
+                kingRow = r;
+                kingCol = c;
+                break;
+            }
+        }
+        if (kingRow !== undefined) break;
+    }
+    
+    return Math.max(Math.abs(kingRow - row), Math.abs(kingCol - col));
+}
+
 // Board analysis functions
 function countDiagonalMoves(row, col) {
     let count = 0;
@@ -168,6 +190,21 @@ function isFileOpen(col) {
         }
     }
     return true;
+}
+
+function countValidKnightMoves(row, col) {
+    const moves = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+    let count = 0;
+    for (const [dr, dc] of moves) {
+        const newRow = row + dr;
+        const newCol = col + dc;
+        if (isWithinBoard(newRow, newCol) && 
+            (!window.board[newRow][newCol] || 
+             getPieceColor(window.board[newRow][newCol]) !== 'red')) {
+            count++;
+        }
+    }
+    return count;
 }
 
 // Board display functions
@@ -621,10 +658,12 @@ function isValidPawnMove(color, startRow, startCol, endRow, endCol) {
     const startingRow = color === 'blue' ? 6 : 1;
     
     const rowDiff = endRow - startRow;
-    const colDiff = Math.abs(endCol - startCol);
+    const colDiff = endCol - startCol;
     
     // Captures (including en passant)
-    if (colDiff === 1 && rowDiff === direction) {
+    if (Math.abs(colDiff) === 1) {
+        if (rowDiff !== direction) return false;
+        
         const targetPiece = window.board[endRow][endCol];
         
         // Normal capture
@@ -640,20 +679,23 @@ function isValidPawnMove(color, startRow, startCol, endRow, endCol) {
             Math.abs(lastMove.startRow - lastMove.endRow) === 2) {
             return true;
         }
+        
+        return false;
     }
     
     // Forward moves
-    if (colDiff === 0 && !window.board[endRow][endCol]) {
-        // Single square forward
-        if (rowDiff === direction) {
-            return true;
-        }
-        // Initial two-square move
-        if (startRow === startingRow && 
-            rowDiff === 2 * direction && 
-            !window.board[startRow + direction][startCol]) {
-            return true;
-        }
+    if (colDiff !== 0 || window.board[endRow][endCol]) return false;
+    
+    // Single square forward
+    if (rowDiff === direction) {
+        return true;
+    }
+    
+    // Initial two-square move
+    if (startRow === startingRow && 
+        rowDiff === 2 * direction && 
+        !window.board[startRow + direction][startCol]) {
+        return true;
     }
     
     return false;
@@ -1522,14 +1564,8 @@ function evaluateEasyMove(piece, startRow, startCol, endRow, endCol) {
 function evaluateHardMove(piece, startRow, startCol, endRow, endCol) {
     let score = 0;
     
-    // Make temporary move
-    const originalPiece = window.board[endRow][endCol];
-    window.board[endRow][endCol] = piece;
-    window.board[startRow][startCol] = null;
-    
-    // Enhanced piece values for hard mode
     const pieceValues = {
-        'p': 100,
+        'p': 100,  // Slightly increased pawn value
         'n': 320,
         'b': 330,
         'r': 500,
@@ -1537,57 +1573,75 @@ function evaluateHardMove(piece, startRow, startCol, endRow, endCol) {
         'k': 20000
     };
     
-    // Capturing evaluation
+    // Evaluate captures more intelligently
+    const originalPiece = window.board[endRow][endCol];
     if (originalPiece) {
-        // Higher bonus for capturing with lower value pieces
-        const captureBonus = pieceValues[originalPiece.toLowerCase()] * 
-            (1 + (pieceValues[originalPiece.toLowerCase()] - pieceValues[piece.toLowerCase()]) / 1000);
-        score += captureBonus;
+        const captureValue = pieceValues[originalPiece.toLowerCase()];
+        const attackerValue = pieceValues[piece.toLowerCase()];
+        score += captureValue * 1.2; // Base capture value
+        if (captureValue > attackerValue) {
+            score += (captureValue - attackerValue) * 0.3; // Bonus for favorable trades
+        }
     }
     
-    // Piece-specific evaluation
+    // Add positional scores from piece-square tables
+    const isEndgame = !isEarlyGame();
+    score += getPieceSquareValue(piece, endRow, endCol, isEndgame) * 0.8;
+    
+    // Piece-specific evaluations
     switch (piece.toLowerCase()) {
         case 'p':
-            score += evaluatePawnPosition(endRow, endCol, 'red') * 1.5;
-            if (hasFriendlyPawnNeighbor(endRow, endCol)) score += 15;
-            if (isPassedPawn(endRow, endCol, 'red')) score += 50;
+            if (isPassedPawn(endRow, endCol, 'red')) score += 60;
+            if (hasFriendlyPawnNeighbor(endRow, endCol)) score += 20;
+            score += (endRow - startRow) * 15; // Encourage forward movement
             break;
-
         case 'n':
-            score += evaluateKnightPosition(endRow, endCol) * 1.5;
-            score += getDistanceToEnemyKing(endRow, endCol, 'blue') * -15;
+            score += (8 - getDistanceToEnemyKing(endRow, endCol, 'blue')) * 10;
+            score += countValidKnightMoves(endRow, endCol) * 8;
             break;
-
         case 'b':
-            score += evaluateBishopPosition(endRow, endCol) * 1.5;
-            if (isOnLongDiagonal(endRow, endCol)) score += 25;
+            score += countDiagonalMoves(endRow, endCol) * 6;
+            if (isOnLongDiagonal(endRow, endCol)) score += 30;
             break;
-
         case 'r':
-            score += evaluateRookPosition(endRow, endCol, 'red') * 1.5;
-            if (isFileOpen(endCol)) score += 35;
+            if (isFileOpen(endCol)) score += 40;
+            if (endRow === 6) score += 30; // 7th rank bonus
+            score += countOrthogonalMoves(endRow, endCol) * 5;
             break;
-
         case 'q':
-            score += evaluateQueenPosition(endRow, endCol) * 1.2;
-            score += getDistanceToEnemyKing(endRow, endCol, 'blue') * -10;
+            score += (countDiagonalMoves(endRow, endCol) + 
+                     countOrthogonalMoves(endRow, endCol)) * 4;
+            score += (8 - getDistanceToEnemyKing(endRow, endCol, 'blue')) * 5;
             break;
-
         case 'k':
-            score += evaluateKingPosition(endRow, endCol, 'red') * 2;
-            score += evaluateKingSafety(endRow, endCol, 'red');
+            if (isEndgame) {
+                score += (8 - getDistanceToEnemyKing(endRow, endCol, 'blue')) * 15;
+            } else {
+                score += evaluateKingSafety(endRow, endCol, 'red');
+            }
             break;
     }
     
     // Strategic bonuses
-    score += evaluateControlOfCenter(endRow, endCol) * 2;
+    if (endRow >= 2 && endRow <= 5 && endCol >= 2 && endCol <= 5) {
+        score += 25; // Control of extended center
+        if (endRow >= 3 && endRow <= 4 && endCol >= 3 && endCol <= 4) {
+            score += 15; // Extra bonus for central control
+        }
+    }
     
-    // Restore board
-    window.board[startRow][startCol] = piece;
-    window.board[endRow][endCol] = originalPiece;
+    // King safety consideration
+    if (!isEndgame && !piece.toLowerCase() !== 'k') {
+        if (getPieceType(piece) !== 'p') {
+            const distanceToOwnKing = getDistanceToFriendlyKing(endRow, endCol, 'red');
+            if (distanceToOwnKing <= 2) score += 10; // Bonus for pieces protecting king
+        }
+    }
     
-    // Small random factor for variety in hard mode
-    score += Math.random() * 15;
+    // Encourage development in early game
+    if (isEarlyGame() && startRow === 0 || startRow === 1) {
+        score += 20; // Bonus for moving pieces out
+    }
     
     return score;
 }
