@@ -145,38 +145,56 @@ const CheckoutComponent = () => {
             alert('Please select a color first');
             return;
         }
-
+    
         try {
             setLoading(true);
             setPaymentType('SOL');
             const connection = new solanaWeb3.Connection('https://api.mainnet-beta.solana.com');
             const recipient = new solanaWeb3.PublicKey('6GXgaZyCrPqs1gMW3tFU9g82oPQY7eqyjcneQDs9PYJN');
-            const transaction = new solanaWeb3.Transaction().add(
+            
+            // Create transaction
+            let transaction = new solanaWeb3.Transaction().add(
                 solanaWeb3.SystemProgram.transfer({
                     fromPubkey: new solanaWeb3.PublicKey(publicKey),
                     toPubkey: recipient,
                     lamports: 0.5 * solanaWeb3.LAMPORTS_PER_SOL
                 })
             );
-
-            const { blockhash } = await connection.getRecentBlockhash();
+    
+            // Get the latest blockhash
+            let { blockhash } = await connection.getLatestBlockhash();
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = new solanaWeb3.PublicKey(publicKey);
-
-            // Modify this part to handle different wallet types
+    
+            // Get the wallet provider
             const provider = window.solana || window.solflare;
-            const signed = await provider.signTransaction(transaction);
-            const signature = await connection.sendRawTransaction(signed.serialize());
-            const confirmation = await connection.confirmTransaction(signature);
-            
-            if (confirmation.value.err) {
-                throw new Error('Transaction failed');
+            if (!provider) {
+                throw new Error('Wallet not connected');
             }
-            
-            setShowForm(true);
+    
+            // Sign and send transaction
+            try {
+                // Send the transaction to the network
+                const signature = await provider.signAndSendTransaction(transaction);
+                console.log('Transaction sent:', signature);
+    
+                // Wait for confirmation
+                const confirmation = await connection.confirmTransaction(signature.signature || signature);
+                console.log('Transaction confirmed:', confirmation);
+    
+                if (confirmation.value && confirmation.value.err) {
+                    throw new Error('Transaction failed');
+                }
+    
+                alert('Payment successful!');
+                setShowForm(true);
+            } catch (err) {
+                console.error('Transaction error:', err);
+                throw new Error('Payment failed: ' + err.message);
+            }
         } catch (err) {
             console.error(err);
-            alert('Payment failed');
+            alert(err.message);
             setPaymentType(null);
         } finally {
             setLoading(false);
@@ -188,13 +206,25 @@ const CheckoutComponent = () => {
             alert('Please select a color first');
             return;
         }
-        setPaymentType('LAWB');
-        // Add LAWB token payment logic here
-        setShowForm(true);
+        try {
+            setLoading(true);
+            alert('LAWB payment functionality coming soon');
+            setPaymentType(null); // Reset payment type since it's not implemented
+        } catch (err) {
+            console.error(err);
+            alert('Payment failed');
+            setPaymentType(null);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!paymentType || !selectedColor) {
+            alert('Please complete payment before submitting shipping details');
+            return;
+        }
         const formData = {
             wallet_address: publicKey,
             color: selectedColor,
