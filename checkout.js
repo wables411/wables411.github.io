@@ -82,28 +82,40 @@ const CheckoutComponent = () => {
                 alert('Please install Phantom wallet');
                 return;
             }
-            const response = await window.solana.connect();
-            setPublicKey(response.publicKey.toString());
-            setWalletConnected(true);
-            setShowColorChoice(true);
-            setShowWalletModal(false);
+            // First check if Phantom is connected
+            const resp = await window.solana.connect();
+            // Only set the public key if connection was successful
+            if (resp && resp.publicKey) {
+                setPublicKey(resp.publicKey.toString());
+                setWalletConnected(true);
+                setShowColorChoice(true);
+                setShowWalletModal(false);
+            } else {
+                throw new Error('Failed to connect wallet');
+            }
         } catch (err) {
             console.error(err);
             alert('Failed to connect Phantom wallet');
         }
     };
-
+    
     const connectSolflare = async () => {
         try {
             if (!window.solflare) {
                 alert('Please install Solflare wallet');
                 return;
             }
-            const response = await window.solflare.connect();
-            setPublicKey(response.publicKey.toString());
-            setWalletConnected(true);
-            setShowColorChoice(true);
-            setShowWalletModal(false);
+            // First check if Solflare is connected
+            const resp = await window.solflare.connect();
+            // Only set the public key if connection was successful
+            if (resp && resp.publicKey) {
+                setPublicKey(resp.publicKey.toString());
+                setWalletConnected(true);
+                setShowColorChoice(true);
+                setShowWalletModal(false);
+            } else {
+                throw new Error('Failed to connect wallet');
+            }
         } catch (err) {
             console.error(err);
             alert('Failed to connect Solflare wallet');
