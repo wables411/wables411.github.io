@@ -149,45 +149,38 @@ const CheckoutComponent = () => {
         try {
             setLoading(true);
             setPaymentType('SOL');
-            const connection = new solanaWeb3.Connection('https://api.mainnet-beta.solana.com');
-            const recipient = new solanaWeb3.PublicKey('6GXgaZyCrPqs1gMW3tFU9g82oPQY7eqyjcneQDs9PYJN');
             
-            // Create transaction
-            let transaction = new solanaWeb3.Transaction().add(
-                solanaWeb3.SystemProgram.transfer({
-                    fromPubkey: new solanaWeb3.PublicKey(publicKey),
-                    toPubkey: recipient,
-                    lamports: 0.5 * solanaWeb3.LAMPORTS_PER_SOL
-                })
-            );
-    
-            // Get the latest blockhash
-            let { blockhash } = await connection.getLatestBlockhash();
-            transaction.recentBlockhash = blockhash;
-            transaction.feePayer = new solanaWeb3.PublicKey(publicKey);
-    
-            // Get the wallet provider
+            // Get the provider (wallet)
             const provider = window.solana || window.solflare;
             if (!provider) {
                 throw new Error('Wallet not connected');
             }
     
-            // Sign and send transaction
+            // Create the transaction
             try {
-                // Send the transaction to the network
-                const signature = await provider.signAndSendTransaction(transaction);
-                console.log('Transaction sent:', signature);
+                const connection = new solanaWeb3.Connection('https://api.mainnet-beta.solana.com');
+                const recipient = new solanaWeb3.PublicKey('6GXgaZyCrPqs1gMW3tFU9g82oPQY7eqyjcneQDs9PYJN');
+                const sender = new solanaWeb3.PublicKey(publicKey);
     
-                // Wait for confirmation
-                const confirmation = await connection.confirmTransaction(signature.signature || signature);
-                console.log('Transaction confirmed:', confirmation);
+                // Request wallet to send transaction
+                const transaction = await provider.request({
+                    method: 'signAndSendTransaction',
+                    params: {
+                        message: {
+                            recipient: recipient.toString(),
+                            amount: '0.5',
+                            splToken: null  // null for SOL transfers
+                        }
+                    }
+                });
     
-                if (confirmation.value && confirmation.value.err) {
+                if (transaction) {
+                    console.log('Transaction sent:', transaction);
+                    alert('Payment successful!');
+                    setShowForm(true);
+                } else {
                     throw new Error('Transaction failed');
                 }
-    
-                alert('Payment successful!');
-                setShowForm(true);
             } catch (err) {
                 console.error('Transaction error:', err);
                 throw new Error('Payment failed: ' + err.message);
@@ -208,11 +201,42 @@ const CheckoutComponent = () => {
         }
         try {
             setLoading(true);
-            alert('LAWB payment functionality coming soon');
-            setPaymentType(null); // Reset payment type since it's not implemented
+            setPaymentType('LAWB');
+    
+            const LAWB_TOKEN_ADDRESS = '65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6';
+            const provider = window.solana || window.solflare;
+            
+            if (!provider) {
+                throw new Error('Wallet not connected');
+            }
+    
+            const connection = new solanaWeb3.Connection('https://api.mainnet-beta.solana.com');
+            const recipient = new solanaWeb3.PublicKey('6GXgaZyCrPqs1gMW3tFU9g82oPQY7eqyjcneQDs9PYJN');
+            const sender = new solanaWeb3.PublicKey(publicKey);
+    
+            // Create SPL Token transfer instruction
+            const transaction = await provider.request({
+                method: 'signAndSendTransaction',
+                params: {
+                    message: {
+                        recipient: recipient.toString(),
+                        amount: '1000000',
+                        splToken: LAWB_TOKEN_ADDRESS
+                    }
+                }
+            });
+    
+            if (transaction) {
+                console.log('Transaction sent:', transaction);
+                alert('Payment successful!');
+                setShowForm(true);
+            } else {
+                throw new Error('Transaction failed');
+            }
+    
         } catch (err) {
             console.error(err);
-            alert('Payment failed');
+            alert('Payment failed: ' + err.message);
             setPaymentType(null);
         } finally {
             setLoading(false);
