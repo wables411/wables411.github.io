@@ -78,46 +78,60 @@ const CheckoutComponent = () => {
 
     const connectPhantom = async () => {
         try {
-            if (!window.solana) {
+            if (typeof window.solana === 'undefined') {
                 alert('Please install Phantom wallet');
                 return;
             }
-            // First check if Phantom is connected
-            const resp = await window.solana.connect();
-            // Only set the public key if connection was successful
-            if (resp && resp.publicKey) {
-                setPublicKey(resp.publicKey.toString());
+    
+            // Request wallet connection
+            try {
+                await window.solana.connect({ onlyIfTrusted: false });
+            } catch (err) {
+                console.error('Connection error:', err);
+                alert('Failed to connect: ' + err.message);
+                return;
+            }
+    
+            // After connection, get the public key
+            if (window.solana.isConnected && window.solana.publicKey) {
+                setPublicKey(window.solana.publicKey.toString());
                 setWalletConnected(true);
                 setShowColorChoice(true);
                 setShowWalletModal(false);
             } else {
-                throw new Error('Failed to connect wallet');
+                alert('Please authorize the connection in your wallet');
             }
         } catch (err) {
-            console.error(err);
+            console.error('Wallet error:', err);
             alert('Failed to connect Phantom wallet');
         }
     };
     
     const connectSolflare = async () => {
         try {
-            if (!window.solflare) {
+            if (typeof window.solflare === 'undefined') {
                 alert('Please install Solflare wallet');
                 return;
             }
-            // First check if Solflare is connected
-            const resp = await window.solflare.connect();
-            // Only set the public key if connection was successful
-            if (resp && resp.publicKey) {
-                setPublicKey(resp.publicKey.toString());
+    
+            try {
+                await window.solflare.connect();
+            } catch (err) {
+                console.error('Connection error:', err);
+                alert('Failed to connect: ' + err.message);
+                return;
+            }
+    
+            if (window.solflare.isConnected && window.solflare.publicKey) {
+                setPublicKey(window.solflare.publicKey.toString());
                 setWalletConnected(true);
                 setShowColorChoice(true);
                 setShowWalletModal(false);
             } else {
-                throw new Error('Failed to connect wallet');
+                alert('Please authorize the connection in your wallet');
             }
         } catch (err) {
-            console.error(err);
+            console.error('Wallet error:', err);
             alert('Failed to connect Solflare wallet');
         }
     };
