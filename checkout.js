@@ -316,7 +316,7 @@ const CheckoutComponent = () => {
                 LAWB_TOKEN_ADDRESS,
                 sender
             );
-
+    
             try {
                 const balance = await connection.getTokenAccountBalance(senderTokenAccount.address);
                 const requiredAmount = BigInt(1000000 * (10 ** LAWB_DECIMALS));
@@ -330,16 +330,27 @@ const CheckoutComponent = () => {
                     LAWB_TOKEN_ADDRESS,
                     MERCHANT_ADDRESS
                 );
-
-                // Create LAWB transfer instruction
+    
+                // Create properly formatted instruction data
+                const dataLayout = {
+                    instruction: 3,  // Token instruction 3 = transfer
+                    amount: requiredAmount
+                };
+    
+                const instructionData = Buffer.alloc(9);  // 1 byte for instruction, 8 bytes for amount
+                instructionData.writeUInt8(dataLayout.instruction, 0);
+                instructionData.writeBigUInt64LE(dataLayout.amount, 1);
+    
+                // Create LAWB transfer instruction with proper data format
                 const instruction = new solanaWeb3.TransactionInstruction({
                     keys: [
                         { pubkey: senderTokenAccount.address, isSigner: false, isWritable: true },
                         { pubkey: recipientTokenAccount.address, isSigner: false, isWritable: true },
                         { pubkey: sender, isSigner: true, isWritable: false },
+                        { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false }, // Added token program as signer
                     ],
                     programId: TOKEN_PROGRAM_ID,
-                    data: Buffer.from([3, ...new Uint8Array(requiredAmount.toString())])  // '3' is transfer instruction
+                    data: instructionData
                 });
         
                 const transaction = new solanaWeb3.Transaction().add(instruction);
