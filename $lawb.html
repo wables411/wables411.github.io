@@ -6,6 +6,8 @@
     <title>we $lawb you</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
+    <!-- Add Google Font for Shopify button -->
+    <link href="https://fonts.googleapis.com/css?family=Old+Standard+TT" rel="stylesheet">
     <style>
         #dexscreener-embed {position: relative; width: 50%; padding-bottom: 125%;}
         @media (min-width: 1400px) {
@@ -88,34 +90,13 @@
                 height: 450px;
             }
         }
-        .unicorn-gods-section {
-            background-color: rgba(255, 0, 255, 0.1);
-            border: 2px solid #FF00FF;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-            color: #FF00FF;
-            font-weight: bold;
-            text-align: center;
-        }
-        .unicorn-gods-section img {
-            max-width: 100%;
-            height: auto;
-            margin-top: 20px;
-        }
-        .sacrifice-image-container {
-            text-align: center;
-            margin: 20px 0;
-        }
-        .sacrifice-image {
-            max-width: 100%;
-            height: auto;
-            cursor: pointer;
-        }
     </style>
 </head>
+
 <body class="lawbstation-body">
-<div class="soundcloud-player">
+
+    <!-- Soundcloud Player -->
+    <div class="soundcloud-player">
         <iframe scrolling="no" frameborder="no" allow="autoplay"
             src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/1817599152&color=%23ff0000&auto_play=false&hide_related=false&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false">
         </iframe>
@@ -125,6 +106,7 @@
         </div>
     </div>
 
+    <!-- Navigation -->
     <nav>
         <ul>
             <li><a href="index.html">home</a></li>
@@ -138,22 +120,30 @@
         </ul>
     </nav>
 
+    <!-- Main Content -->
     <div class="full-height-container">
         <div class="main-content">
             <img src="images/lawbticker.gif" alt="ticker $lawb" style="max-width: 80%;">
             <h1><a href="https://dexscreener.com/solana/dtxvuypheobwo66afefp9mfgt2e14c6ufexnvxwnvep" target="_blank">🦞 $LAWB</a></h1>
+            
+            <!-- Token Info -->
             <p>$lawb seems nice but a lawbster token on the solana blockchain will never achieve anything without a roadmap.
             token created 03.15.24 on <a href="https://www.pump.fun/65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6" target="_blank">pump.fun</a>
             $lawb airdropped to LawbStation holders 03.19.24</p>
             <p>THERE IS NO MEME WE $LAWB YOU</p>
             <p>ca: 65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6</p>
+
+            <!-- Shopify Buy Button -->
+            <div id='product-component-1734203549488'></div>
             
+            <!-- Typeform -->
             <div data-tf-live="01J47TV9D4K8X30KBPPJKG41EX"></div>
             
+            <!-- DexScreener -->
             <div id="dexscreener-embed">
                 <iframe src="https://dexscreener.com/solana/DTxVuYphEobWo66afEfP9MfGt2E14C6UfeXnvXWnvep?embed=1&theme=dark&info=0"></iframe>
             </div>
-            
+
             <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
                 <a href="https://uwu.pro/memoji/ulawb" target="_blank">
                     <img src="images/lawbuwu.png" alt="UWU Chart" style="max-width: 50%; height: auto;">
@@ -168,11 +158,14 @@
             </div>
 
             <div id="vrm-container"></div>
-        </div>
-    </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.55.2/phaser.min.js"></script>
+        </div> <!-- Close main-content -->
+    </div> <!-- Close full-height-container -->
+
+    <!-- Script imports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.55.2/phaser.min.js"></script>
     <script src="//embed.typeform.com/next/embed.js"></script>
 
+    <!-- VRM Loader Script -->
     <script type="module">
         import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
         import { VRMLoader } from 'https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@0.6.11/lib/three-vrm.module.js';
@@ -210,178 +203,267 @@
         animate();
     </script>
 
+    <!-- Game Script -->
     <script>
-    document.createElement = (function(create) {
-      return function() {
-        var element = create.apply(this, arguments);
-        if (element.tagName.toLowerCase() === 'canvas') {
-          element.setAttribute('willreadfrequently', '');
-        }
-        return element;
-      };
-    })(document.createElement);
-
-    const config = {
-        type: Phaser.CANVAS,
-        width: 800,
-        height: 600,
-        parent: 'game-container',
-        canvas: document.createElement('canvas'),
-        canvasStyle: 'willReadFrequently',
-        physics: {
-            default: 'arcade',
-            arcade: {
-                gravity: { y: 300 },
-                debug: false
+        document.createElement = (function(create) {
+          return function() {
+            var element = create.apply(this, arguments);
+            if (element.tagName.toLowerCase() === 'canvas') {
+              element.setAttribute('willreadfrequently', '');
             }
-        },
-        scene: {
-            preload: preload,
-            create: create,
-            update: update
-        },
-        audio: {
-            disableWebAudio: true
+            return element;
+          };
+        })(document.createElement);
+    
+        const config = {
+            type: Phaser.CANVAS,
+            width: 800,
+            height: 600,
+            parent: 'game-container',
+            canvas: document.createElement('canvas'),
+            canvasStyle: 'willReadFrequently',
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 300 },
+                    debug: false
+                }
+            },
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            },
+            audio: {
+                disableWebAudio: true
+            }
+        };
+    
+        let game;
+        let player;
+        let emojis;
+        let score = 0;
+        let scoreText;
+        let timeLeft = 120;
+        let timeText;
+        let background;
+        let isGameOver = true;
+        let startButton;
+    
+        function initGame() {
+            if (!game) {
+                game = new Phaser.Game(config);
+            }
         }
-    };
-
-    let game;
-    let player;
-    let emojis;
-    let score = 0;
-    let scoreText;
-    let timeLeft = 120; // 2 minutes
-    let timeText;
-    let background;
-    let isGameOver = true;
-    let startButton;
-
-    function initGame() {
-        if (!game) {
-            game = new Phaser.Game(config);
+    
+        function preload() {
+            this.load.image('lawb', 'images/69lawbster.png');
+            this.load.image('emoji', 'images/clownemoji.png');
+            this.load.image('background', 'images/oceanfloor.gif');
         }
-    }
-
-    function preload() {
-        this.load.image('lawb', 'images/69lawbster.png');
-        this.load.image('emoji', 'images/clownemoji.png');
-        this.load.image('background', 'images/oceanfloor.gif');
-    }
-
-    function create() {
-        background = this.add.image(400, 300, 'background');
-        background.setDisplaySize(config.width, config.height);
-
-        player = this.physics.add.sprite(400, 550, 'lawb');
-        player.setCollideWorldBounds(true);
-        player.setVisible(false);
-        
-        emojis = this.physics.add.group();
-        
-        scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#FFF' });
-        timeText = this.add.text(16, 56, 'Time: 2:00', { fontSize: '32px', fill: '#FFF' });
-        
-        scoreText.setVisible(false);
-        timeText.setVisible(false);
-
-        startButton = this.add.text(400, 300, 'Start Game', { fontSize: '48px', fill: '#00FF00' })
-            .setOrigin(0.5)
-            .setInteractive()
-            .on('pointerdown', () => {
-                startButton.setVisible(false);
-                startGameplay.call(this);
-            });
-
-        this.input.on('pointermove', function (pointer) {
+    
+        function create() {
+            background = this.add.image(400, 300, 'background');
+            background.setDisplaySize(config.width, config.height);
+    
+            player = this.physics.add.sprite(400, 550, 'lawb');
+            player.setCollideWorldBounds(true);
+            player.setVisible(false);
+            
+            emojis = this.physics.add.group();
+            
+            scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#FFF' });
+            timeText = this.add.text(16, 56, 'Time: 2:00', { fontSize: '32px', fill: '#FFF' });
+            
+            scoreText.setVisible(false);
+            timeText.setVisible(false);
+    
+            startButton = this.add.text(400, 300, 'Start Game', { fontSize: '48px', fill: '#00FF00' })
+                .setOrigin(0.5)
+                .setInteractive()
+                .on('pointerdown', () => {
+                    startButton.setVisible(false);
+                    startGameplay.call(this);
+                });
+    
+            this.input.on('pointermove', function (pointer) {
+                if (!isGameOver) {
+                    player.x = Phaser.Math.Clamp(pointer.x, player.width / 2, config.width - player.width / 2);
+                }
+            }, this);
+        }
+    
+        function startGameplay() {
+            isGameOver = false;
+            player.setVisible(true);
+            scoreText.setVisible(true);
+            timeText.setVisible(true);
+            score = 0;
+            timeLeft = 120;
+            scoreText.setText('Score: 0');
+            timeText.setText('Time: 2:00');
+    
+            this.time.addEvent({ delay: 1000, callback: updateTimer, callbackScope: this, loop: true });
+            this.time.addEvent({ delay: 1500, callback: spawnEmoji, callbackScope: this, loop: true });
+        }
+    
+        function update() {
             if (!isGameOver) {
-                player.x = Phaser.Math.Clamp(pointer.x, player.width / 2, config.width - player.width / 2);
+                this.physics.overlap(player, emojis, collectEmoji, null, this);
             }
-        }, this);
-    }
-
-    function startGameplay() {
-        isGameOver = false;
-        player.setVisible(true);
-        scoreText.setVisible(true);
-        timeText.setVisible(true);
-        score = 0;
-        timeLeft = 120;
-        scoreText.setText('Score: 0');
-        timeText.setText('Time: 2:00');
-
-        this.time.addEvent({ delay: 1000, callback: updateTimer, callbackScope: this, loop: true });
-        this.time.addEvent({ delay: 1500, callback: spawnEmoji, callbackScope: this, loop: true });
-    }
-
-    function update() {
-        if (!isGameOver) {
-            this.physics.overlap(player, emojis, collectEmoji, null, this);
         }
-    }
-
-    function spawnEmoji() {
-        if (!isGameOver) {
-            const x = Phaser.Math.Between(0, 800);
-            const emoji = emojis.create(x, 0, 'emoji');
-            emoji.setBounce(0.7);
-            emoji.setCollideWorldBounds(true);
-            emoji.setVelocity(Phaser.Math.Between(-100, 100), 20);
+    
+        function spawnEmoji() {
+            if (!isGameOver) {
+                const x = Phaser.Math.Between(0, 800);
+                const emoji = emojis.create(x, 0, 'emoji');
+                emoji.setBounce(0.7);
+                emoji.setCollideWorldBounds(true);
+                emoji.setVelocity(Phaser.Math.Between(-100, 100), 20);
+                
+                this.time.addEvent({
+                    delay: 10000,
+                    callback: () => {
+                        if (emoji.active) {
+                            emoji.destroy();
+                        }
+                    },
+                    loop: false
+                });
+            }
+        }
+    
+        function collectEmoji(player, emoji) {
+            emoji.disableBody(true, true);
+            score += 10;
+            scoreText.setText('Score: ' + score);
+        }
+    
+        function updateTimer() {
+            if (!isGameOver) {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timeText.setText(`Time: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+                
+                if (timeLeft <= 0) {
+                    gameOver.call(this);
+                }
+            }
+        }
+    
+        function gameOver() {
+            isGameOver = true;
+            this.physics.pause();
             
-            this.time.addEvent({
-                delay: 10000, // 10 seconds
-                callback: () => {
-                    if (emoji.active) {
-                        emoji.destroy();
-                    }
-                },
-                loop: false
+            emojis.children.entries.forEach(emoji => {
+                emoji.setVelocity(0, 0);
             });
-        }
-    }
-
-    function collectEmoji(player, emoji) {
-        emoji.disableBody(true, true);
-        score += 10;
-        scoreText.setText('Score: ' + score);
-    }
-
-    function updateTimer() {
-        if (!isGameOver) {
-            timeLeft--;
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            timeText.setText(`Time: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
             
-            if (timeLeft <= 0) {
-                gameOver.call(this);
-            }
+            const gameOverText = this.add.text(400, 250, 'Game Over', { fontSize: '64px', fill: '#FF0000' }).setOrigin(0.5);
+            const scoreDisplay = this.add.text(400, 320, `Final Score: ${score}`, { fontSize: '32px', fill: '#FFFFFF' }).setOrigin(0.5);
+            
+            const restartButton = this.add.text(400, 400, 'Restart Game', { fontSize: '32px', fill: '#00FF00' })
+                .setOrigin(0.5)
+                .setInteractive()
+                .on('pointerdown', () => {
+                    this.scene.restart();
+                });
         }
-    }
-
-    function gameOver() {
-        isGameOver = true;
-        this.physics.pause();
-        
-        emojis.children.entries.forEach(emoji => {
-            emoji.setVelocity(0, 0);
+    
+        document.getElementById('start-game-button').addEventListener('click', function() {
+            this.style.display = 'none';
+            initGame();
         });
-        
-        const gameOverText = this.add.text(400, 250, 'Game Over', { fontSize: '64px', fill: '#FF0000' }).setOrigin(0.5);
-        const scoreDisplay = this.add.text(400, 320, `Final Score: ${score}`, { fontSize: '32px', fill: '#FFFFFF' }).setOrigin(0.5);
-        
-        const restartButton = this.add.text(400, 400, 'Restart Game', { fontSize: '32px', fill: '#00FF00' })
-            .setOrigin(0.5)
-            .setInteractive()
-            .on('pointerdown', () => {
-                this.scene.restart();
-            });
-    }
+    </script>
 
-    // Initialize the game when the start button is clicked
-    document.getElementById('start-game-button').addEventListener('click', function() {
-        this.style.display = 'none';  // Hide the button after clicking
-        initGame();
-    });
+    <!-- Shopify Buy Button Script -->
+    <script>
+    /*<![CDATA[*/
+    (function () {
+      var scriptURL = 'https://sdks.shopifycdn.com/buy-button/latest/buy-button-storefront.min.js';
+      if (window.ShopifyBuy) {
+        if (window.ShopifyBuy.UI) {
+          ShopifyBuyInit();
+        } else {
+          loadScript();
+        }
+      } else {
+        loadScript();
+      }
+      function loadScript() {
+        var script = document.createElement('script');
+        script.async = true;
+        script.src = scriptURL;
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(script);
+        script.onload = ShopifyBuyInit;
+      }
+      function ShopifyBuyInit() {
+        var client = ShopifyBuy.buildClient({
+          domain: 'planet-ick.myshopify.com',
+          storefrontAccessToken: '58a6db588cb5789b3ef13e1b7870762a',
+        });
+        ShopifyBuy.UI.onReady(client).then(function (ui) {
+          ui.createComponent('product', {
+            id: '9559189029161',
+            node: document.getElementById('product-component-1734203549488'),
+            moneyFormat: '%24%7B%7Bamount%7D%7D',
+            options: {
+              "product": {
+                "styles": {
+                  "product": {
+                    "@media (min-width: 601px)": {
+                      "max-width": "calc(25% - 20px)",
+                      "margin-left": "20px",
+                      "margin-bottom": "50px"
+                    },
+                    "carousel-button": {
+                      "display": "none"
+                    }
+                  },
+                  "title": {
+                    "font-family": "Old Standard TT, serif",
+                    "font-size": "20px",
+                    "color": "#1eff00"
+                  },
+                  "button": {
+                    "font-family": "Old Standard TT, serif",
+                    "font-weight": "bold",
+                    "font-size": "14px",
+                    "padding-top": "15px",
+                    "padding-bottom": "15px",
+                    "color": "#6eff00",
+                    ":hover": {
+                      "color": "#6eff00",
+                      "background-color": "#000000"
+                    },
+                    "background-color": "#000000",
+                    ":focus": {
+                      "background-color": "#000000"
+                    },
+                    "border-radius": "0px",
+                    "padding-left": "20px",
+                    "padding-right": "20px"
+                  }
+                },
+                "buttonDestination": "checkout",
+                "contents": {
+                  "img": false,
+                  "imgWithCarousel": true
+                },
+                "text": {
+                  "button": "Buy now"
+                },
+                "googleFonts": [
+                  "Old Standard TT"
+                ]
+              }
+            },
+          });
+        });
+      }
+    })();
+    /*]]>*/
     </script>
 </body>
 </html>
