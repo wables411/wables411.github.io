@@ -496,7 +496,7 @@ class MultiplayerManager {
         try {
             this.isProcessingMove = true;
             
-            // Validate move parameters
+            // Validate basic parameters
             if (!window.board || !window.board[startRow] || !window.board[startRow][startCol]) {
                 throw new Error('Invalid start position');
             }
@@ -515,20 +515,43 @@ class MultiplayerManager {
                 currentPlayer: window.currentPlayer
             });
     
-            const newBoard = JSON.parse(JSON.stringify(window.board));
-            const movingPiece = newBoard[startRow][startCol];
+            const movingPiece = window.board[startRow][startCol];
             
             if (!movingPiece) {
                 throw new Error('No piece at start position');
             }
     
+            // Validate chess rules before making the move
+            if (!window.canPieceMove(movingPiece, startRow, startCol, endRow, endCol)) {
+                console.error('Invalid move according to chess rules');
+                return false;
+            }
+    
+            // Create new board state after validating move
+            const newBoard = JSON.parse(JSON.stringify(window.board));
             newBoard[endRow][endCol] = promotion || movingPiece;
             newBoard[startRow][startCol] = null;
     
+            // Handle special moves like castling
+            if (movingPiece.toLowerCase() === 'k' && Math.abs(endCol - startCol) === 2) {
+                const row = this.playerColor === 'blue' ? 7 : 0;
+                if (endCol === 6) { // Kingside
+                    newBoard[row][5] = newBoard[row][7];
+                    newBoard[row][7] = null;
+                } else if (endCol === 2) { // Queenside
+                    newBoard[row][3] = newBoard[row][0];
+                    newBoard[row][0] = null;
+                }
+            }
+    
+            // Temporarily set board to check game end conditions
+            const originalBoard = JSON.parse(JSON.stringify(window.board));
             window.board = newBoard;
+            
             const nextPlayer = this.playerColor === 'blue' ? 'red' : 'blue';
             let gameEndState = null;
     
+            // Check for checkmate/stalemate
             if (window.isCheckmate && window.isCheckmate(nextPlayer)) {
                 gameEndState = {
                     game_state: 'ended',
@@ -541,6 +564,7 @@ class MultiplayerManager {
                 };
             }
     
+            // Prepare database update
             const updateData = {
                 board: {
                     positions: newBoard,
@@ -562,15 +586,18 @@ class MultiplayerManager {
                 Object.assign(updateData, gameEndState);
             }
     
+            // Update database
             const { error } = await this.supabase
                 .from('chess_games')
                 .update(updateData)
                 .eq('game_id', this.gameId);
     
             if (error) {
+                window.board = originalBoard; // Restore original board state
                 throw error;
             }
     
+            // Update local state
             window.board = newBoard;
             window.placePieces();
             window.updateStatusDisplay("Opponent's turn");
@@ -580,7 +607,7 @@ class MultiplayerManager {
         } catch (error) {
             console.error('Move error:', error);
             
-            // Recover board state
+            // Restore original board state
             if (this.currentGameState?.board?.positions) {
                 window.board = JSON.parse(JSON.stringify(this.currentGameState.board.positions));
                 window.placePieces();

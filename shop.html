@@ -6,11 +6,7 @@
         <title>$lawb shop</title>
         <link rel="icon" href="favicon.ico" type="image/x-icon">
         <link rel="stylesheet" href="style.css">
-        <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-        <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-        <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-        <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@latest"></script>
+        <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
         
     <style>
         .shop-container {
@@ -81,6 +77,36 @@
             max-width: 500px;
             margin: 20px auto;
         }
+
+        .gating-message {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            margin: 20px 0;
+            color: #6eff00;
+        }
+
+        .loading {
+            color: #6eff00;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .connect-wallet-btn {
+            background-color: #FF0000;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 20px 0;
+        }
+
+        .connect-wallet-btn:hover {
+            background-color: #cc0000;
+        }
     </style>
 </head>
 <body class="lawbstation-body">
@@ -103,35 +129,210 @@
         </ul>
     </nav>
 
-    <div class="shop-container">
-        <div class="product-card">
-            <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 20px;">
-                <div style="flex: 1; max-width: 400px;">
-                    <img src="images/redplushy.jpg" alt="Red LAWB Plushie" class="product-image" style="width: 100%;">
-                    <p style="color: white; margin-top: 5px;">Red Lawbster</p>
-                </div>
-                <div style="flex: 1; max-width: 400px;">
-                    <img src="images/blueplushy.jpg" alt="Blue LAWB Plushie" class="product-image" style="width: 100%;">
-                    <p style="color: white; margin-top: 5px;">Blue Lawbster</p>
-                </div>
-            </div>
-            <h2 class="product-title">🦞 Lawbster Plushy 🦞</h2>
-            <div class="product-description">
-                <p>Red vs Blue</p>
-                <p>Limited to 100 Lawbsters per color </p>
-                <p>shipping included</p>
-            </div>
-            <div class="price-container">
-                <div class="price-tag">0.5 SOL</div>
-                <div class="price-tag">1,000,000 $LAWB</div>
-            </div>
-            <div id="checkout-root"></div>
+    <div class="shop-container" id="shop-content">
+        <div class="gating-message" id="connect-message">
+            <button class="connect-wallet-btn" onclick="connectWallet()">Connect Wallet</button>
         </div>
     </div>
 
-    <script type="text/babel">
-        const { createClient } = supabase;
+    <script>
+        const COLLECTIONS = [
+            {
+                address: '0x5Af0D9827E0c53E4799BB226655A1de152A425a5',
+                chain: 'eth'
+            },
+            {
+                address: '0xEEd41d06AE195CA8f5CaCACE4cd691EE75F0683f',
+                chain: 'eth'
+            },
+            {
+                address: '0x0ef7bA09C38624b8E9cc4985790a2f5dBFc1dC42',
+                chain: 'eth'
+            },
+            {
+                address: '0xEC0a7A26456B8451aefc4b00393ce1BefF5eB3e9',
+                chain: 'eth'
+            },
+            {
+                address: '0xd7922cD333da5ab3758C95f774B092A7B13a5449',
+                chain: 'base'
+            },
+            {
+                address: '0x0c12abA58Fc88F1267fa772012495b47aAf31CaB',
+                chain: 'base'
+            },
+            {
+                address: '0xD0ddA8e6B354c5F12787aaca936b711C831745BA',
+                chain: 'base'
+            },
+            {
+                address: '0xEe7D1B184be8185Adc7052635329152a4d0cdEfA',
+                chain: 'base'
+            }
+        ];
+
+        const ERC721_ABI = [
+            {
+                "inputs": [{"internalType": "address","name": "owner","type": "address"}],
+                "name": "balanceOf",
+                "outputs": [{"internalType": "uint256","name": "","type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+
+        async function connectWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                showMessage('Please install MetaMask to access this product');
+                return;
+            }
+
+            try {
+                document.getElementById('connect-message').innerHTML = '<div class="loading">Checking wallet...</div>';
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                checkTokens(accounts[0]);
+            } catch (error) {
+                showMessage('Error connecting wallet: ' + error.message);
+            }
+        }
+
+        async function checkTokens(userAddress) {
+            try {
+                const web3 = new Web3(window.ethereum);
+                
+                for (const collection of COLLECTIONS) {
+                    const contract = new web3.eth.Contract(ERC721_ABI, collection.address);
+                    try {
+                        const balance = await contract.methods.balanceOf(userAddress).call();
+                        if (balance > 0) {
+                            showProduct();
+                            return;
+                        }
+                    } catch (error) {
+                        console.error(`Error checking collection ${collection.address}:`, error);
+                    }
+                }
+                
+                showMessage('You must own at least one NFT from the eligible collections to access this product');
+            } catch (error) {
+                showMessage('Error checking tokens: ' + error.message);
+            }
+        }
+
+        function showMessage(message) {
+            document.getElementById('shop-content').innerHTML = `
+                <div class="gating-message">
+                    <p>${message}</p>
+                    <button class="connect-wallet-btn" onclick="connectWallet()">Try Again</button>
+                </div>
+            `;
+        }
+
+        function showProduct() {
+            document.getElementById('shop-content').innerHTML = `
+                <div class="product-card">
+                    <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 20px;">
+                        <div style="flex: 1; max-width: 400px;">
+                            <img src="images/redplushy.jpg" alt="Red LAWB Plushie" class="product-image" style="width: 100%;">
+                            <p style="color: white; margin-top: 5px;">Red Lawbster</p>
+                        </div>
+                        <div style="flex: 1; max-width: 400px;">
+                            <img src="images/blueplushy.jpg" alt="Blue LAWB Plushie" class="product-image" style="width: 100%;">
+                            <p style="color: white; margin-top: 5px;">Blue Lawbster</p>
+                        </div>
+                    </div>
+                    <h2 class="product-title">🦞 Lawbster Plushy 🦞</h2>
+                    <div class="product-description">
+                        <p>Red vs Blue</p>
+                        <p>Limited to 100 Lawbsters per color </p>
+                        <p>shipping included</p>
+                    </div>
+                    <div class="price-container">
+                        <div class="price-tag">0.5 SOL</div>
+                        <div class="price-tag">1,000,000 $LAWB</div>
+                    </div>
+                    <div id="product-component-1734220534764"></div>
+                </div>
+            `;
+
+            // Initialize Shopify button after showing product
+            initializeShopifyButton();
+        }
+
+        function initializeShopifyButton() {
+            const script = document.createElement('script');
+            script.src = 'https://sdks.shopifycdn.com/buy-button/latest/buy-button-storefront.min.js';
+            script.async = true;
+            script.onload = shopifyButtonInit;
+            document.head.appendChild(script);
+        }
+
+        function shopifyButtonInit() {
+            const client = ShopifyBuy.buildClient({
+                domain: 'planet-ick.myshopify.com',
+                storefrontAccessToken: '58a6db588cb5789b3ef13e1b7870762a',
+            });
+
+            ShopifyBuy.UI.onReady(client).then(function (ui) {
+                ui.createComponent('product', {
+                    id: '9559189029161',
+                    node: document.getElementById('product-component-1734220534764'),
+                    moneyFormat: '%24%7B%7Bamount%7D%7D',
+                    options: {
+                        "product": {
+                            "styles": {
+                                "product": {
+                                    "@media (min-width: 601px)": {
+                                        "max-width": "calc(25% - 20px)",
+                                        "margin-left": "20px",
+                                        "margin-bottom": "50px"
+                                    },
+                                    "carousel-button": {
+                                        "display": "none"
+                                    }
+                                },
+                                "title": {
+                                    "font-family": "Old Standard TT, serif",
+                                    "font-size": "20px",
+                                    "color": "#1eff00"
+                                },
+                                "button": {
+                                    "font-family": "Old Standard TT, serif",
+                                    "font-weight": "bold",
+                                    "font-size": "14px",
+                                    "padding-top": "15px",
+                                    "padding-bottom": "15px",
+                                    "color": "#6eff00",
+                                    ":hover": {
+                                        "color": "#6eff00",
+                                        "background-color": "#000000"
+                                    },
+                                    "background-color": "#000000",
+                                    ":focus": {
+                                        "background-color": "#000000"
+                                    },
+                                    "border-radius": "0px",
+                                    "padding-left": "20px",
+                                    "padding-right": "20px"
+                                }
+                            },
+                            "buttonDestination": "modal",
+                            "contents": {
+                                "img": false,
+                                "imgWithCarousel": true,
+                                "options": false
+                            },
+                            "text": {
+                                "button": "Buy now"
+                            },
+                            "googleFonts": [
+                                "Old Standard TT"
+                            ]
+                        }
+                    }
+                });
+            });
+        }
     </script>
-    <script type="text/babel" src="checkout.js"></script>
 </body>
 </html>
