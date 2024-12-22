@@ -1561,220 +1561,659 @@ function evaluateEasyMove(piece, startRow, startCol, endRow, endCol) {
     return score;
 }
 
+// Sophisticated piece values with position-based adjustments
+const PIECE_VALUES = {
+    'p': 100,  // Base pawn value
+    'n': 325,  // Slightly increased knight value
+    'b': 335,  // Slightly increased bishop value
+    'r': 500,
+    'q': 900,
+    'k': 20000
+};
+
 function evaluateHardMove(piece, startRow, startCol, endRow, endCol) {
     let score = 0;
+    const pieceType = piece.toLowerCase();
+    const color = getPieceColor(piece);
     
-    const pieceValues = {
-        'p': 100,  // Slightly increased pawn value
-        'n': 320,
-        'b': 330,
-        'r': 500,
-        'q': 900,
-        'k': 20000
-    };
-    
-    // Evaluate captures more intelligently
-    const originalPiece = window.board[endRow][endCol];
-    if (originalPiece) {
-        const captureValue = pieceValues[originalPiece.toLowerCase()];
-        const attackerValue = pieceValues[piece.toLowerCase()];
-        score += captureValue * 1.2; // Base capture value
+    // 1. Evaluate immediate material gain/loss
+    const capturedPiece = window.board[endRow][endCol];
+    if (capturedPiece) {
+        const captureValue = PIECE_VALUES[capturedPiece.toLowerCase()];
+        const attackerValue = PIECE_VALUES[pieceType];
+        score += captureValue * 1.2;  // Base capture bonus
+        
+        // Strategic trade evaluation
         if (captureValue > attackerValue) {
-            score += (captureValue - attackerValue) * 0.3; // Bonus for favorable trades
+            score += (captureValue - attackerValue) * 0.5; // Winning material
+        } else if (captureValue === attackerValue) {
+            // Equal trades evaluated based on game phase
+            const isEnd = isEndgame();
+            if (isEnd) {
+                score += 25; // Encourage simplification in endgame
+            } else if (pieceType === 'q') {
+                score -= 15; // Discourage early queen trades
+            }
         }
     }
-    
-    // Add positional scores from piece-square tables
-    const isEndgame = !isEarlyGame();
-    score += getPieceSquareValue(piece, endRow, endCol, isEndgame) * 0.8;
-    
-    // Piece-specific evaluations
-    switch (piece.toLowerCase()) {
+
+    // 2. Position evaluation
+    score += evaluatePosition(piece, endRow, endCol) * 0.8;
+
+    // 3. Mobility evaluation
+    score += evaluateMobility(piece, endRow, endCol) * 0.4;
+
+    // 4. Advanced piece-specific evaluation
+    switch (pieceType) {
         case 'p':
-            if (isPassedPawn(endRow, endCol, 'red')) score += 60;
-            if (hasFriendlyPawnNeighbor(endRow, endCol)) score += 20;
-            score += (endRow - startRow) * 15; // Encourage forward movement
+            score += evaluateAdvancedPawn(piece, endRow, endCol);
             break;
         case 'n':
-            score += (8 - getDistanceToEnemyKing(endRow, endCol, 'blue')) * 10;
-            score += countValidKnightMoves(endRow, endCol) * 8;
+            score += evaluateAdvancedKnight(piece, endRow, endCol);
             break;
         case 'b':
-            score += countDiagonalMoves(endRow, endCol) * 6;
-            if (isOnLongDiagonal(endRow, endCol)) score += 30;
+            score += evaluateAdvancedBishop(piece, endRow, endCol);
             break;
         case 'r':
-            if (isFileOpen(endCol)) score += 40;
-            if (endRow === 6) score += 30; // 7th rank bonus
-            score += countOrthogonalMoves(endRow, endCol) * 5;
+            score += evaluateAdvancedRook(piece, endRow, endCol);
             break;
         case 'q':
-            score += (countDiagonalMoves(endRow, endCol) + 
-                     countOrthogonalMoves(endRow, endCol)) * 4;
-            score += (8 - getDistanceToEnemyKing(endRow, endCol, 'blue')) * 5;
+            score += evaluateAdvancedQueen(piece, endRow, endCol);
             break;
         case 'k':
-            if (isEndgame) {
-                score += (8 - getDistanceToEnemyKing(endRow, endCol, 'blue')) * 15;
-            } else {
-                score += evaluateKingSafety(endRow, endCol, 'red');
-            }
+            score += evaluateAdvancedKing(piece, endRow, endCol);
             break;
     }
-    
-    // Strategic bonuses
-    if (endRow >= 2 && endRow <= 5 && endCol >= 2 && endCol <= 5) {
-        score += 25; // Control of extended center
-        if (endRow >= 3 && endRow <= 4 && endCol >= 3 && endCol <= 4) {
-            score += 15; // Extra bonus for central control
-        }
+
+    // 5. Development and tempo bonus in opening/middlegame
+    if (!isEndgame()) {
+        score += evaluateDevelopment(piece, startRow, startCol, endRow, endCol) * 0.7;
     }
-    
-    // King safety consideration
-    if (!isEndgame && !piece.toLowerCase() !== 'k') {
-        if (getPieceType(piece) !== 'p') {
-            const distanceToOwnKing = getDistanceToFriendlyKing(endRow, endCol, 'red');
-            if (distanceToOwnKing <= 2) score += 10; // Bonus for pieces protecting king
-        }
+
+    // 6. Center control bonus with distance-based scaling
+    const centerDistance = Math.max(
+        Math.abs(3.5 - endRow),
+        Math.abs(3.5 - endCol)
+    );
+    score += (4 - centerDistance) * 15;
+
+    // 7. King proximity evaluation in endgame
+    if (isEndgame() && pieceType !== 'k') {
+        const distToEnemyKing = getDistanceToEnemyKing(endRow, endCol, color === 'red' ? 'blue' : 'red');
+        score += (7 - distToEnemyKing) * 12;
     }
-    
-    // Encourage development in early game
-    if (isEarlyGame() && startRow === 0 || startRow === 1) {
-        score += 20; // Bonus for moving pieces out
-    }
-    
+
+    // 8. Pattern recognition
+    score += evaluatePositionalPatterns(piece, endRow, endCol) * 0.6;
+
     return score;
 }
 
-// Positional evaluation helper functions
-function evaluatePawnPosition(row, col, color) {
+function evaluateAdvancedPawn(piece, row, col) {
     let score = 0;
-    const pawnAdvancement = color === 'red' ? row : 7 - row;
+    const color = getPieceColor(piece);
     
-    // Reward pawn advancement
-    score += pawnAdvancement * 10;
-    
-    // Center control bonus
+    // Passed pawn evaluation
+    if (isPassedPawn(row, col, color)) {
+        const rankFromPromotion = color === 'red' ? 7 - row : row;
+        score += 50 + (20 * (7 - rankFromPromotion));  // Increases as pawn advances
+        
+        // Protected passed pawn bonus
+        if (hasFriendlyPawnNeighbor(row, col)) {
+            score += 35;
+        }
+    }
+
+    // Pawn structure evaluation
+    if (hasFriendlyPawnNeighbor(row, col)) {
+        score += 25;  // Connected pawns bonus
+    }
+
+    // Doubled pawn penalty
+    if (isDoubledPawn(col, color)) {
+        score -= 35;
+    }
+
+    // Isolated pawn penalty
+    if (isIsolatedPawn(col, color)) {
+        score -= 30;
+    }
+
+    // Center control bonus for central pawns
     if (col >= 3 && col <= 4) {
-        score += 20;
+        score += 25;
+        if (row >= 3 && row <= 4) {
+            score += 15;  // Extra bonus for central control
+        }
     }
-    
+
+    // Forward pawn bonus
+    const advancementBonus = color === 'red' ? row * 8 : (7 - row) * 8;
+    score += advancementBonus;
+
     return score;
 }
 
-function evaluateKnightPosition(row, col) {
+function evaluateAdvancedKnight(piece, row, col) {
     let score = 0;
+    const color = getPieceColor(piece);
     
-    // Center control bonus
-    const distanceFromCenter = Math.max(Math.abs(3.5 - row), Math.abs(3.5 - col));
-    score += (4 - distanceFromCenter) * 10;
-    
-    // Mobility bonus
-    let mobilityCount = 0;
-    const moves = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
-    for (const [dr, dc] of moves) {
-        const newRow = row + dr;
-        const newCol = col + dc;
-        if (isWithinBoard(newRow, newCol)) mobilityCount++;
+    // Outpost evaluation
+    if (isKnightOutpost(piece, row, col)) {
+        score += 45;
+        if (isPawnProtected(row, col, color)) {
+            score += 20;  // Protected outpost bonus
+        }
     }
-    score += mobilityCount * 5;
-    
+
+    // Mobility evaluation
+    const mobility = countValidKnightMoves(row, col);
+    score += mobility * 8;
+
+    // Center proximity bonus
+    const centerDistance = Math.max(Math.abs(3.5 - row), Math.abs(3.5 - col));
+    score += (4 - centerDistance) * 12;
+
+    // Edge penalties
+    if (row === 0 || row === 7 || col === 0 || col === 7) {
+        score -= 25;
+    }
+
     return score;
 }
 
-function getDistanceToEnemyKing(row, col, enemyColor) {
-    const kingPiece = enemyColor === 'blue' ? 'k' : 'K';
-    let kingRow, kingCol;
+function evaluateAdvancedBishop(piece, row, col) {
+    let score = 0;
+    const color = getPieceColor(piece);
     
-    for (let r = 0; r < 8; r++) {
-        for (let c = 0; c < 8; c++) {
-            if (window.board[r][c] === kingPiece) {
-                kingRow = r;
-                kingCol = c;
-                break;
+    // Mobility on diagonals
+    score += countDiagonalMoves(row, col) * 6;
+
+    // Bishop pair bonus
+    if (hasBishopPair(color)) {
+        score += 50;
+    }
+
+    // Fianchetto bonus
+    if (isFianchettoed(piece, row, col)) {
+        score += 30;
+        
+        // Extra bonus if king is castled on same side
+        if (isKingCastled(color) && isOnSameSide(row, col, findKingPosition(color))) {
+            score += 20;
+        }
+    }
+
+    // Long diagonal control
+    if (isOnLongDiagonal(row, col)) {
+        score += 35;
+    }
+
+    // Open diagonal bonus
+    score += countOpenDiagonals(row, col) * 12;
+
+    return score;
+}
+
+function evaluateAdvancedRook(piece, row, col) {
+    let score = 0;
+    const color = getPieceColor(piece);
+    
+    // Open file control
+    if (isFileOpen(col)) {
+        score += 45;
+    } else if (isSemiOpenFile(col, color)) {
+        score += 25;
+    }
+
+    // Seventh rank control
+    const seventhRank = color === 'red' ? 6 : 1;
+    if (row === seventhRank) {
+        score += 40;
+        
+        // Extra bonus if another rook is also on 7th
+        if (hasRookOnSeventh(color, seventhRank, col)) {
+            score += 25;
+        }
+    }
+
+    // Connected rooks bonus
+    if (hasConnectedRook(piece, row, col)) {
+        score += 30;
+    }
+
+    // Mobility score
+    score += countOrthogonalMoves(row, col) * 5;
+
+    return score;
+}
+
+function evaluateAdvancedQueen(piece, row, col) {
+    let score = 0;
+    const isEnd = isEndgame();
+    
+    // Mobility evaluation
+    const mobilityScore = (countDiagonalMoves(row, col) + countOrthogonalMoves(row, col)) * 4;
+    score += mobilityScore;
+
+    // Early development penalty
+    if (!isEnd && isEarlyDevelopment()) {
+        score -= 35;  // Significant penalty for early queen development
+    }
+
+    // King proximity evaluation
+    if (isEnd) {
+        const distToEnemyKing = getDistanceToEnemyKing(row, col);
+        score += (8 - distToEnemyKing) * 8;
+    } else {
+        // In middlegame, prefer safer squares away from enemy pieces
+        score += evaluateQueenSafety(row, col) * 5;
+    }
+
+    // Center influence
+    if (row >= 2 && row <= 5 && col >= 2 && col <= 5) {
+        score += 20;
+        if (isEnd) {
+            score += 10;  // Extra central bonus in endgame
+        }
+    }
+
+    return score;
+}
+
+function evaluateAdvancedKing(piece, row, col) {
+    let score = 0;
+    const color = getPieceColor(piece);
+    const isEnd = isEndgame();
+    
+    if (isEnd) {
+        // Endgame: King should be active
+        score += evaluateKingActivity(row, col) * 10;
+        score += (8 - getDistanceToEnemyKing(row, col)) * 10;
+        score += evaluateCentralization(row, col) * 8;
+    } else {
+        // Middlegame: King safety is priority
+        score += evaluateKingSafety(row, col, color) * 15;
+        
+        // Castling evaluation
+        if (!hasCastled(color)) {
+            score -= 40;  // Penalty for not castling
+            if (hasKingMoved(color)) {
+                score -= 20;  // Additional penalty if king moved without castling
             }
         }
-        if (kingRow !== undefined) break;
+    }
+
+    // Pawn shield evaluation
+    score += evaluatePawnShield(row, col, color);
+
+    return score;
+}
+
+// Advanced helper functions
+function isKnightOutpost(piece, row, col) {
+    const color = getPieceColor(piece);
+    if (piece.toLowerCase() !== 'n') return false;
+    
+    // Must be in enemy half
+    const inEnemyTerritory = color === 'red' ? row >= 4 : row <= 3;
+    if (!inEnemyTerritory) return false;
+    
+    // Cannot be attacked by enemy pawns
+    return !canBeAttackedByEnemyPawns(row, col, color);
+}
+
+function isSemiOpenFile(col, color) {
+    let hasOwnPawn = false;
+    let hasEnemyPawn = false;
+    const ownPawn = color === 'red' ? 'P' : 'p';
+    const enemyPawn = color === 'red' ? 'p' : 'P';
+    
+    for (let row = 0; row < 8; row++) {
+        const piece = window.board[row][col];
+        if (piece === ownPawn) hasOwnPawn = true;
+        if (piece === enemyPawn) hasEnemyPawn = true;
     }
     
-    return Math.max(Math.abs(kingRow - row), Math.abs(kingCol - col));
+    return !hasOwnPawn && hasEnemyPawn;
 }
 
-function evaluateBishopPosition(row, col) {
-    return countDiagonalMoves(row, col) * 5;
+function evaluateQueenSafety(row, col) {
+    let score = 0;
+    const piece = window.board[row][col];
+    const color = getPieceColor(piece);
+    
+    // Check attacking pieces
+    const attackers = countAttackers(row, col, color === 'red' ? 'blue' : 'red');
+    score -= attackers * 20;
+    
+    // Bonus for having defenders
+    const defenders = countAttackers(row, col, color);
+    score += defenders * 15;
+    
+    return score;
 }
 
-function isOnLongDiagonal(row, col) {
-    return Math.abs(row - col) === 0 || Math.abs(row - (7 - col)) === 0;
-}
-
-function evaluateRookPosition(row, col, color) {
+function evaluateKingActivity(row, col) {
     let score = 0;
     
-    // Open file bonus
-    if (isFileOpen(col)) score += 30;
+    // Distance from center bonus
+    const centerDistance = Math.max(Math.abs(3.5 - row), Math.abs(3.5 - col));
+    score += (4 - centerDistance) * 10;
     
-    // Seventh rank bonus
-    if ((color === 'red' && row === 6) || (color === 'blue' && row === 1)) {
+    // Bonus for controlling adjacent squares
+    for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const newRow = row + dr;
+            const newCol = col + dc;
+            if (isWithinBoard(newRow, newCol) && !isSquareUnderAttack(newRow, newCol)) {
+                score += 5;
+            }
+        }
+    }
+    
+    return score;
+}
+
+function evaluateCentralization(row, col) {
+    const distanceFromCenter = Math.max(
+        Math.abs(3.5 - row),
+        Math.abs(3.5 - col)
+    );
+    return Math.max(0, 4 - distanceFromCenter) * 10;
+}
+
+function evaluatePawnShield(row, col, color) {
+    let score = 0;
+    const direction = color === 'red' ? 1 : -1;
+    
+    // Check pawns in front of king
+    for (let r = row; r !== row + (3 * direction) && r >= 0 && r < 8; r += direction) {
+        for (let c = Math.max(0, col - 1); c <= Math.min(7, col + 1); c++) {
+            const piece = window.board[r][c];
+            if (piece && piece.toLowerCase() === 'p' && getPieceColor(piece) === color) {
+                // Closer pawns are worth more
+                const distance = Math.abs(r - row);
+                score += 20 - (distance * 5);
+            }
+        }
+    }
+    
+    return score;
+}
+
+function countAttackers(row, col, attackingColor) {
+    let count = 0;
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const piece = window.board[r][c];
+            if (piece && getPieceColor(piece) === attackingColor) {
+                if (canPieceMove(piece, r, c, row, col)) {
+                    count++;
+                }
+            }
+        }
+    }
+    return count;
+}
+
+function evaluatePositionalPatterns(piece, row, col) {
+    let score = 0;
+    const pieceType = piece.toLowerCase();
+    const color = getPieceColor(piece);
+    
+    // Pawn chain detection
+    if (pieceType === 'p' && hasPawnChain(row, col, color)) {
+        score += 25;
+    }
+    
+    // Bishop fianchetto pattern
+    if (pieceType === 'b' && isFianchetto(piece, row, col)) {
+        score += 30;
+    }
+    
+    // Rook on seventh rank
+    if (pieceType === 'r' && ((color === 'red' && row === 6) || (color === 'blue' && row === 1))) {
+        score += 35;
+    }
+    
+    // Knight outpost
+    if (pieceType === 'n' && isKnightOutpost(piece, row, col)) {
         score += 40;
     }
     
-    return score + countOrthogonalMoves(row, col) * 5;
-}
-
-function evaluateQueenPosition(row, col) {
-    return (countDiagonalMoves(row, col) + countOrthogonalMoves(row, col)) * 5;
-}
-
-function evaluateKingPosition(row, col, color) {
-    let score = 0;
-    
-    // Early game: prefer the back rank
-    if (isEarlyGame()) {
-        score += (color === 'red' ? row : 7 - row) * -20;
-    } else {
-        // Late game: king should be more active
-        const distanceFromCenter = Math.max(Math.abs(3.5 - row), Math.abs(3.5 - col));
-        score += (4 - distanceFromCenter) * 10;
-    }
-    
     return score;
 }
 
-function evaluateKingSafety(row, col, color) {
-    let score = 0;
+function hasPawnChain(row, col, color) {
+    const offset = color === 'red' ? 1 : -1;
+    const pawn = color === 'red' ? 'P' : 'p';
     
-    // Pawn shield
-    const pawnRow = color === 'red' ? row + 1 : row - 1;
-    if (pawnRow >= 0 && pawnRow < 8) {
-        for (let c = col - 1; c <= col + 1; c++) {
-            if (c >= 0 && c < 8) {
-                const piece = window.board[pawnRow][c];
-                if (piece && piece.toLowerCase() === 'p' && getPieceColor(piece) === color) {
-                    score += 30;
+    // Check diagonally forward
+    for (let dc of [-1, 1]) {
+        const protectRow = row + offset;
+        const protectCol = col + dc;
+        if (isWithinBoard(protectRow, protectCol) &&
+            window.board[protectRow][protectCol] === pawn) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+function isFianchetto(piece, row, col) {
+    const color = getPieceColor(piece);
+    if (piece.toLowerCase() !== 'b') return false;
+    
+    // Check if bishop is in fianchetto position
+    return (color === 'red' && row <= 2 && (col === 1 || col === 6)) ||
+           (color === 'blue' && row >= 5 && (col === 1 || col === 6));
+}
+
+function getMaterialCount() {
+    let count = 0;
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            const piece = window.board[row][col];
+            if (piece) {
+                count += PIECE_VALUES[piece.toLowerCase()];
+            }
+        }
+    }
+    return count;
+}
+
+function isEndgame() {
+    const materialCount = getMaterialCount();
+    return materialCount <= 3000 || !hasQueens();
+}
+
+function hasQueens() {
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            const piece = window.board[row][col];
+            if (piece && piece.toLowerCase() === 'q') {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Missing helper functions
+function evaluatePosition(piece, row, col) {
+    const isEnd = isEndgame();
+    return getPieceSquareValue(piece, row, col, isEnd);
+}
+
+function hasBishopPair(color) {
+    let bishops = 0;
+    const bishopChar = color === 'red' ? 'B' : 'b';
+    
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            if (window.board[row][col] === bishopChar) {
+                bishops++;
+            }
+        }
+    }
+    
+    return bishops >= 2;
+}
+
+function isPawnProtected(row, col, color) {
+    const pawn = color === 'red' ? 'P' : 'p';
+    const direction = color === 'red' ? -1 : 1;
+    
+    // Check if any friendly pawns can protect this square
+    for (let dc of [-1, 1]) {
+        const checkRow = row + direction;
+        const checkCol = col + dc;
+        if (isWithinBoard(checkRow, checkCol) && 
+            window.board[checkRow][checkCol] === pawn) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function findKingPosition(color) {
+    const king = color === 'red' ? 'K' : 'k';
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            if (window.board[row][col] === king) {
+                return { row, col };
+            }
+        }
+    }
+    return null;
+}
+
+function isKingCastled(color) {
+    const kingPos = findKingPosition(color);
+    if (!kingPos) return false;
+    
+    // Consider king castled if it has moved from its starting position
+    const startRow = color === 'red' ? 0 : 7;
+    const startCol = 4;
+    
+    return kingPos.row === startRow && (kingPos.col === 2 || kingPos.col === 6);
+}
+
+function isOnSameSide(row, col, kingPos) {
+    if (!kingPos) return false;
+    return Math.abs(col - kingPos.col) <= 2;
+}
+
+function hasRookOnSeventh(color, seventhRank, excludeCol) {
+    const rook = color === 'red' ? 'R' : 'r';
+    
+    for (let col = 0; col < 8; col++) {
+        if (col !== excludeCol && 
+            window.board[seventhRank][col] === rook) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function countOpenDiagonals(row, col) {
+    let count = 0;
+    const directions = [[1,1], [1,-1], [-1,1], [-1,-1]];
+    
+    for (const [dr, dc] of directions) {
+        let r = row + dr;
+        let c = col + dc;
+        let isOpen = true;
+        
+        while (isWithinBoard(r, c)) {
+            if (window.board[r][c]) {
+                isOpen = false;
+                break;
+            }
+            r += dr;
+            c += dc;
+        }
+        
+        if (isOpen) count++;
+    }
+    
+    return count;
+}
+
+function isDoubledPawn(col, color) {
+    let pawnCount = 0;
+    const pawn = color === 'red' ? 'P' : 'p';
+    
+    for (let row = 0; row < 8; row++) {
+        if (window.board[row][col] === pawn) {
+            pawnCount++;
+        }
+    }
+    
+    return pawnCount > 1;
+}
+
+function isIsolatedPawn(col, color) {
+    const pawn = color === 'red' ? 'P' : 'p';
+    
+    // Check adjacent files for friendly pawns
+    for (let adjacentCol of [col - 1, col + 1]) {
+        if (adjacentCol < 0 || adjacentCol >= 8) continue;
+        
+        for (let row = 0; row < 8; row++) {
+            if (window.board[row][adjacentCol] === pawn) {
+                return false;
+            }
+        }
+    }
+    
+    return true;
+}
+
+function evaluateMobility(piece, row, col) {
+    let score = 0;
+    const pieceType = piece.toLowerCase();
+    const color = getPieceColor(piece);
+    
+    // Calculate how many squares the piece can move to
+    let mobilityCount = 0;
+    for (let endRow = 0; endRow < 8; endRow++) {
+        for (let endCol = 0; endCol < 8; endCol++) {
+            if (canPieceMove(piece, row, col, endRow, endCol, false)) {
+                mobilityCount++;
+                
+                // Bonus for controlling central squares
+                if (endRow >= 2 && endRow <= 5 && endCol >= 2 && endCol <= 5) {
+                    score += 2;
                 }
             }
         }
     }
     
+    // Weight mobility based on piece type
+    const mobilityWeights = {
+        'p': 1,
+        'n': 4,
+        'b': 5,
+        'r': 3,
+        'q': 2,
+        'k': 1
+    };
+    
+    score += mobilityCount * (mobilityWeights[pieceType] || 1);
     return score;
 }
 
-function evaluateControlOfCenter(row, col) {
-    if (row >= 2 && row <= 5 && col >= 2 && col <= 5) {
-        return (row >= 3 && row <= 4 && col >= 3 && col <= 4) ? 30 : 15;
+function isEarlyDevelopment() {
+    let moveCount = 0;
+    const moveHistoryElement = document.getElementById('move-history');
+    if (moveHistoryElement) {
+        moveCount = moveHistoryElement.children.length;
     }
-    return 0;
-}
-
-function isEarlyGame() {
-    let pieceCount = 0;
-    for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
-            if (window.board[row][col]) pieceCount++;
-        }
-    }
-    return pieceCount >= 24;
+    return moveCount < 10; // Consider first 10 moves as early game
 }
 
 // Make positional evaluation functions globally available
