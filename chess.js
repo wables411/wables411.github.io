@@ -2216,6 +2216,34 @@ function isEarlyDevelopment() {
     return moveCount < 10; // Consider first 10 moves as early game
 }
 
+function hasConnectedRook(piece, row, col) {
+    if (piece.toLowerCase() !== 'r') return false;
+    const color = getPieceColor(piece);
+    const rook = color === 'red' ? 'R' : 'r';
+    
+    // Check if there's another rook on the same rank
+    for (let c = 0; c < 8; c++) {
+        if (c !== col && window.board[row][c] === rook) {
+            // Check if path is clear between rooks
+            if (isPathClear(row, Math.min(col, c), row, Math.max(col, c))) {
+                return true;
+            }
+        }
+    }
+    
+    // Check if there's another rook on the same file
+    for (let r = 0; r < 8; r++) {
+        if (r !== row && window.board[r][col] === rook) {
+            // Check if path is clear between rooks
+            if (isPathClear(Math.min(row, r), col, Math.max(row, r), col)) {
+                return true;
+            }
+        }
+    }
+    
+    return false;
+}
+
 function evaluateDevelopment(piece, startRow, startCol, endRow, endCol) {
     let score = 0;
     const pieceType = piece.toLowerCase();
