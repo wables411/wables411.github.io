@@ -2216,6 +2216,75 @@ function isEarlyDevelopment() {
     return moveCount < 10; // Consider first 10 moves as early game
 }
 
+function evaluateDevelopment(piece, startRow, startCol, endRow, endCol) {
+    let score = 0;
+    const pieceType = piece.toLowerCase();
+    const color = getPieceColor(piece);
+    const isInitialPosition = (color === 'red' && startRow <= 1) || 
+                            (color === 'blue' && startRow >= 6);
+
+    if (isInitialPosition) {
+        // Encourage developing minor pieces
+        if (pieceType === 'n' || pieceType === 'b') {
+            score += 30;
+            // Extra bonus for developing towards the center
+            if (endCol >= 2 && endCol <= 5) {
+                score += 10;
+            }
+        }
+        
+        // Penalize early queen development
+        if (pieceType === 'q') {
+            score -= 25;
+            // Extra penalty if moved to an exposed position
+            if (endRow >= 3 && endRow <= 4) {
+                score -= 15;
+            }
+        }
+        
+        // Small bonus for rook development only if files are open
+        if (pieceType === 'r' && isFileOpen(endCol)) {
+            score += 15;
+        }
+    }
+
+    // Bonus for controlling central squares during development
+    if ((pieceType === 'n' || pieceType === 'b') && 
+        endRow >= 2 && endRow <= 5 && endCol >= 2 && endCol <= 5) {
+        score += 20;
+    }
+
+    // Penalty for blocking center pawns with pieces
+    if (isBlockingCenterPawn(piece, endRow, endCol)) {
+        score -= 25;
+    }
+
+    return score;
+}
+
+function isBlockingCenterPawn(piece, row, col) {
+    if (piece.toLowerCase() === 'p') return false;
+    const color = getPieceColor(piece);
+    const pawnRow = color === 'red' ? 1 : 6;
+    const pawn = color === 'red' ? 'P' : 'p';
+    
+    // Check if piece is blocking a center pawn that hasn't moved
+    return (row === pawnRow && (col === 3 || col === 4) && 
+            window.board[color === 'red' ? 1 : 6][col] === pawn);
+}
+
+function hasKingMoved(color) {
+    return color === 'red' ? pieceState.redKingMoved : pieceState.blueKingMoved;
+}
+
+function hasCastled(color) {
+    const kingPos = findKingPosition(color);
+    if (!kingPos) return false;
+    
+    const startRow = color === 'red' ? 0 : 7;
+    return kingPos.row === startRow && (kingPos.col === 2 || kingPos.col === 6);
+}
+
 // Make positional evaluation functions globally available
 window.evaluatePawnPosition = evaluatePawnPosition;
 window.evaluateKnightPosition = evaluateKnightPosition;
