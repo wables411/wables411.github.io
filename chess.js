@@ -68,7 +68,7 @@ const pieceImages = {
 // Make piece images globally available
 window.pieceImages = pieceImages;
 
-// Core utility functions first
+// Core utility functions
 function debug(message) {
     console.log(message);
     const debugElement = document.getElementById('debug');
@@ -125,87 +125,11 @@ function coordsToAlgebraic(row, col) {
     return `${String.fromCharCode(97 + col)}${8 - row}`;
 }
 
-function getPieceType(piece) {
-    return piece.toLowerCase();
-}
-
-function getDistanceToFriendlyKing(row, col, color) {
-    const kingPiece = color === 'blue' ? 'k' : 'K';
-    let kingRow, kingCol;
-    
-    for (let r = 0; r < 8; r++) {
-        for (let c = 0; c < 8; c++) {
-            if (window.board[r][c] === kingPiece) {
-                kingRow = r;
-                kingCol = c;
-                break;
-            }
-        }
-        if (kingRow !== undefined) break;
-    }
-    
-    return Math.max(Math.abs(kingRow - row), Math.abs(kingCol - col));
-}
-
-// Board analysis functions
-function countDiagonalMoves(row, col) {
-    let count = 0;
-    const directions = [[1,1], [1,-1], [-1,1], [-1,-1]];
-    
-    for (const [dr, dc] of directions) {
-        let r = row + dr;
-        let c = col + dc;
-        while (r >= 0 && r < 8 && c >= 0 && c < 8) {
-            count++;
-            if (window.board[r][c]) break;
-            r += dr;
-            c += dc;
-        }
-    }
-    return count;
-}
-
-function countOrthogonalMoves(row, col) {
-    let count = 0;
-    const directions = [[0,1], [0,-1], [1,0], [-1,0]];
-    
-    for (const [dr, dc] of directions) {
-        let r = row + dr;
-        let c = col + dc;
-        while (r >= 0 && r < 8 && c >= 0 && c < 8) {
-            count++;
-            if (window.board[r][c]) break;
-            r += dr;
-            c += dc;
-        }
-    }
-    return count;
-}
-
-function isFileOpen(col) {
-    for (let row = 0; row < BOARD_SIZE; row++) {
-        const piece = window.board[row][col];
-        if (piece && piece.toLowerCase() === 'p') {
-            return false;
-        }
-    }
-    return true;
-}
-
-function countValidKnightMoves(row, col) {
-    const moves = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
-    let count = 0;
-    for (const [dr, dc] of moves) {
-        const newRow = row + dr;
-        const newCol = col + dc;
-        if (isWithinBoard(newRow, newCol) && 
-            (!window.board[newRow][newCol] || 
-             getPieceColor(window.board[newRow][newCol]) !== 'red')) {
-            count++;
-        }
-    }
-    return count;
-}
+// Make core functions globally available
+window.getPieceColor = getPieceColor;
+window.getPieceName = getPieceName;
+window.isWithinBoard = isWithinBoard;
+window.coordsToAlgebraic = coordsToAlgebraic;
 
 // Board display functions
 function placePieces() {
@@ -234,7 +158,7 @@ function placePieces() {
     }
 }
 
-// Important: Make placePieces globally available immediately
+// Make placePieces globally available
 window.placePieces = placePieces;
 
 function createPieceElement(piece, row, col) {
@@ -275,9 +199,219 @@ function selectRandomChessboard() {
 window.createBoard = createBoard;
 window.createPieceElement = createPieceElement;
 window.selectRandomChessboard = selectRandomChessboard;
-window.getPieceColor = getPieceColor;
-window.getPieceName = getPieceName;
-window.isWithinBoard = isWithinBoard;
+
+// UI Event Handlers
+function onPieceClick(event) {
+    try {
+        if (!checkGameAccess()) return;
+        
+        // Log current state
+        console.log('Click state:', {
+            isMultiplayerMode: window.isMultiplayerMode,
+            currentPlayer: window.currentPlayer,
+            playerColor: window.playerColor,
+            gameState: gameState
+        });
+
+        // Check game mode restrictions
+        if (window.isMultiplayerMode && window.multiplayerManager) {
+            // Let multiplayer manager handle the click
+            return;
+        } else if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') {
+            return;
+        }
+        
+        if (gameState !== 'active' && gameState !== 'check') return;
+        
+        const clickedPiece = event.target;
+        const row = parseInt(clickedPiece.getAttribute('data-row'));
+        const col = parseInt(clickedPiece.getAttribute('data-col'));
+        const pieceType = window.board[row][col];
+        
+        if (selectedPiece) {
+            selectedPiece.style.opacity = '1';
+            removeHighlights();
+        }
+        
+        const pieceColor = getPieceColor(pieceType);
+        if (pieceColor === window.currentPlayer) {
+            if (selectedPiece === clickedPiece) {
+                selectedPiece = null;
+            } else {
+                selectedPiece = clickedPiece;
+                clickedPiece.style.opacity = '0.7';
+                showLegalMoves(row, col);
+            }
+        }
+    } catch (error) {
+        console.error("Error in onPieceClick:", error);
+        debug(`Piece click error: ${error.message}`);
+    }
+}
+
+function showLegalMoves(row, col) {
+    removeHighlights();
+    
+    const piece = window.board[row][col];
+    if (!piece) return;
+    
+    for (let endRow = 0; endRow < BOARD_SIZE; endRow++) {
+        for (let endCol = 0; endCol < BOARD_SIZE; endCol++) {
+            if (canPieceMove(piece, row, col, endRow, endCol)) {
+                const target = window.board[endRow][endCol];
+                highlightSquare(endRow, endCol, !!target);
+            }
+        }
+    }
+}
+
+function highlightSquare(row, col, isCapture = false) {
+    const square = document.createElement('div');
+    square.className = 'highlight' + (isCapture ? ' capture' : '');
+    square.style.left = `${col * 12.5}%`;
+    square.style.top = `${row * 12.5}%`;
+    square.setAttribute('data-row', row);
+    square.setAttribute('data-col', col);
+    
+    square.addEventListener('click', () => onSquareClick(row, col));
+    
+    document.getElementById('chessboard').appendChild(square);
+}
+
+function removeHighlights() {
+    const highlights = document.querySelectorAll('.highlight');
+    highlights.forEach(highlight => highlight.remove());
+}
+
+window.removeHighlights = removeHighlights;
+window.highlightSquare = highlightSquare;
+
+function onSquareClick(row, col) {
+    try {
+        // Check game mode restrictions
+        if (window.isMultiplayerMode && window.multiplayerManager) {
+            return; // Let multiplayer manager handle clicks
+        } else if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') {
+            return;
+        }
+        
+        if (gameState !== 'active' && gameState !== 'check') return;
+        
+        if (selectedPiece) {
+            const startRow = parseInt(selectedPiece.getAttribute('data-row'));
+            const startCol = parseInt(selectedPiece.getAttribute('data-col'));
+            const piece = window.board[startRow][startCol];
+            
+            if (canPieceMove(piece, startRow, startCol, row, col)) {
+                if (piece.toLowerCase() === 'p' && (row === 0 || row === 7)) {
+                    promptPawnPromotion(startRow, startCol, row, col);
+                } else {
+                    executeMove(startRow, startCol, row, col);
+                }
+            }
+            
+            selectedPiece.style.opacity = '1';
+            selectedPiece = null;
+            removeHighlights();
+        }
+    } catch (error) {
+        console.error("Error in onSquareClick:", error);
+        debug(`Square click error: ${error.message}`);
+    }
+}
+
+// Move execution and game state management
+function executeMove(startRow, startCol, endRow, endCol, promotionPiece = null) {
+    if (!canMakeMove(startRow, startCol, endRow, endCol)) return false;
+
+    const piece = window.board[startRow][startCol];
+    const color = getPieceColor(piece);
+    const capturedPiece = window.board[endRow][endCol];
+    
+    // Update board state
+    if (promotionPiece) {
+        window.board[endRow][endCol] = promotionPiece;
+    } else {
+        window.board[endRow][endCol] = piece;
+    }
+    window.board[startRow][startCol] = null;
+
+    // Handle castling
+    if (piece.toLowerCase() === 'k' && Math.abs(endCol - startCol) === 2) {
+        const row = color === 'blue' ? 7 : 0;
+        if (endCol === 6) { // Kingside
+            window.board[row][5] = window.board[row][7];
+            window.board[row][7] = null;
+        } else if (endCol === 2) { // Queenside
+            window.board[row][3] = window.board[row][0];
+            window.board[row][0] = null;
+        }
+    }
+
+    // Save move for en passant detection
+    lastMove = {
+        piece,
+        startRow,
+        startCol,
+        endRow,
+        endCol,
+        promotion: promotionPiece
+    };
+
+    // Update move history and display
+    addMoveToHistory(piece, startRow, startCol, endRow, endCol, capturedPiece);
+    window.placePieces();
+    window.currentPlayer = window.currentPlayer === 'blue' ? 'red' : 'blue';
+    
+    // Check game end conditions and update display
+    if (isCheckmate(window.currentPlayer)) {
+        endGame(color);
+    } else if (isStalemate(window.currentPlayer)) {
+        endGame('draw');
+    } else if (isKingInCheck(window.currentPlayer)) {
+        gameState = 'check';
+        updateStatusDisplay(`${window.currentPlayer.charAt(0).toUpperCase() + window.currentPlayer.slice(1)} is in check!`);
+    } else {
+        gameState = 'active';
+        updateStatusDisplay(`${window.currentPlayer.charAt(0).toUpperCase() + window.currentPlayer.slice(1)}'s turn`);
+    }
+
+    // Make AI move if it's AI's turn
+    if (currentGameMode === GameMode.AI && window.currentPlayer === 'red' && !window.isMultiplayerMode) {
+        setTimeout(makeAIMove, 500);
+    }
+
+    return true;
+}
+
+function promptPawnPromotion(startRow, startCol, endRow, endCol) {
+    const dialog = document.createElement('div');
+    dialog.className = 'promotion-dialog';
+    dialog.style.position = 'absolute';
+    
+    // Position dialog based on promotion square
+    dialog.style.top = `${endRow * 12.5}%`;
+    dialog.style.left = `${endCol * 12.5}%`;
+    
+    const pieces = ['q', 'r', 'n', 'b'];
+    const currentColor = window.currentPlayer;
+    
+    pieces.forEach(piece => {
+        const pieceButton = document.createElement('div');
+        pieceButton.className = 'promotion-piece';
+        const promotedPiece = currentColor === 'blue' ? piece : piece.toUpperCase();
+        pieceButton.style.backgroundImage = `url('${pieceImages[promotedPiece]}')`;
+        
+        pieceButton.onclick = () => {
+            executeMove(startRow, startCol, endRow, endCol, promotedPiece);
+            dialog.remove();
+        };
+        
+        dialog.appendChild(pieceButton);
+    });
+    
+    document.getElementById('chessboard').appendChild(dialog);
+}
 
 // Game end and state management
 async function endGame(winner) {
@@ -291,7 +425,7 @@ async function endGame(winner) {
         
         // Update multiplayer game status if in multiplayer mode
         if (window.isMultiplayerMode && window.multiplayerManager) {
-            await window.multiplayerManager.updateGameStatus('completed', winner);
+            await window.multiplayerManager.updateGameStatus('ended', winner);
         }
 
         // Update leaderboard
@@ -310,6 +444,28 @@ async function endGame(winner) {
     }
 }
 
+function addMoveToHistory(piece, startRow, startCol, endRow, endCol, capturedPiece) {
+    try {
+        const moveText = `${getPieceName(piece)} ${coordsToAlgebraic(startRow, startCol)} to ${coordsToAlgebraic(endRow, endCol)}${capturedPiece ? ' captures ' + getPieceName(capturedPiece) : ''}`;
+        moveHistory.push(moveText);
+        
+        const historyElement = document.getElementById('move-history');
+        if (historyElement) {
+            const moveNumber = Math.floor(moveHistory.length / 2) + 1;
+            const newMove = document.createElement('div');
+            newMove.textContent = `${moveNumber}. ${moveText}`;
+            if (capturedPiece) {
+                newMove.style.color = '#ff6b6b';
+            }
+            historyElement.appendChild(newMove);
+            historyElement.scrollTop = historyElement.scrollHeight;
+        }
+    } catch (error) {
+        console.error("Error adding move to history:", error);
+        debug(`Move history error: ${error.message}`);
+    }
+}
+
 // Game initialization functions
 function startGame() {
     try {
@@ -324,12 +480,10 @@ function startGame() {
             isGameInitialized = true;
         }
         
-        if (window.isMultiplayerMode && window.multiplayerManager) {
-            // Let multiplayer manager handle game start
-            return;
+        if (window.isMultiplayerMode) {
+            return; // Let multiplayer manager handle game start
         }
         
-        // Reset game state
         window.board = JSON.parse(JSON.stringify(initialBoard));
         window.currentPlayer = 'blue';
         selectedPiece = null;
@@ -337,7 +491,6 @@ function startGame() {
         gameState = 'active';
         lastMove = null;
         
-        // Reset piece states
         Object.assign(pieceState, {
             blueKingMoved: false,
             redKingMoved: false,
@@ -346,30 +499,28 @@ function startGame() {
             lastPawnDoubleMove: null
         });
 
-        // Update display
         createBoard();
         window.placePieces();
         updateStatusDisplay("Blue's turn");
         debug(`New game started - ${gameDifficulty} mode`);
         
-        // Clear move history display
         const moveHistoryElement = document.getElementById('move-history');
         if (moveHistoryElement) {
             moveHistoryElement.innerHTML = '';
         }
 
-        // Enable board interactions
         const chessboard = document.getElementById('chessboard');
         if (chessboard) {
             chessboard.style.pointerEvents = 'auto';
         }
-
-        debug('Game started successfully');
+        
     } catch (error) {
         console.error("Error starting game:", error);
         debug(`Error starting game: ${error.message}`);
     }
 }
+
+window.startGame = startGame;
 
 function resetGame() {
     try {
@@ -407,232 +558,7 @@ function resetGame() {
     }
 }
 
-function initGame() {
-    try {
-        debug('\n----- Game Initialization -----');
-        createBoard();
-        window.placePieces();
-        
-        // Add keyboard controls
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && selectedPiece) {
-                selectedPiece.style.opacity = '1';
-                selectedPiece = null;
-                removeHighlights();
-            }
-        });
-        
-        // Initialize multiplayer if needed
-        if (window.isMultiplayerMode && !window.multiplayerManager) {
-            initializeMultiplayer();
-        }
-        
-        debug('Game initialization completed successfully');
-    } catch (error) {
-        console.error("Error during game initialization:", error);
-        debug(`Error during game initialization: ${error.message}`);
-    }
-}
-
-// Make game state management functions globally available
-window.endGame = endGame;
-window.startGame = startGame;
 window.resetGame = resetGame;
-window.initGame = initGame;
-
-// Game mode control functions
-function initGameModeControls() {
-    const aiModeBtn = document.getElementById('ai-mode');
-    const multiplayerModeBtn = document.getElementById('multiplayer-mode');
-    const difficultyScreen = document.getElementById('difficulty-screen');
-    const multiplayerMenu = document.querySelector('.multiplayer-menu');
-
-    if (aiModeBtn && multiplayerModeBtn) {
-        aiModeBtn.addEventListener('click', () => {
-            currentGameMode = GameMode.AI;
-            window.isMultiplayerMode = false;
-            aiModeBtn.classList.add('selected');
-            if (multiplayerModeBtn) multiplayerModeBtn.classList.remove('selected');
-            if (multiplayerMenu) multiplayerMenu.style.display = 'none';
-            if (difficultyScreen) difficultyScreen.style.display = 'flex';
-            if (window.multiplayerManager) {
-                window.multiplayerManager.leaveGame();
-            }
-        });
-
-        multiplayerModeBtn.addEventListener('click', () => {
-            currentGameMode = GameMode.ONLINE;
-            window.isMultiplayerMode = true;
-            multiplayerModeBtn.classList.add('selected');
-            if (aiModeBtn) aiModeBtn.classList.remove('selected');
-            if (difficultyScreen) difficultyScreen.style.display = 'none';
-            if (multiplayerMenu) multiplayerMenu.style.display = 'block';
-            initializeMultiplayer();
-        });
-    }
-}
-
-function initializeMultiplayer() {
-    if (!window.multiplayerManager) {
-        window.multiplayerManager = new MultiplayerManager();
-    }
-}
-
-function initDifficultySelection() {
-    try {
-        debug('\n----- Initializing Difficulty Selection -----');
-        
-        const elements = {
-            easyBtn: document.getElementById('easy-mode'),
-            hardBtn: document.getElementById('hard-mode'),
-            startBtn: document.getElementById('start-game'),
-            difficultyScreen: document.getElementById('difficulty-screen'),
-            chessGame: document.getElementById('chess-game')
-        };
-        
-        Object.entries(elements).forEach(([name, element]) => {
-            debug(`${name} found: ${!!element}`);
-            if (!element) throw new Error(`${name} not found`);
-        });
-        
-        elements.startBtn.disabled = true;
-        selectedDifficulty = null;
-
-        elements.easyBtn.addEventListener('click', () => {
-            debug('Easy mode clicked');
-            gameDifficulty = 'easy';
-            selectedDifficulty = 'easy';
-            elements.easyBtn.classList.add('selected');
-            elements.hardBtn.classList.remove('selected');
-            elements.startBtn.disabled = false;
-        });
-
-        elements.hardBtn.addEventListener('click', () => {
-            debug('Hard mode clicked');
-            gameDifficulty = 'hard';
-            selectedDifficulty = 'hard';
-            elements.hardBtn.classList.add('selected');
-            elements.easyBtn.classList.remove('selected');
-            elements.startBtn.disabled = false;
-        });
-
-        elements.startBtn.addEventListener('click', () => {
-            if (selectedDifficulty) {
-                debug(`Starting game with ${selectedDifficulty} difficulty`);
-                elements.difficultyScreen.style.display = 'none';
-                elements.chessGame.style.display = 'block';
-                startGame();
-            }
-        });
-        
-        debug('Difficulty selection initialized successfully');
-    } catch (error) {
-        console.error("Error in initDifficultySelection:", error);
-        debug(`Error initializing difficulty selection: ${error.message}`);
-    }
-}
-
-function initRestartButton() {
-    const restartButton = document.getElementById('restart-game');
-    if (restartButton) {
-        restartButton.addEventListener('click', () => {
-            console.log("Restart button clicked");
-            
-            // Handle multiplayer cleanup if needed
-            if (window.isMultiplayerMode && window.multiplayerManager) {
-                window.multiplayerManager.leaveGame();
-            }
-            
-            const difficultyScreen = document.getElementById('difficulty-screen');
-            const chessGame = document.getElementById('chess-game');
-            const multiplayerMenu = document.querySelector('.multiplayer-menu');
-            
-            if (difficultyScreen && chessGame) {
-                if (window.isMultiplayerMode) {
-                    multiplayerMenu.style.display = 'block';
-                    difficultyScreen.style.display = 'none';
-                } else {
-                    difficultyScreen.style.display = 'flex';
-                    multiplayerMenu.style.display = 'none';
-                }
-                chessGame.style.display = 'none';
-            }
-            
-            selectedDifficulty = null;
-            const easyBtn = document.getElementById('easy-mode');
-            const hardBtn = document.getElementById('hard-mode');
-            const startBtn = document.getElementById('start-game');
-            
-            if (easyBtn && hardBtn && startBtn) {
-                easyBtn.classList.remove('selected');
-                hardBtn.classList.remove('selected');
-                startBtn.disabled = true;
-            }
-            
-            resetGame();
-            debug("Game restarted");
-        });
-    }
-}
-
-// Initialize event listeners for the UI
-window.addEventListener('DOMContentLoaded', function() {
-    try {
-        console.log("Initializing chess game...");
-        initGameModeControls();
-        initDifficultySelection();
-        initRestartButton();
-        
-        // Set initial game mode
-        const aiModeBtn = document.getElementById('ai-mode');
-        if (aiModeBtn) {
-            aiModeBtn.classList.add('selected');
-        }
-        
-        debug('Initial setup completed');
-    } catch (error) {
-        console.error("Error during initialization:", error);
-        debug(`Initialization error: ${error.message}`);
-    }
-});
-
-window.addEventListener('load', function() {
-    try {
-        debug('\n----- Page Load Initialization -----');
-        
-        if (isWalletConnected()) {
-            const difficultyScreen = document.getElementById('difficulty-screen');
-            if (difficultyScreen) {
-                difficultyScreen.style.display = 'flex';
-            }
-        }
-        
-        initGame();
-        debug('Page load initialization completed');
-    } catch (error) {
-        console.error("Error during page load initialization:", error);
-        debug(`Page load error: ${error.message}`);
-    }
-});
-
-window.addEventListener('beforeunload', function() {
-    try {
-        if (window.isMultiplayerMode && window.multiplayerManager) {
-            window.multiplayerManager.leaveGame();
-        }
-        
-        selectedPiece = null;
-        gameState = 'ended';
-    } catch (error) {
-        console.error("Error during cleanup:", error);
-    }
-});
-
-// Make initialization functions globally available
-window.initGameModeControls = initGameModeControls;
-window.initializeMultiplayer = initializeMultiplayer;
-window.initDifficultySelection = initDifficultySelection;
-window.initRestartButton = initRestartButton;
 
 // Move validation functions
 function canMakeMove(startRow, startCol, endRow, endCol) {
@@ -677,6 +603,7 @@ function isValidPawnMove(color, startRow, startCol, endRow, endCol) {
             lastMove.endRow === startRow &&
             lastMove.endCol === endCol &&
             Math.abs(lastMove.startRow - lastMove.endRow) === 2) {
+            window.board[startRow][endCol] = null; // Remove captured pawn
             return true;
         }
         
@@ -772,8 +699,8 @@ function isValidKingMove(color, startRow, startCol, endRow, endCol) {
 }
 
 function isPathClear(startRow, startCol, endRow, endCol) {
-    const rowStep = Math.sign(endRow - startRow);
-    const colStep = Math.sign(endCol - startCol);
+    const rowStep = Math.sign(endRow - startRow) || 0;
+    const colStep = Math.sign(endCol - startCol) || 0;
     
     let currentRow = startRow + rowStep;
     let currentCol = startCol + colStep;
@@ -786,16 +713,6 @@ function isPathClear(startRow, startCol, endRow, endCol) {
     
     return true;
 }
-
-// Make move validation functions globally available
-window.canMakeMove = canMakeMove;
-window.isValidPawnMove = isValidPawnMove;
-window.isValidRookMove = isValidRookMove;
-window.isValidKnightMove = isValidKnightMove;
-window.isValidBishopMove = isValidBishopMove;
-window.isValidQueenMove = isValidQueenMove;
-window.isValidKingMove = isValidKingMove;
-window.isPathClear = isPathClear;
 
 function canPieceMove(piece, startRow, startCol, endRow, endCol, checkForCheck = true) {
     if (!piece) return false;
@@ -841,6 +758,17 @@ function canPieceMove(piece, startRow, startCol, endRow, endCol, checkForCheck =
     return true;
 }
 
+// Make move validation functions globally available
+window.canMakeMove = canMakeMove;
+window.isValidPawnMove = isValidPawnMove;
+window.isValidRookMove = isValidRookMove;
+window.isValidKnightMove = isValidKnightMove;
+window.isValidBishopMove = isValidBishopMove;
+window.isValidQueenMove = isValidQueenMove;
+window.isValidKingMove = isValidKingMove;
+window.isPathClear = isPathClear;
+window.canPieceMove = canPieceMove;
+
 // Check detection
 let checkingAttack = false;
 
@@ -879,6 +807,7 @@ function isKingInCheck(color) {
     const kingPiece = color === 'blue' ? 'k' : 'K';
     let kingRow, kingCol;
     
+    // Find king position
     for (let row = 0; row < BOARD_SIZE; row++) {
         for (let col = 0; col < BOARD_SIZE; col++) {
             if (window.board[row][col] === kingPiece) {
@@ -964,8 +893,61 @@ function getAllLegalMoves(color) {
     return moves;
 }
 
+function findKing(color) {
+    const kingPiece = color === 'blue' ? 'k' : 'K';
+    for (let row = 0; row < BOARD_SIZE; row++) {
+        for (let col = 0; col < BOARD_SIZE; col++) {
+            if (window.board[row][col] === kingPiece) {
+                return { row, col };
+            }
+        }
+    }
+    return null;
+}
+
+function isInCheck(color) {
+    const kingPos = findKing(color);
+    if (!kingPos) return false; // Should never happen in a valid game
+    return isSquareUnderAttack(kingPos.row, kingPos.col, color === 'blue' ? 'red' : 'blue');
+}
+
+function getAttackingPieces(targetRow, targetCol, attackingColor) {
+    const attackers = [];
+    for (let row = 0; row < BOARD_SIZE; row++) {
+        for (let col = 0; col < BOARD_SIZE; col++) {
+            const piece = window.board[row][col];
+            if (piece && getPieceColor(piece) === attackingColor) {
+                if (canPieceMove(piece, row, col, targetRow, targetCol, false)) {
+                    attackers.push({ piece, row, col });
+                }
+            }
+        }
+    }
+    return attackers;
+}
+
+function isPinned(row, col) {
+    const piece = window.board[row][col];
+    if (!piece) return false;
+    
+    const color = getPieceColor(piece);
+    const kingPos = findKing(color);
+    if (!kingPos) return false;
+    
+    // Remove the piece temporarily
+    const originalPiece = window.board[row][col];
+    window.board[row][col] = null;
+    
+    // Check if the king is now under attack through this square
+    const isPinned = isInCheck(color);
+    
+    // Restore the piece
+    window.board[row][col] = originalPiece;
+    
+    return isPinned;
+}
+
 // Make check detection functions globally available
-window.canPieceMove = canPieceMove;
 window.isSquareUnderAttack = isSquareUnderAttack;
 window.isKingInCheck = isKingInCheck;
 window.wouldMoveExposeCheck = wouldMoveExposeCheck;
@@ -973,271 +955,27 @@ window.isCheckmate = isCheckmate;
 window.isStalemate = isStalemate;
 window.hasLegalMoves = hasLegalMoves;
 window.getAllLegalMoves = getAllLegalMoves;
+window.findKing = findKing;
+window.isInCheck = isInCheck;
+window.getAttackingPieces = getAttackingPieces;
+window.isPinned = isPinned;
 
-// UI Event Handlers
-function onPieceClick(event) {
-    try {
-        if (!checkGameAccess()) return;
-        
-        // Log current state
-        console.log('Click state:', {
-            isMultiplayerMode: window.isMultiplayerMode,
-            currentPlayer: window.currentPlayer,
-            playerColor: window.playerColor,
-            gameState: gameState
-        });
+// Piece values for AI evaluation
+const PIECE_VALUES = {
+    'p': 100,  // Pawn
+    'n': 320,  // Knight
+    'b': 330,  // Bishop
+    'r': 500,  // Rook
+    'q': 900,  // Queen
+    'k': 20000 // King
+};
 
-        // Check game mode restrictions
-        if (window.isMultiplayerMode) {
-            if (window.currentPlayer !== window.playerColor) {
-                console.log('Not your turn:', {
-                    currentPlayer: window.currentPlayer,
-                    playerColor: window.playerColor
-                });
-                return;
-            }
-        } else if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') {
-            return;
-        }
-        
-        if (gameState !== 'active' && gameState !== 'check') return;
-        
-        const clickedPiece = event.target;
-        const row = parseInt(clickedPiece.getAttribute('data-row'));
-        const col = parseInt(clickedPiece.getAttribute('data-col'));
-        const pieceType = window.board[row][col];
-        
-        if (selectedPiece) {
-            selectedPiece.style.opacity = '1';
-            removeHighlights();
-        }
-        
-        const pieceColor = getPieceColor(pieceType);
-        
-        // Validate turn in multiplayer mode
-        const validPlayer = window.isMultiplayerMode ? 
-            (pieceColor === window.playerColor && window.currentPlayer === window.playerColor) : 
-            pieceColor === window.currentPlayer;
-            
-        if (validPlayer) {
-            if (selectedPiece === clickedPiece) {
-                selectedPiece = null;
-            } else {
-                selectedPiece = clickedPiece;
-                clickedPiece.style.opacity = '0.7';
-                showLegalMoves(row, col);
-            }
-        }
-    } catch (error) {
-        console.error("Error in onPieceClick:", error);
-        debug(`Piece click error: ${error.message}`);
-    }
-}
-
-function showLegalMoves(row, col) {
-    removeHighlights();
-    
-    const piece = window.board[row][col];
-    if (!piece) return;
-    
-    for (let endRow = 0; endRow < BOARD_SIZE; endRow++) {
-        for (let endCol = 0; endCol < BOARD_SIZE; endCol++) {
-            if (canPieceMove(piece, row, col, endRow, endCol)) {
-                const target = window.board[endRow][endCol];
-                highlightSquare(endRow, endCol, !!target);
-            }
-        }
-    }
-}
-
-function highlightSquare(row, col, isCapture = false) {
-    const square = document.createElement('div');
-    square.className = 'highlight' + (isCapture ? ' capture' : '');
-    square.style.position = 'absolute';
-    square.style.left = `${col * 12.5}%`;
-    square.style.top = `${row * 12.5}%`;
-    square.style.width = '12.5%';
-    square.style.height = '12.5%';
-    square.style.zIndex = '5';
-    
-    square.setAttribute('data-row', row);
-    square.setAttribute('data-col', col);
-    
-    square.addEventListener('click', function(e) {
-        e.stopPropagation();
-        onSquareClick(row, col);
-    });
-    
-    document.getElementById('chessboard').appendChild(square);
-}
-
-function removeHighlights() {
-    const highlights = document.querySelectorAll('.highlight');
-    highlights.forEach(highlight => highlight.remove());
-}
-
-window.removeHighlights = removeHighlights;
-window.clearHighlights = removeHighlights; 
-
-function onSquareClick(row, col) {
-    try {
-        // Check game mode restrictions
-        if (window.isMultiplayerMode) {
-            if (window.currentPlayer !== window.playerColor) return;
-        } else if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') {
-            return;
-        }
-        
-        if (gameState !== 'active' && gameState !== 'check') return;
-        
-        if (selectedPiece) {
-            const startRow = parseInt(selectedPiece.getAttribute('data-row'));
-            const startCol = parseInt(selectedPiece.getAttribute('data-col'));
-            const piece = window.board[startRow][startCol];
-            
-            if (canPieceMove(piece, startRow, startCol, row, col)) {
-                if (window.isMultiplayerMode && window.multiplayerManager) {
-                    // For multiplayer, use the multiplayer manager's move function
-                    if (piece.toLowerCase() === 'p' && (row === 0 || row === 7)) {
-                        promptPawnPromotion(startRow, startCol, row, col, true);
-                    } else {
-                        window.multiplayerManager.makeMove(startRow, startCol, row, col);
-                    }
-                } else {
-                    // For single player, use the normal move execution
-                    if (piece.toLowerCase() === 'p' && (row === 0 || row === 7)) {
-                        promptPawnPromotion(startRow, startCol, row, col);
-                    } else {
-                        executeMove(startRow, startCol, row, col);
-                    }
-                }
-            }
-            
-            selectedPiece.style.opacity = '1';
-            selectedPiece = null;
-            removeHighlights();
-        }
-    } catch (error) {
-        console.error("Error in onSquareClick:", error);
-        debug(`Square click error: ${error.message}`);
-    }
-}
-
-function promptPawnPromotion(startRow, startCol, endRow, endCol, isMultiplayer = false) {
-    const promotionPieces = ['q', 'r', 'n', 'b'];
-    const color = window.isMultiplayerMode ? window.playerColor : window.currentPlayer;
-    
-    const dialog = document.createElement('div');
-    dialog.className = 'promotion-dialog';
-    dialog.style.position = 'absolute';
-    
-    // Adjust position based on which side is promoting
-    if (endRow === 0) { // Blue promoting at top
-        dialog.style.top = '12.5%';
-    } else { // Red promoting at bottom
-        dialog.style.bottom = '12.5%';
-    }
-    
-    dialog.style.left = `${endCol * 12.5}%`;
-    dialog.style.zIndex = '1000';
-    
-    promotionPieces.forEach(piece => {
-        const pieceButton = document.createElement('div');
-        pieceButton.className = 'promotion-piece';
-        const promotedPiece = color === 'blue' ? piece : piece.toUpperCase();
-        pieceButton.style.backgroundImage = `url('${pieceImages[promotedPiece]}')`;
-        pieceButton.style.cursor = 'pointer';
-        
-        pieceButton.onclick = () => {
-            if (isMultiplayer && window.multiplayerManager) {
-                window.multiplayerManager.makeMove(startRow, startCol, endRow, endCol, promotedPiece);
-            } else {
-                executeMove(startRow, startCol, endRow, endCol, promotedPiece);
-            }
-            dialog.remove();
-        };
-        
-        dialog.appendChild(pieceButton);
-    });
-    
-    const chessboard = document.getElementById('chessboard');
-    if (chessboard) {
-        chessboard.appendChild(dialog);
-    }
-}
-
-function executeMove(startRow, startCol, endRow, endCol, promotionPiece = null) {
-    if (!canMakeMove(startRow, startCol, endRow, endCol)) return false;
-
-    // Handle multiplayer moves
-    if (window.isMultiplayerMode && window.multiplayerManager) {
-        return window.multiplayerManager.makeMove(startRow, startCol, endRow, endCol, promotionPiece);
-    }
-
-    const piece = window.board[startRow][startCol];
-    const color = getPieceColor(piece);
-    const capturedPiece = window.board[endRow][endCol];
-    
-    // Update board state
-    if (promotionPiece) {
-        window.board[endRow][endCol] = promotionPiece;
-    } else {
-        window.board[endRow][endCol] = piece;
-    }
-    window.board[startRow][startCol] = null;
-
-    // Handle castling
-    if (piece.toLowerCase() === 'k' && Math.abs(endCol - startCol) === 2) {
-        const row = color === 'blue' ? 7 : 0;
-        if (endCol === 6) { // Kingside
-            window.board[row][5] = window.board[row][7];
-            window.board[row][7] = null;
-        } else if (endCol === 2) { // Queenside
-            window.board[row][3] = window.board[row][0];
-            window.board[row][0] = null;
-        }
-    }
-
-    // Save move for en passant detection
-    lastMove = {
-        piece,
-        startRow,
-        startCol,
-        endRow,
-        endCol
-    };
-
-    // Update move history and display
-    addMoveToHistory(piece, startRow, startCol, endRow, endCol, capturedPiece);
-    window.placePieces();
-    window.currentPlayer = window.currentPlayer === 'blue' ? 'red' : 'blue';
-    
-    // Check game end conditions and update display
-    if (isCheckmate(window.currentPlayer)) {
-        endGame(color);
-    } else if (isStalemate(window.currentPlayer)) {
-        endGame('draw');
-    } else if (isKingInCheck(window.currentPlayer)) {
-        updateStatusDisplay(`${window.currentPlayer.charAt(0).toUpperCase() + window.currentPlayer.slice(1)} is in check!`);
-    } else {
-        updateStatusDisplay(`${window.currentPlayer.charAt(0).toUpperCase() + window.currentPlayer.slice(1)}'s turn`);
-    }
-
-    // Make AI move if it's AI's turn
-    if (currentGameMode === GameMode.AI && window.currentPlayer === 'red' && !window.isMultiplayerMode) {
-        setTimeout(makeAIMove, 500);
-    }
-
-    return true;
-}
-
+// AI Move Selection
 function makeAIMove() {
     if (currentGameMode !== GameMode.AI || window.currentPlayer !== 'red' || window.isMultiplayerMode) return;
     
     const inCheck = isKingInCheck('red');
     debug(`AI thinking... (in check: ${inCheck}, difficulty: ${gameDifficulty})`);
-    
-    console.log("Making AI move attempt");
     
     const move = selectBestMove();
     if (move) {
@@ -1250,1078 +988,441 @@ function makeAIMove() {
         } else if (isStalemate('red')) {
             endGame('draw');
         }
-        console.log("No valid moves found for AI");
     }
 }
 
-// Pawn structure analysis
-function hasFriendlyPawnNeighbor(row, col) {
-    const piece = window.board[row][col];
-    if (!piece || piece.toLowerCase() !== 'p') return false;
-    
-    const color = getPieceColor(piece);
-    const files = [col - 1, col + 1];
-    
-    return files.some(file => {
-        if (file < 0 || file >= 8) return false;
-        const neighbor = window.board[row][file];
-        return neighbor && 
-               neighbor.toLowerCase() === 'p' && 
-               getPieceColor(neighbor) === color;
-    });
-}
-
-function isPassedPawn(row, col, color) {
-    const piece = window.board[row][col];
-    if (!piece || piece.toLowerCase() !== 'p') return false;
-    
-    const direction = color === 'red' ? 1 : -1;
-    const enemyColor = color === 'red' ? 'blue' : 'red';
-    
-    // Check if there are any enemy pawns in front of this pawn
-    // (including diagonally) that could block its advance
-    for (let r = row + direction; r >= 0 && r < 8; r += direction) {
-        for (let c = col - 1; c <= col + 1; c++) {
-            if (c < 0 || c >= 8) continue;
-            const square = window.board[r][c];
-            if (square && 
-                square.toLowerCase() === 'p' && 
-                getPieceColor(square) === enemyColor) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-// Additional positional evaluation helpers
-function getPieceSquareValue(piece, row, col, isEndgame) {
-    const tables = {
-        'p': [ // Pawn
-            [0,  0,  0,  0,  0,  0,  0,  0],
-            [50, 50, 50, 50, 50, 50, 50, 50],
-            [10, 10, 20, 30, 30, 20, 10, 10],
-            [5,  5, 10, 25, 25, 10,  5,  5],
-            [0,  0,  0, 20, 20,  0,  0,  0],
-            [5, -5,-10,  0,  0,-10, -5,  5],
-            [5, 10, 10,-20,-20, 10, 10,  5],
-            [0,  0,  0,  0,  0,  0,  0,  0]
-        ],
-        'n': [ // Knight
-            [-50,-40,-30,-30,-30,-30,-40,-50],
-            [-40,-20,  0,  0,  0,  0,-20,-40],
-            [-30,  0, 10, 15, 15, 10,  0,-30],
-            [-30,  5, 15, 20, 20, 15,  5,-30],
-            [-30,  0, 15, 20, 20, 15,  0,-30],
-            [-30,  5, 10, 15, 15, 10,  5,-30],
-            [-40,-20,  0,  5,  5,  0,-20,-40],
-            [-50,-40,-30,-30,-30,-30,-40,-50]
-        ],
-        'b': [ // Bishop
-            [-20,-10,-10,-10,-10,-10,-10,-20],
-            [-10,  0,  0,  0,  0,  0,  0,-10],
-            [-10,  0,  5, 10, 10,  5,  0,-10],
-            [-10,  5,  5, 10, 10,  5,  5,-10],
-            [-10,  0, 10, 10, 10, 10,  0,-10],
-            [-10, 10, 10, 10, 10, 10, 10,-10],
-            [-10,  5,  0,  0,  0,  0,  5,-10],
-            [-20,-10,-10,-10,-10,-10,-10,-20]
-        ],
-        'r': [ // Rook
-            [0,  0,  0,  0,  0,  0,  0,  0],
-            [5, 10, 10, 10, 10, 10, 10,  5],
-            [-5,  0,  0,  0,  0,  0,  0, -5],
-            [-5,  0,  0,  0,  0,  0,  0, -5],
-            [-5,  0,  0,  0,  0,  0,  0, -5],
-            [-5,  0,  0,  0,  0,  0,  0, -5],
-            [-5,  0,  0,  0,  0,  0,  0, -5],
-            [0,  0,  0,  5,  5,  0,  0,  0]
-        ],
-        'q': [ // Queen
-            [-20,-10,-10, -5, -5,-10,-10,-20],
-            [-10,  0,  0,  0,  0,  0,  0,-10],
-            [-10,  0,  5,  5,  5,  5,  0,-10],
-            [-5,   0,  5,  5,  5,  5,  0, -5],
-            [0,    0,  5,  5,  5,  5,  0, -5],
-            [-10,  5,  5,  5,  5,  5,  0,-10],
-            [-10,  0,  5,  0,  0,  0,  0,-10],
-            [-20,-10,-10, -5, -5,-10,-10,-20]
-        ],
-        'k': [ // King middlegame
-            [-30,-40,-40,-50,-50,-40,-40,-30],
-            [-30,-40,-40,-50,-50,-40,-40,-30],
-            [-30,-40,-40,-50,-50,-40,-40,-30],
-            [-30,-40,-40,-50,-50,-40,-40,-30],
-            [-20,-30,-30,-40,-40,-30,-30,-20],
-            [-10,-20,-20,-20,-20,-20,-20,-10],
-            [20, 20,  0,  0,  0,  0, 20, 20],
-            [20, 30, 10,  0,  0, 10, 30, 20]
-        ],
-        'k_endgame': [ // King endgame
-            [-50,-40,-30,-20,-20,-30,-40,-50],
-            [-30,-20,-10,  0,  0,-10,-20,-30],
-            [-30,-10, 20, 30, 30, 20,-10,-30],
-            [-30,-10, 30, 40, 40, 30,-10,-30],
-            [-30,-10, 30, 40, 40, 30,-10,-30],
-            [-30,-10, 20, 30, 30, 20,-10,-30],
-            [-30,-30,  0,  0,  0,  0,-30,-30],
-            [-50,-30,-30,-30,-30,-30,-30,-50]
-        ]
-    };
-
-    const pieceType = piece.toLowerCase();
-    let table = tables[pieceType];
-    
-    if (pieceType === 'k' && isEndgame) {
-        table = tables.k_endgame;
-    }
-
-    if (!table) return 0;
-
-    // For red pieces, flip the board perspective
-    const adjustedRow = getPieceColor(piece) === 'red' ? row : 7 - row;
-    return table[adjustedRow][col];
-}
-
-// Development and piece coordination
-function isPieceTrapped(row, col) {
-    const piece = window.board[row][col];
-    if (!piece) return false;
-    
-    const moves = getAllLegalMoves(getPieceColor(piece)).filter(
-        move => move.startRow === row && move.startCol === col
-    );
-    
-    return moves.length === 0;
-}
-
-// Development scoring
-function calculateDevelopmentScore(color) {
-    let score = 0;
-    const backRank = color === 'red' ? 0 : 7;
-    
-    // Check if minor pieces have moved from starting squares
-    const minorPieces = color === 'red' ? ['N', 'B'] : ['n', 'b'];
-    for (let col of [1, 2, 5, 6]) {
-        if (window.board[backRank][col] !== minorPieces[col <= 2 ? 1 : 0]) {
-            score += 10; // Bonus for developed minor pieces
-        }
-    }
-    
-    // Penalize undeveloped pieces in late game
-    if (!isEarlyGame()) {
-        for (let col = 0; col < 8; col++) {
-            const piece = window.board[backRank][col];
-            if (piece && piece.toLowerCase() !== 'k' && piece.toLowerCase() !== 'r') {
-                score -= 20; // Penalty for pieces still on back rank
-            }
-        }
-    }
-    
-    return score;
-}
-
-// Make these functions globally available
-window.hasFriendlyPawnNeighbor = hasFriendlyPawnNeighbor;
-window.isPassedPawn = isPassedPawn;
-window.getPieceSquareValue = getPieceSquareValue;
-window.isPieceTrapped = isPieceTrapped;
-window.calculateDevelopmentScore = calculateDevelopmentScore;
-
-function addMoveToHistory(piece, startRow, startCol, endRow, endCol, capturedPiece) {
-    try {
-        const moveText = `${getPieceName(piece)} ${coordsToAlgebraic(startRow, startCol)} to ${coordsToAlgebraic(endRow, endCol)}${capturedPiece ? ' captures ' + getPieceName(capturedPiece) : ''}`;
-        moveHistory.push(moveText);
-        
-        const historyElement = document.getElementById('move-history');
-        if (historyElement) {
-            const moveNumber = Math.floor(moveHistory.length / 2) + 1;
-            const newMove = document.createElement('div');
-            newMove.textContent = `${moveNumber}. ${moveText}`;
-            if (capturedPiece) {
-                newMove.style.color = '#ff6b6b';
-            }
-            historyElement.appendChild(newMove);
-            historyElement.scrollTop = historyElement.scrollHeight;
-        }
-    } catch (error) {
-        console.error("Error adding move to history:", error);
-        debug(`Move history error: ${error.message}`);
-    }
-}
-
-// AI Move Selection
 function selectBestMove() {
     const legalMoves = getAllLegalMoves('red');
     if (legalMoves.length === 0) return null;
 
     const inCheck = isKingInCheck('red');
 
-    // If in check, prioritize any move that gets out of check
+    // If in check, prioritize escaping
     if (inCheck) {
         for (const move of legalMoves) {
-            // Make temporary move
-            const originalPiece = window.board[move.endRow][move.endCol];
-            const movingPiece = window.board[move.startRow][move.startCol];
-            window.board[move.endRow][move.endCol] = movingPiece;
-            window.board[move.startRow][move.startCol] = null;
-
-            // Check if this move escapes check
-            const escapesCheck = !isKingInCheck('red');
-
-            // Restore board
-            window.board[move.startRow][move.startCol] = movingPiece;
-            window.board[move.endRow][move.endCol] = originalPiece;
-
-            if (escapesCheck) {
-                return move;
-            }
+            const escapes = doesMoveEscapeCheck(move);
+            if (escapes) return move;
         }
     }
 
-    // Normal move evaluation
+    // Evaluate moves based on difficulty
     legalMoves.forEach(move => {
-        if (gameDifficulty === 'hard') {
-            move.score = evaluateHardMove(
-                window.board[move.startRow][move.startCol],
-                move.startRow, 
-                move.startCol,
-                move.endRow,
-                move.endCol
-            );
-        } else {
-            move.score = evaluateEasyMove(
-                window.board[move.startRow][move.startCol],
-                move.startRow,
-                move.startCol,
-                move.endRow,
-                move.endCol
-            );
-        }
+        move.score = gameDifficulty === 'hard' ? 
+            evaluateHardMove(move) : 
+            evaluateEasyMove(move);
     });
 
     // Sort moves by score
     legalMoves.sort((a, b) => b.score - a.score);
 
-    // Select move based on difficulty and situation
+    // Select move based on difficulty
     if (inCheck || gameDifficulty === 'hard') {
-        // In check or hard mode: usually choose the best move
-        return legalMoves[0];
+        return legalMoves[0]; // Best move
     } else {
-        // In easy mode: randomly select from top 3 moves
+        // Random selection from top 3 moves for easy mode
         const topMoves = legalMoves.slice(0, Math.min(3, legalMoves.length));
         return topMoves[Math.floor(Math.random() * topMoves.length)];
     }
 }
 
-function evaluateEasyMove(piece, startRow, startCol, endRow, endCol) {
+function doesMoveEscapeCheck(move) {
+    // Make temporary move
+    const originalPiece = window.board[move.endRow][move.endCol];
+    const movingPiece = window.board[move.startRow][move.startCol];
+    window.board[move.endRow][move.endCol] = movingPiece;
+    window.board[move.startRow][move.startCol] = null;
+
+    // Check if still in check
+    const stillInCheck = isKingInCheck('red');
+
+    // Restore board
+    window.board[move.startRow][move.startCol] = movingPiece;
+    window.board[move.endRow][move.endCol] = originalPiece;
+
+    return !stillInCheck;
+}
+
+function evaluateEasyMove(move) {
     let score = 0;
     
-    // Make temporary move
-    const originalPiece = window.board[endRow][endCol];
-    window.board[endRow][endCol] = piece;
-    window.board[startRow][startCol] = null;
-    
-    // Basic piece values for easy mode
-    const pieceValues = {
-        'p': 100,
-        'n': 320,
-        'b': 330,
-        'r': 500,
-        'q': 900,
-        'k': 20000
-    };
-    
-    // Strongly encourage capturing in easy mode
-    if (originalPiece) {
-        score += pieceValues[originalPiece.toLowerCase()] * 2.0;
-        if (piece.toLowerCase() === 'p') {
-            score += 400; // Extra bonus for pawn captures
-        }
+    // Capture value (primary consideration in easy mode)
+    if (move.isCapture) {
+        const capturedPiece = window.board[move.endRow][move.endCol];
+        score += PIECE_VALUES[capturedPiece.toLowerCase()] * 2;
     }
     
     // Simple positional bonuses
-    if (piece.toLowerCase() === 'p') {
-        score += endRow * 30; // Encourage pawn advancement
-        if (endCol >= 3 && endCol <= 4) score += 50; // Center control
-    } else if (piece.toLowerCase() !== 'k') {
-        // Center control bonus for other pieces
-        if (endRow >= 3 && endRow <= 4 && endCol >= 3 && endCol <= 4) {
-            score += 40;
-        }
-    }
-    
-    // Restore board
-    window.board[startRow][startCol] = piece;
-    window.board[endRow][endCol] = originalPiece;
-    
-    // Add significant randomness for easy mode
-    score += Math.random() * 150;
-    
-    return score;
-}
-
-// Sophisticated piece values with position-based adjustments
-const PIECE_VALUES = {
-    'p': 100,  // Base pawn value
-    'n': 325,  // Slightly increased knight value
-    'b': 335,  // Slightly increased bishop value
-    'r': 500,
-    'q': 900,
-    'k': 20000
-};
-
-function evaluateHardMove(piece, startRow, startCol, endRow, endCol) {
-    let score = 0;
-    const pieceType = piece.toLowerCase();
-    const color = getPieceColor(piece);
-    
-    // 1. Evaluate immediate material gain/loss
-    const capturedPiece = window.board[endRow][endCol];
-    if (capturedPiece) {
-        const captureValue = PIECE_VALUES[capturedPiece.toLowerCase()];
-        const attackerValue = PIECE_VALUES[pieceType];
-        score += captureValue * 1.2;  // Base capture bonus
+    if (move.piece.toLowerCase() === 'p') {
+        // Encourage pawn advancement
+        score += (7 - move.endRow) * 10;
         
-        // Strategic trade evaluation
-        if (captureValue > attackerValue) {
-            score += (captureValue - attackerValue) * 0.5; // Winning material
-        } else if (captureValue === attackerValue) {
-            // Equal trades evaluated based on game phase
-            const isEnd = isEndgame();
-            if (isEnd) {
-                score += 25; // Encourage simplification in endgame
-            } else if (pieceType === 'q') {
-                score -= 15; // Discourage early queen trades
-            }
-        }
-    }
-
-    // 2. Position evaluation
-    score += evaluatePosition(piece, endRow, endCol) * 0.8;
-
-    // 3. Mobility evaluation
-    score += evaluateMobility(piece, endRow, endCol) * 0.4;
-
-    // 4. Advanced piece-specific evaluation
-    switch (pieceType) {
-        case 'p':
-            score += evaluateAdvancedPawn(piece, endRow, endCol);
-            break;
-        case 'n':
-            score += evaluateAdvancedKnight(piece, endRow, endCol);
-            break;
-        case 'b':
-            score += evaluateAdvancedBishop(piece, endRow, endCol);
-            break;
-        case 'r':
-            score += evaluateAdvancedRook(piece, endRow, endCol);
-            break;
-        case 'q':
-            score += evaluateAdvancedQueen(piece, endRow, endCol);
-            break;
-        case 'k':
-            score += evaluateAdvancedKing(piece, endRow, endCol);
-            break;
-    }
-
-    // 5. Development and tempo bonus in opening/middlegame
-    if (!isEndgame()) {
-        score += evaluateDevelopment(piece, startRow, startCol, endRow, endCol) * 0.7;
-    }
-
-    // 6. Center control bonus with distance-based scaling
-    const centerDistance = Math.max(
-        Math.abs(3.5 - endRow),
-        Math.abs(3.5 - endCol)
-    );
-    score += (4 - centerDistance) * 15;
-
-    // 7. King proximity evaluation in endgame
-    if (isEndgame() && pieceType !== 'k') {
-        const distToEnemyKing = getDistanceToEnemyKing(endRow, endCol, color === 'red' ? 'blue' : 'red');
-        score += (7 - distToEnemyKing) * 12;
-    }
-
-    // 8. Pattern recognition
-    score += evaluatePositionalPatterns(piece, endRow, endCol) * 0.6;
-
-    return score;
-}
-
-function evaluateAdvancedPawn(piece, row, col) {
-    let score = 0;
-    const color = getPieceColor(piece);
-    
-    // Passed pawn evaluation
-    if (isPassedPawn(row, col, color)) {
-        const rankFromPromotion = color === 'red' ? 7 - row : row;
-        score += 50 + (20 * (7 - rankFromPromotion));  // Increases as pawn advances
-        
-        // Protected passed pawn bonus
-        if (hasFriendlyPawnNeighbor(row, col)) {
-            score += 35;
-        }
-    }
-
-    // Pawn structure evaluation
-    if (hasFriendlyPawnNeighbor(row, col)) {
-        score += 25;  // Connected pawns bonus
-    }
-
-    // Doubled pawn penalty
-    if (isDoubledPawn(col, color)) {
-        score -= 35;
-    }
-
-    // Isolated pawn penalty
-    if (isIsolatedPawn(col, color)) {
-        score -= 30;
-    }
-
-    // Center control bonus for central pawns
-    if (col >= 3 && col <= 4) {
-        score += 25;
-        if (row >= 3 && row <= 4) {
-            score += 15;  // Extra bonus for central control
-        }
-    }
-
-    // Forward pawn bonus
-    const advancementBonus = color === 'red' ? row * 8 : (7 - row) * 8;
-    score += advancementBonus;
-
-    return score;
-}
-
-function evaluateAdvancedKnight(piece, row, col) {
-    let score = 0;
-    const color = getPieceColor(piece);
-    
-    // Outpost evaluation
-    if (isKnightOutpost(piece, row, col)) {
-        score += 45;
-        if (isPawnProtected(row, col, color)) {
-            score += 20;  // Protected outpost bonus
-        }
-    }
-
-    // Mobility evaluation
-    const mobility = countValidKnightMoves(row, col);
-    score += mobility * 8;
-
-    // Center proximity bonus
-    const centerDistance = Math.max(Math.abs(3.5 - row), Math.abs(3.5 - col));
-    score += (4 - centerDistance) * 12;
-
-    // Edge penalties
-    if (row === 0 || row === 7 || col === 0 || col === 7) {
-        score -= 25;
-    }
-
-    return score;
-}
-
-function evaluateAdvancedBishop(piece, row, col) {
-    let score = 0;
-    const color = getPieceColor(piece);
-    
-    // Mobility on diagonals
-    score += countDiagonalMoves(row, col) * 6;
-
-    // Bishop pair bonus
-    if (hasBishopPair(color)) {
-        score += 50;
-    }
-
-    // Fianchetto bonus
-    if (isFianchettoed(piece, row, col)) {
-        score += 30;
-        
-        // Extra bonus if king is castled on same side
-        if (isKingCastled(color) && isOnSameSide(row, col, findKingPosition(color))) {
+        // Bonus for center control
+        if (move.endCol >= 3 && move.endCol <= 4) {
             score += 20;
         }
     }
-
-    // Long diagonal control
-    if (isOnLongDiagonal(row, col)) {
-        score += 35;
+    
+    // Piece development bonus
+    if (move.startRow <= 1 && move.endRow > 1) {
+        score += 15;
     }
-
-    // Open diagonal bonus
-    score += countOpenDiagonals(row, col) * 12;
-
+    
+    // Add randomness for unpredictability
+    score += Math.random() * 50;
+    
     return score;
 }
 
-function evaluateAdvancedRook(piece, row, col) {
+function evaluateHardMove(move) {
     let score = 0;
-    const color = getPieceColor(piece);
+    const piece = move.piece.toLowerCase();
     
-    // Open file control
-    if (isFileOpen(col)) {
-        score += 45;
-    } else if (isSemiOpenFile(col, color)) {
-        score += 25;
-    }
-
-    // Seventh rank control
-    const seventhRank = color === 'red' ? 6 : 1;
-    if (row === seventhRank) {
-        score += 40;
+    // Material value of captures
+    if (move.isCapture) {
+        const capturedPiece = window.board[move.endRow][move.endCol].toLowerCase();
+        score += PIECE_VALUES[capturedPiece];
         
-        // Extra bonus if another rook is also on 7th
-        if (hasRookOnSeventh(color, seventhRank, col)) {
-            score += 25;
+        // Extra bonus for favorable trades
+        if (PIECE_VALUES[piece] < PIECE_VALUES[capturedPiece]) {
+            score += (PIECE_VALUES[capturedPiece] - PIECE_VALUES[piece]) / 2;
         }
     }
-
-    // Connected rooks bonus
-    if (hasConnectedRook(piece, row, col)) {
+    
+    // Positional evaluation
+    score += evaluatePosition(piece, move.endRow, move.endCol);
+    
+    // Center control
+    if (move.endRow >= 3 && move.endRow <= 4 && move.endCol >= 3 && move.endCol <= 4) {
         score += 30;
     }
-
-    // Mobility score
-    score += countOrthogonalMoves(row, col) * 5;
-
-    return score;
-}
-
-function evaluateAdvancedQueen(piece, row, col) {
-    let score = 0;
-    const isEnd = isEndgame();
     
-    // Mobility evaluation
-    const mobilityScore = (countDiagonalMoves(row, col) + countOrthogonalMoves(row, col)) * 4;
-    score += mobilityScore;
-
-    // Early development penalty
-    if (!isEnd && isEarlyDevelopment()) {
-        score -= 35;  // Significant penalty for early queen development
+    // Piece-specific evaluations
+    switch (piece) {
+        case 'p':
+            score += evaluatePawnMove(move);
+            break;
+        case 'n':
+            score += evaluateKnightMove(move);
+            break;
+        case 'b':
+            score += evaluateBishopMove(move);
+            break;
+        case 'r':
+            score += evaluateRookMove(move);
+            break;
+        case 'q':
+            score += evaluateQueenMove(move);
+            break;
+        case 'k':
+            score += evaluateKingMove(move);
+            break;
     }
-
-    // King proximity evaluation
-    if (isEnd) {
-        const distToEnemyKing = getDistanceToEnemyKing(row, col);
-        score += (8 - distToEnemyKing) * 8;
-    } else {
-        // In middlegame, prefer safer squares away from enemy pieces
-        score += evaluateQueenSafety(row, col) * 5;
-    }
-
-    // Center influence
-    if (row >= 2 && row <= 5 && col >= 2 && col <= 5) {
+    
+    // Safety evaluation
+    if (!doesMoveExposeWeakness(move)) {
         score += 20;
-        if (isEnd) {
-            score += 10;  // Extra central bonus in endgame
-        }
     }
-
-    return score;
-}
-
-function evaluateAdvancedKing(piece, row, col) {
-    let score = 0;
-    const color = getPieceColor(piece);
-    const isEnd = isEndgame();
-    
-    if (isEnd) {
-        // Endgame: King should be active
-        score += evaluateKingActivity(row, col) * 10;
-        score += (8 - getDistanceToEnemyKing(row, col)) * 10;
-        score += evaluateCentralization(row, col) * 8;
-    } else {
-        // Middlegame: King safety is priority
-        score += evaluateKingSafety(row, col, color) * 15;
-        
-        // Castling evaluation
-        if (!hasCastled(color)) {
-            score -= 40;  // Penalty for not castling
-            if (hasKingMoved(color)) {
-                score -= 20;  // Additional penalty if king moved without castling
-            }
-        }
-    }
-
-    // Pawn shield evaluation
-    score += evaluatePawnShield(row, col, color);
-
-    return score;
-}
-
-// Advanced helper functions
-function isKnightOutpost(piece, row, col) {
-    const color = getPieceColor(piece);
-    if (piece.toLowerCase() !== 'n') return false;
-    
-    // Must be in enemy half
-    const inEnemyTerritory = color === 'red' ? row >= 4 : row <= 3;
-    if (!inEnemyTerritory) return false;
-    
-    // Cannot be attacked by enemy pawns
-    return !canBeAttackedByEnemyPawns(row, col, color);
-}
-
-function isSemiOpenFile(col, color) {
-    let hasOwnPawn = false;
-    let hasEnemyPawn = false;
-    const ownPawn = color === 'red' ? 'P' : 'p';
-    const enemyPawn = color === 'red' ? 'p' : 'P';
-    
-    for (let row = 0; row < 8; row++) {
-        const piece = window.board[row][col];
-        if (piece === ownPawn) hasOwnPawn = true;
-        if (piece === enemyPawn) hasEnemyPawn = true;
-    }
-    
-    return !hasOwnPawn && hasEnemyPawn;
-}
-
-function evaluateQueenSafety(row, col) {
-    let score = 0;
-    const piece = window.board[row][col];
-    const color = getPieceColor(piece);
-    
-    // Check attacking pieces
-    const attackers = countAttackers(row, col, color === 'red' ? 'blue' : 'red');
-    score -= attackers * 20;
-    
-    // Bonus for having defenders
-    const defenders = countAttackers(row, col, color);
-    score += defenders * 15;
     
     return score;
 }
 
-function evaluateKingActivity(row, col) {
+function evaluatePosition(piece, row, col) {
     let score = 0;
     
-    // Distance from center bonus
+    // General positional bonuses
     const centerDistance = Math.max(Math.abs(3.5 - row), Math.abs(3.5 - col));
-    score += (4 - centerDistance) * 10;
+    score -= centerDistance * 5; // Prefer central positions
     
-    // Bonus for controlling adjacent squares
-    for (let dr = -1; dr <= 1; dr++) {
-        for (let dc = -1; dc <= 1; dc++) {
-            if (dr === 0 && dc === 0) continue;
-            const newRow = row + dr;
-            const newCol = col + dc;
-            if (isWithinBoard(newRow, newCol) && !isSquareUnderAttack(newRow, newCol)) {
-                score += 5;
-            }
-        }
+    // Avoid edge of board except for rooks
+    if (piece !== 'r' && (row === 0 || row === 7 || col === 0 || col === 7)) {
+        score -= 20;
     }
     
     return score;
 }
 
-function evaluateCentralization(row, col) {
-    const distanceFromCenter = Math.max(
-        Math.abs(3.5 - row),
-        Math.abs(3.5 - col)
-    );
-    return Math.max(0, 4 - distanceFromCenter) * 10;
-}
-
-function evaluatePawnShield(row, col, color) {
+function evaluatePawnMove(move) {
     let score = 0;
-    const direction = color === 'red' ? 1 : -1;
     
-    // Check pawns in front of king
-    for (let r = row; r !== row + (3 * direction) && r >= 0 && r < 8; r += direction) {
-        for (let c = Math.max(0, col - 1); c <= Math.min(7, col + 1); c++) {
-            const piece = window.board[r][c];
-            if (piece && piece.toLowerCase() === 'p' && getPieceColor(piece) === color) {
-                // Closer pawns are worth more
-                const distance = Math.abs(r - row);
-                score += 20 - (distance * 5);
-            }
-        }
+    // Advancement bonus
+    score += (7 - move.endRow) * 10;
+    
+    // Passed pawn bonus
+    if (isPawnPassed(move.endRow, move.endCol)) {
+        score += 50;
+    }
+    
+    // Connected pawns bonus
+    if (hasConnectedPawn(move.endRow, move.endCol)) {
+        score += 20;
     }
     
     return score;
 }
 
-function countAttackers(row, col, attackingColor) {
-    let count = 0;
-    for (let r = 0; r < 8; r++) {
-        for (let c = 0; c < 8; c++) {
-            const piece = window.board[r][c];
-            if (piece && getPieceColor(piece) === attackingColor) {
-                if (canPieceMove(piece, r, c, row, col)) {
-                    count++;
-                }
-            }
-        }
-    }
-    return count;
-}
-
-function evaluatePositionalPatterns(piece, row, col) {
+function evaluateKnightMove(move) {
     let score = 0;
-    const pieceType = piece.toLowerCase();
-    const color = getPieceColor(piece);
     
-    // Pawn chain detection
-    if (pieceType === 'p' && hasPawnChain(row, col, color)) {
-        score += 25;
-    }
-    
-    // Bishop fianchetto pattern
-    if (pieceType === 'b' && isFianchetto(piece, row, col)) {
+    // Outpost bonus
+    if (isKnightOutpost(move.endRow, move.endCol)) {
         score += 30;
     }
     
-    // Rook on seventh rank
-    if (pieceType === 'r' && ((color === 'red' && row === 6) || (color === 'blue' && row === 1))) {
-        score += 35;
-    }
+    // Mobility bonus
+    score += countKnightMoves(move.endRow, move.endCol) * 5;
     
-    // Knight outpost
-    if (pieceType === 'n' && isKnightOutpost(piece, row, col)) {
-        score += 40;
+    return score;
+}
+
+function evaluateBishopMove(move) {
+    let score = 0;
+    
+    // Diagonal control
+    score += countDiagonalMoves(move.endRow, move.endCol) * 5;
+    
+    // Bishop pair bonus
+    if (hasBishopPair()) {
+        score += 30;
     }
     
     return score;
 }
 
-function hasPawnChain(row, col, color) {
-    const offset = color === 'red' ? 1 : -1;
-    const pawn = color === 'red' ? 'P' : 'p';
+function evaluateRookMove(move) {
+    let score = 0;
     
-    // Check diagonally forward
-    for (let dc of [-1, 1]) {
-        const protectRow = row + offset;
-        const protectCol = col + dc;
-        if (isWithinBoard(protectRow, protectCol) &&
-            window.board[protectRow][protectCol] === pawn) {
-            return true;
-        }
+    // Open file bonus
+    if (isFileOpen(move.endCol)) {
+        score += 40;
     }
     
-    return false;
-}
-
-function isFianchetto(piece, row, col) {
-    const color = getPieceColor(piece);
-    if (piece.toLowerCase() !== 'b') return false;
-    
-    // Check if bishop is in fianchetto position
-    return (color === 'red' && row <= 2 && (col === 1 || col === 6)) ||
-           (color === 'blue' && row >= 5 && (col === 1 || col === 6));
-}
-
-function getMaterialCount() {
-    let count = 0;
-    for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
-            const piece = window.board[row][col];
-            if (piece) {
-                count += PIECE_VALUES[piece.toLowerCase()];
-            }
-        }
-    }
-    return count;
-}
-
-function isEndgame() {
-    const materialCount = getMaterialCount();
-    return materialCount <= 3000 || !hasQueens();
-}
-
-function hasQueens() {
-    for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
-            const piece = window.board[row][col];
-            if (piece && piece.toLowerCase() === 'q') {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-// Missing helper functions
-function evaluatePosition(piece, row, col) {
-    const isEnd = isEndgame();
-    return getPieceSquareValue(piece, row, col, isEnd);
-}
-
-function hasBishopPair(color) {
-    let bishops = 0;
-    const bishopChar = color === 'red' ? 'B' : 'b';
-    
-    for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
-            if (window.board[row][col] === bishopChar) {
-                bishops++;
-            }
-        }
+    // Seventh rank bonus
+    if (move.endRow === 1) {
+        score += 30;
     }
     
-    return bishops >= 2;
+    return score;
 }
 
-function isPawnProtected(row, col, color) {
-    const pawn = color === 'red' ? 'P' : 'p';
-    const direction = color === 'red' ? -1 : 1;
+function evaluateQueenMove(move) {
+    let score = 0;
     
-    // Check if any friendly pawns can protect this square
-    for (let dc of [-1, 1]) {
-        const checkRow = row + direction;
-        const checkCol = col + dc;
-        if (isWithinBoard(checkRow, checkCol) && 
-            window.board[checkRow][checkCol] === pawn) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function findKingPosition(color) {
-    const king = color === 'red' ? 'K' : 'k';
-    for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
-            if (window.board[row][col] === king) {
-                return { row, col };
-            }
-        }
-    }
-    return null;
-}
-
-function isKingCastled(color) {
-    const kingPos = findKingPosition(color);
-    if (!kingPos) return false;
+    // Mobility
+    score += (countDiagonalMoves(move.endRow, move.endCol) + 
+              countOrthogonalMoves(move.endRow, move.endCol)) * 3;
     
-    // Consider king castled if it has moved from its starting position
-    const startRow = color === 'red' ? 0 : 7;
-    const startCol = 4;
-    
-    return kingPos.row === startRow && (kingPos.col === 2 || kingPos.col === 6);
-}
-
-function isOnSameSide(row, col, kingPos) {
-    if (!kingPos) return false;
-    return Math.abs(col - kingPos.col) <= 2;
-}
-
-function hasRookOnSeventh(color, seventhRank, excludeCol) {
-    const rook = color === 'red' ? 'R' : 'r';
-    
-    for (let col = 0; col < 8; col++) {
-        if (col !== excludeCol && 
-            window.board[seventhRank][col] === rook) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function countOpenDiagonals(row, col) {
-    let count = 0;
-    const directions = [[1,1], [1,-1], [-1,1], [-1,-1]];
-    
-    for (const [dr, dc] of directions) {
-        let r = row + dr;
-        let c = col + dc;
-        let isOpen = true;
-        
-        while (isWithinBoard(r, c)) {
-            if (window.board[r][c]) {
-                isOpen = false;
-                break;
-            }
-            r += dr;
-            c += dc;
-        }
-        
-        if (isOpen) count++;
+    // Safety penalty for early development
+    if (getMoveNumber() < 10) {
+        score -= 30;
     }
     
-    return count;
+    return score;
 }
 
-function isDoubledPawn(col, color) {
-    let pawnCount = 0;
-    const pawn = color === 'red' ? 'P' : 'p';
+function evaluateKingMove(move) {
+    let score = 0;
     
-    for (let row = 0; row < 8; row++) {
-        if (window.board[row][col] === pawn) {
-            pawnCount++;
-        }
+    // Safety
+    score -= countAttackingSquares(move.endRow, move.endCol) * 10;
+    
+    // Castling bonus
+    if (Math.abs(move.endCol - move.startCol) === 2) {
+        score += 50;
     }
     
-    return pawnCount > 1;
+    return score;
 }
 
-function isIsolatedPawn(col, color) {
-    const pawn = color === 'red' ? 'P' : 'p';
+// Helper functions for evaluation
+function doesMoveExposeWeakness(move) {
+    // Make temporary move
+    const originalPiece = window.board[move.endRow][move.endCol];
+    const movingPiece = window.board[move.startRow][move.startCol];
+    window.board[move.endRow][move.endCol] = movingPiece;
+    window.board[move.startRow][move.startCol] = null;
     
-    // Check adjacent files for friendly pawns
-    for (let adjacentCol of [col - 1, col + 1]) {
-        if (adjacentCol < 0 || adjacentCol >= 8) continue;
-        
-        for (let row = 0; row < 8; row++) {
-            if (window.board[row][adjacentCol] === pawn) {
+    // Check for weaknesses
+    const exposesWeakness = isSquareUnderAttack(move.endRow, move.endCol, 'blue');
+    
+    // Restore board
+    window.board[move.startRow][move.startCol] = movingPiece;
+    window.board[move.endRow][move.endCol] = originalPiece;
+    
+    return exposesWeakness;
+}
+
+function getMoveNumber() {
+    return Math.floor(moveHistory.length / 2) + 1;
+}
+
+function isPawnPassed(row, col) {
+    // Check if there are any enemy pawns that could block or capture
+    for (let r = row - 1; r >= 0; r--) {
+        for (let c = col - 1; c <= col + 1; c++) {
+            if (c >= 0 && c < 8 && window.board[r][c] === 'p') {
                 return false;
             }
         }
     }
-    
     return true;
 }
 
-function evaluateMobility(piece, row, col) {
-    let score = 0;
-    const pieceType = piece.toLowerCase();
-    const color = getPieceColor(piece);
-    
-    // Calculate how many squares the piece can move to
-    let mobilityCount = 0;
-    for (let endRow = 0; endRow < 8; endRow++) {
-        for (let endCol = 0; endCol < 8; endCol++) {
-            if (canPieceMove(piece, row, col, endRow, endCol, false)) {
-                mobilityCount++;
-                
-                // Bonus for controlling central squares
-                if (endRow >= 2 && endRow <= 5 && endCol >= 2 && endCol <= 5) {
-                    score += 2;
-                }
-            }
+function hasConnectedPawn(row, col) {
+    // Check adjacent files for friendly pawns
+    for (let c = col - 1; c <= col + 1; c += 2) {
+        if (c >= 0 && c < 8 && window.board[row][c] === 'P') {
+            return true;
         }
     }
-    
-    // Weight mobility based on piece type
-    const mobilityWeights = {
-        'p': 1,
-        'n': 4,
-        'b': 5,
-        'r': 3,
-        'q': 2,
-        'k': 1
-    };
-    
-    score += mobilityCount * (mobilityWeights[pieceType] || 1);
-    return score;
-}
-
-function isEarlyDevelopment() {
-    let moveCount = 0;
-    const moveHistoryElement = document.getElementById('move-history');
-    if (moveHistoryElement) {
-        moveCount = moveHistoryElement.children.length;
-    }
-    return moveCount < 10; // Consider first 10 moves as early game
-}
-
-function hasConnectedRook(piece, row, col) {
-    if (piece.toLowerCase() !== 'r') return false;
-    const color = getPieceColor(piece);
-    const rook = color === 'red' ? 'R' : 'r';
-    
-    // Check if there's another rook on the same rank
-    for (let c = 0; c < 8; c++) {
-        if (c !== col && window.board[row][c] === rook) {
-            // Check if path is clear between rooks
-            if (isPathClear(row, Math.min(col, c), row, Math.max(col, c))) {
-                return true;
-            }
-        }
-    }
-    
-    // Check if there's another rook on the same file
-    for (let r = 0; r < 8; r++) {
-        if (r !== row && window.board[r][col] === rook) {
-            // Check if path is clear between rooks
-            if (isPathClear(Math.min(row, r), col, Math.max(row, r), col)) {
-                return true;
-            }
-        }
-    }
-    
     return false;
 }
 
-function evaluateDevelopment(piece, startRow, startCol, endRow, endCol) {
-    let score = 0;
-    const pieceType = piece.toLowerCase();
-    const color = getPieceColor(piece);
-    const isInitialPosition = (color === 'red' && startRow <= 1) || 
-                            (color === 'blue' && startRow >= 6);
+function isKnightOutpost(row, col) {
+    // An outpost is a square that cannot be attacked by enemy pawns
+    return row < 6 && !canBeAttackedByEnemyPawns(row, col);
+}
 
-    if (isInitialPosition) {
-        // Encourage developing minor pieces
-        if (pieceType === 'n' || pieceType === 'b') {
-            score += 30;
-            // Extra bonus for developing towards the center
-            if (endCol >= 2 && endCol <= 5) {
-                score += 10;
+function canBeAttackedByEnemyPawns(row, col) {
+    for (let c = col - 1; c <= col + 1; c += 2) {
+        if (c >= 0 && c < 8 && row > 0 && window.board[row - 1][c] === 'p') {
+            return true;
+        }
+    }
+    return false;
+}
+
+function hasBishopPair() {
+    let bishops = 0;
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            if (window.board[row][col] === 'B') bishops++;
+        }
+    }
+    return bishops >= 2;
+}
+
+function countAttackingSquares(row, col) {
+    let count = 0;
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (isSquareUnderAttack(r, c, 'blue')) count++;
+        }
+    }
+    return count;
+}
+
+// AI helper functions
+function countKnightMoves(row, col) {
+    const possibleMoves = [
+        [-2, -1], [-2, 1], [-1, -2], [-1, 2],
+        [1, -2], [1, 2], [2, -1], [2, 1]
+    ];
+    
+    let count = 0;
+    for (const [dr, dc] of possibleMoves) {
+        const newRow = row + dr;
+        const newCol = col + dc;
+        if (isWithinBoard(newRow, newCol)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+function countDiagonalMoves(row, col) {
+    const directions = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+    let count = 0;
+    
+    for (const [dr, dc] of directions) {
+        let r = row + dr;
+        let c = col + dc;
+        while (isWithinBoard(r, c)) {
+            count++;
+            if (window.board[r][c]) break;
+            r += dr;
+            c += dc;
+        }
+    }
+    return count;
+}
+
+function countOrthogonalMoves(row, col) {
+    const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    let count = 0;
+    
+    for (const [dr, dc] of directions) {
+        let r = row + dr;
+        let c = col + dc;
+        while (isWithinBoard(r, c)) {
+            count++;
+            if (window.board[r][c]) break;
+            r += dr;
+            c += dc;
+        }
+    }
+    return count;
+}
+
+function isFileOpen(col) {
+    for (let row = 0; row < BOARD_SIZE; row++) {
+        const piece = window.board[row][col];
+        if (piece && piece.toLowerCase() === 'p') {
+            return false;
+        }
+    }
+    return true;
+}
+
+function initGame() {
+    try {
+        debug('\n----- Game Initialization -----');
+        createBoard();
+        window.placePieces();
+        
+        // Add keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && selectedPiece) {
+                selectedPiece.style.opacity = '1';
+                selectedPiece = null;
+                removeHighlights();
             }
+        });
+        
+        // Initialize game mode controls
+        const aiModeBtn = document.getElementById('ai-mode');
+        const multiplayerModeBtn = document.getElementById('multiplayer-mode');
+        const difficultyScreen = document.getElementById('difficulty-screen');
+        const multiplayerMenu = document.querySelector('.multiplayer-menu');
+
+        if (aiModeBtn && multiplayerModeBtn) {
+            aiModeBtn.addEventListener('click', () => {
+                currentGameMode = GameMode.AI;
+                window.isMultiplayerMode = false;
+                aiModeBtn.classList.add('selected');
+                multiplayerModeBtn?.classList.remove('selected');
+                if (difficultyScreen) difficultyScreen.style.display = 'flex';
+                if (multiplayerMenu) multiplayerMenu.style.display = 'none';
+            });
+
+            multiplayerModeBtn.addEventListener('click', () => {
+                currentGameMode = GameMode.ONLINE;
+                window.isMultiplayerMode = true;
+                multiplayerModeBtn.classList.add('selected');
+                aiModeBtn?.classList.remove('selected');
+                if (difficultyScreen) difficultyScreen.style.display = 'none';
+                if (multiplayerMenu) multiplayerMenu.style.display = 'block';
+            });
         }
         
-        // Penalize early queen development
-        if (pieceType === 'q') {
-            score -= 25;
-            // Extra penalty if moved to an exposed position
-            if (endRow >= 3 && endRow <= 4) {
-                score -= 15;
-            }
-        }
-        
-        // Small bonus for rook development only if files are open
-        if (pieceType === 'r' && isFileOpen(endCol)) {
-            score += 15;
-        }
+        debug('Game initialization completed successfully');
+    } catch (error) {
+        console.error("Error during game initialization:", error);
+        debug(`Error during game initialization: ${error.message}`);
     }
-
-    // Bonus for controlling central squares during development
-    if ((pieceType === 'n' || pieceType === 'b') && 
-        endRow >= 2 && endRow <= 5 && endCol >= 2 && endCol <= 5) {
-        score += 20;
-    }
-
-    // Penalty for blocking center pawns with pieces
-    if (isBlockingCenterPawn(piece, endRow, endCol)) {
-        score -= 25;
-    }
-
-    return score;
 }
 
-function isBlockingCenterPawn(piece, row, col) {
-    if (piece.toLowerCase() === 'p') return false;
-    const color = getPieceColor(piece);
-    const pawnRow = color === 'red' ? 1 : 6;
-    const pawn = color === 'red' ? 'P' : 'p';
-    
-    // Check if piece is blocking a center pawn that hasn't moved
-    return (row === pawnRow && (col === 3 || col === 4) && 
-            window.board[color === 'red' ? 1 : 6][col] === pawn);
-}
+// Make initialization function globally available
+window.initGame = initGame;
 
-function hasKingMoved(color) {
-    return color === 'red' ? pieceState.redKingMoved : pieceState.blueKingMoved;
-}
+window.makeAIMove = makeAIMove;
 
-function hasCastled(color) {
-    const kingPos = findKingPosition(color);
-    if (!kingPos) return false;
-    
-    const startRow = color === 'red' ? 0 : 7;
-    return kingPos.row === startRow && (kingPos.col === 2 || kingPos.col === 6);
-}
-
-// Make positional evaluation functions globally available
-window.evaluatePawnPosition = evaluatePawnPosition;
-window.evaluateKnightPosition = evaluateKnightPosition;
-window.getDistanceToEnemyKing = getDistanceToEnemyKing;
-window.evaluateBishopPosition = evaluateBishopPosition;
-window.isOnLongDiagonal = isOnLongDiagonal;
-window.evaluateRookPosition = evaluateRookPosition;
-window.evaluateQueenPosition = evaluateQueenPosition;
-window.evaluateKingPosition = evaluateKingPosition;
-window.evaluateKingSafety = evaluateKingSafety;
-window.evaluateControlOfCenter = evaluateControlOfCenter;
-window.isEarlyGame = isEarlyGame;
