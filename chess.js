@@ -1393,6 +1393,42 @@ function initGame() {
         const multiplayerModeBtn = document.getElementById('multiplayer-mode');
         const difficultyScreen = document.getElementById('difficulty-screen');
         const multiplayerMenu = document.querySelector('.multiplayer-menu');
+        const easyBtn = document.getElementById('easy-mode');
+        const hardBtn = document.getElementById('hard-mode');
+        const startBtn = document.getElementById('start-game');
+
+        // Initialize difficulty selection
+        if (easyBtn && hardBtn && startBtn) {
+            startBtn.disabled = true;
+            selectedDifficulty = null;
+
+            easyBtn.addEventListener('click', () => {
+                debug('Easy mode clicked');
+                gameDifficulty = 'easy';
+                selectedDifficulty = 'easy';
+                easyBtn.classList.add('selected');
+                hardBtn.classList.remove('selected');
+                startBtn.disabled = false;
+            });
+
+            hardBtn.addEventListener('click', () => {
+                debug('Hard mode clicked');
+                gameDifficulty = 'hard';
+                selectedDifficulty = 'hard';
+                hardBtn.classList.add('selected');
+                easyBtn.classList.remove('selected');
+                startBtn.disabled = false;
+            });
+
+            startBtn.addEventListener('click', () => {
+                if (selectedDifficulty) {
+                    debug(`Starting game with ${selectedDifficulty} difficulty`);
+                    difficultyScreen.style.display = 'none';
+                    document.getElementById('chess-game').style.display = 'block';
+                    startGame();
+                }
+            });
+        }
 
         if (aiModeBtn && multiplayerModeBtn) {
             aiModeBtn.addEventListener('click', () => {
@@ -1400,7 +1436,13 @@ function initGame() {
                 window.isMultiplayerMode = false;
                 aiModeBtn.classList.add('selected');
                 multiplayerModeBtn?.classList.remove('selected');
-                if (difficultyScreen) difficultyScreen.style.display = 'flex';
+                if (difficultyScreen) {
+                    difficultyScreen.style.display = 'flex';
+                    selectedDifficulty = null;
+                    if (startBtn) startBtn.disabled = true;
+                    if (easyBtn) easyBtn.classList.remove('selected');
+                    if (hardBtn) hardBtn.classList.remove('selected');
+                }
                 if (multiplayerMenu) multiplayerMenu.style.display = 'none';
             });
 
