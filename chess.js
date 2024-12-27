@@ -1089,6 +1089,21 @@ function countMovesInDirections(row, col, directions) {
     return count;
 }
 
+function countAttackingSquares(row, col, attackingColor = 'blue') {
+    let count = 0;
+    for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+            const piece = window.board[r][c];
+            if (piece && getPieceColor(piece) === attackingColor) {  // Add this check
+                if (canPieceMove(piece, r, c, row, col, false)) {
+                    count++;
+                }
+            }
+        }
+    }
+    return count;
+}
+
 // Add these helper functions after the existing evaluation helpers
 
 function isPawnPassed(row, col) {
@@ -1222,6 +1237,14 @@ function onPieceClick(event) {
         console.error("Error in onPieceClick:", error);
         debug(`Piece click error: ${error.message}`);
     }
+}
+
+function showLegalMoves(row, col) {
+    const validMoves = getValidMoves(row, col);
+    validMoves.forEach(move => {
+        const isCapture = window.board[move.row][move.col] !== null;
+        highlightSquare(move.row, move.col, isCapture);
+    });
 }
 
 function onSquareClick(row, col) {
