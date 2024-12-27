@@ -1217,13 +1217,29 @@ function onPieceClick(event) {
         const row = parseInt(clickedPiece.getAttribute('data-row'));
         const col = parseInt(clickedPiece.getAttribute('data-col'));
         const pieceType = window.board[row][col];
+        const pieceColor = getPieceColor(pieceType);
+
+        // If we have a piece selected and click on an opponent's piece,
+        // treat it as a capture attempt
+        if (selectedPiece && pieceColor !== window.currentPlayer) {
+            const startRow = parseInt(selectedPiece.getAttribute('data-row'));
+            const startCol = parseInt(selectedPiece.getAttribute('data-col'));
+            if (canPieceMove(window.board[startRow][startCol], startRow, startCol, row, col)) {
+                executeMove(startRow, startCol, row, col);
+            }
+            selectedPiece.style.opacity = '1';
+            selectedPiece = null;
+            removeHighlights();
+            return;
+        }
         
+        // Clear previous selection
         if (selectedPiece) {
             selectedPiece.style.opacity = '1';
             removeHighlights();
         }
         
-        const pieceColor = getPieceColor(pieceType);
+        // Only allow selecting own pieces
         if (pieceColor === window.currentPlayer) {
             if (selectedPiece === clickedPiece) {
                 selectedPiece = null;
