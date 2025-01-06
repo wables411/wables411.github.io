@@ -239,11 +239,25 @@
         Code copied to clipboard!
     </div>
 
-    <!-- Load Dependencies -->
+    <!-- Supabase -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-    <!-- Load Core Game Files -->
-    <script src="database.js"></script>
+    <!-- Initialize Core Systems -->
+    <script>
+        // Initialize Supabase
+        try {
+            if (!window.gameDatabase) {
+                window.gameDatabase = window.supabase.createClient(
+                    'https://roxwocgknkiqnsgiojgz.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
+                );
+            }
+        } catch (error) {
+            console.error('Error initializing Supabase:', error);
+        }
+    </script>
+
+    <!-- Load Game Scripts in Order -->
     <script src="loadImages.js"></script>
     <script src="leaderboard.js"></script>
     <script src="multiplayer.js"></script>
@@ -251,117 +265,81 @@
 
     <!-- Initialize Game Systems -->
     <script>
-        document.addEventListener('DOMContentLoaded', async function() {
-            try {
-                // Wait for database connection
-                if (!window.databaseConnection) {
-                    throw new Error('Database connection not initialized. Check if database.js is loaded.');
-                }
-                
-                await window.databaseConnection.initialize();
-                console.log('Database connection established');
-                
-                // Initialize game systems in order
-                if (window.loadImages) {
-                    await window.loadImages();
-                    console.log('Images loaded');
-                }
-                
-                if (window.LeaderboardManager) {
-                    window.leaderboardManager = new window.LeaderboardManager();
-                    console.log('Leaderboard initialized');
-                }
-                
-                if (window.MultiplayerManager) {
-                    window.multiplayerManager = new window.MultiplayerManager();
-                    console.log('Multiplayer system initialized');
-                }
-                
-                // Initialize game UI
-                const elements = {
-                    aiModeBtn: document.getElementById('ai-mode'),
-                    multiplayerModeBtn: document.getElementById('multiplayer-mode'),
-                    difficultyScreen: document.getElementById('difficulty-screen'),
-                    multiplayerMenu: document.querySelector('.multiplayer-menu'),
-                    gameCodeInput: document.getElementById('game-code-input'),
-                    gameCodeDisplay: document.getElementById('gameCode'),
-                    joinGameBtn: document.getElementById('join-game'),
-                    createGameBtn: document.getElementById('create-game'),
-                    statusElement: document.getElementById('status')
-                };
+    document.addEventListener('DOMContentLoaded', function() {
+        const elements = {
+            aiModeBtn: document.getElementById('ai-mode'),
+            multiplayerModeBtn: document.getElementById('multiplayer-mode'),
+            difficultyScreen: document.getElementById('difficulty-screen'),
+            multiplayerMenu: document.querySelector('.multiplayer-menu'),
+            gameCodeInput: document.getElementById('game-code-input'),
+            gameCodeDisplay: document.getElementById('gameCode'),
+            joinGameBtn: document.getElementById('join-game'),
+            createGameBtn: document.getElementById('create-game'),
+            statusElement: document.getElementById('status')
+        };
 
-                // Initialize mode switching
-                if (elements.multiplayerModeBtn) {
-                    elements.multiplayerModeBtn.addEventListener('click', () => {
-                        console.log('Activating multiplayer mode');
-                        elements.aiModeBtn?.classList.remove('selected');
-                        elements.multiplayerModeBtn.classList.add('selected');
-                        elements.difficultyScreen.style.display = 'none';
-                        elements.multiplayerMenu.style.display = 'block';
-                    });
-                }
+        // Initialize mode switching
+        if (elements.multiplayerModeBtn) {
+            elements.multiplayerModeBtn.addEventListener('click', () => {
+                console.log('Activating multiplayer mode');
+                elements.aiModeBtn?.classList.remove('selected');
+                elements.multiplayerModeBtn.classList.add('selected');
+                elements.difficultyScreen.style.display = 'none';
+                elements.multiplayerMenu.style.display = 'block';
+            });
+        }
 
-                if (elements.aiModeBtn) {
-                    elements.aiModeBtn.addEventListener('click', () => {
-                        console.log('Activating AI mode');
-                        elements.multiplayerModeBtn?.classList.remove('selected');
-                        elements.aiModeBtn.classList.add('selected');
-                        elements.difficultyScreen.style.display = 'flex';
-                        elements.multiplayerMenu.style.display = 'none';
-                    });
-                }
+        if (elements.aiModeBtn) {
+            elements.aiModeBtn.addEventListener('click', () => {
+                console.log('Activating AI mode');
+                elements.multiplayerModeBtn?.classList.remove('selected');
+                elements.aiModeBtn.classList.add('selected');
+                elements.difficultyScreen.style.display = 'flex';
+                elements.multiplayerMenu.style.display = 'none';
+            });
+        }
 
-                // Initialize game code functionality
-                if (elements.gameCodeDisplay) {
-                    elements.gameCodeDisplay.addEventListener('click', function() {
-                        navigator.clipboard.writeText(this.textContent).then(() => {
-                            const notification = document.getElementById('copyNotification');
-                            notification.style.display = 'block';
-                            setTimeout(() => notification.style.display = 'none', 2000);
-                        });
-                    });
-                }
+        // Initialize game code functionality
+        if (elements.gameCodeDisplay) {
+            elements.gameCodeDisplay.addEventListener('click', function() {
+                navigator.clipboard.writeText(this.textContent).then(() => {
+                    const notification = document.getElementById('copyNotification');
+                    notification.style.display = 'block';
+                    setTimeout(() => notification.style.display = 'none', 2000);
+                });
+            });
+        }
 
-                if (elements.gameCodeInput) {
-                    elements.gameCodeInput.addEventListener('input', function() {
-                        this.value = this.value.toUpperCase();
-                        if (this.value.length > 6) {
-                            this.value = this.value.slice(0, 6);
-                        }
-                    });
+        if (elements.gameCodeInput) {
+            elements.gameCodeInput.addEventListener('input', function() {
+                this.value = this.value.toUpperCase();
+                if (this.value.length > 6) {
+                    this.value = this.value.slice(0, 6);
                 }
+            });
+        }
 
-                if (elements.createGameBtn) {
-                    elements.createGameBtn.addEventListener('click', () => {
-                        if (window.multiplayerManager) {
-                            window.multiplayerManager.createGame();
-                        }
-                    });
+        if (elements.createGameBtn) {
+            elements.createGameBtn.addEventListener('click', () => {
+                if (window.multiplayerManager) {
+                    window.multiplayerManager.createGame();
                 }
+            });
+        }
 
-                if (elements.joinGameBtn) {
-                    elements.joinGameBtn.addEventListener('click', () => {
-                        const gameCode = elements.gameCodeInput?.value?.trim();
-                        if (!gameCode) {
-                            alert('Please enter a game code');
-                            return;
-                        }
-                        if (window.multiplayerManager) {
-                            window.multiplayerManager.joinGameByCode(gameCode);
-                        }
-                    });
+        if (elements.joinGameBtn) {
+            elements.joinGameBtn.addEventListener('click', () => {
+                const gameCode = elements.gameCodeInput?.value?.trim();
+                if (!gameCode) {
+                    alert('Please enter a game code');
+                    return;
                 }
-
-                console.log('All game systems initialized successfully');
-                
-            } catch (error) {
-                console.error('Error initializing game systems:', error);
-                const statusElement = document.getElementById('status');
-                if (statusElement) {
-                    statusElement.textContent = 'Error connecting to game server. Please refresh the page.';
+                if (window.multiplayerManager) {
+                    window.multiplayerManager.joinGameByCode(gameCode);
                 }
-            }
-        });
+            });
+        }
+    });
     </script>
 </body>
 </html>
