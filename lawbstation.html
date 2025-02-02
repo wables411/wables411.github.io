@@ -130,6 +130,45 @@
             z-index: 1000;
             font-family: Impact, sans-serif;
         }
+
+        .video-container {
+            width: 50%;
+            margin: 30px auto;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .video-container video {
+            width: 100%;
+            height: auto;
+            border-radius: 20px;
+            box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
+        }
+
+        .play-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: rgba(50, 205, 50, 0.7);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .play-overlay::after {
+            content: '';
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 10px 0 10px 20px;
+            border-color: transparent transparent transparent #ffffff;
+            margin-left: 5px;
+        }
     </style>
 </head>
 <body class="lawbstation-body">
@@ -148,6 +187,14 @@
             <li><a href="https://lawb.shop">shop</a></li>
         </ul>
     </nav>
+
+    <div class="video-container">
+        <video id="topVideo">
+            <source src="images/lawbstation_promo 3.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="play-overlay"></div>
+    </div>
 
     <div class="top-gif-container">
         <div class="tenor-gif-embed" data-postid="14418647991790600316" data-share-method="host" data-aspect-ratio="1" data-width="50%">
@@ -367,5 +414,26 @@
     });
     </script>
     <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
-</body>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const videoContainer = document.querySelector('.video-container');
+            const video = document.getElementById('topVideo');
+            const overlay = document.querySelector('.play-overlay');
+            
+            videoContainer.addEventListener('click', function() {
+                if (video.paused) {
+                    video.play();
+                    overlay.style.display = 'none';
+                } else {
+                    video.pause();
+                    overlay.style.display = 'flex';
+                }
+            });
+    
+            video.addEventListener('ended', function() {
+                overlay.style.display = 'flex';
+            });
+        });
+    </script>
+    </body>
 </html>
