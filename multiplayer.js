@@ -83,13 +83,30 @@ class MultiplayerManager {
             console.log('Not player turn or processing move');
             return;
         }
-
+    
         const piece = e.target.closest('.piece');
         const square = e.target.closest('.highlight');
         
         if (piece) {
             const row = parseInt(piece.getAttribute('data-row'));
             const col = parseInt(piece.getAttribute('data-col'));
+            
+            // If we already have a piece selected and click on opponent's piece, try to capture
+            if (this.selectedPiece) {
+                const targetPiece = window.board[row][col];
+                if (targetPiece && window.getPieceColor(targetPiece) !== this.playerColor) {
+                    // Attempt capture
+                    const startRow = this.selectedPiece.row;
+                    const startCol = this.selectedPiece.col;
+                    if (window.canMakeMove(startRow, startCol, row, col)) {
+                        this.makeMove(startRow, startCol, row, col);
+                        this.selectedPiece = null;
+                        window.removeHighlights();
+                        return;
+                    }
+                }
+            }
+            
             this.handlePieceClick(row, col);
         } else if (square && this.selectedPiece) {
             const row = parseInt(square.getAttribute('data-row'));
