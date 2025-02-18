@@ -1383,6 +1383,21 @@ function endGame(winner) {
     
     updateStatusDisplay(message);
     
+    // Update leaderboard with the correct result format
+    if (window.updateGameResult) {
+        if (winner === 'draw') {
+            window.updateGameResult('draw');
+        } else {
+            // Get the current player's color from localStorage
+            const playerWallet = localStorage.getItem('currentPlayer');
+            if (playerWallet) {
+                // If player is playing as blue and blue wins -> win
+                const result = (winner === 'blue') ? 'win' : 'loss';
+                window.updateGameResult(result);
+            }
+        }
+    }
+    
     // Disable board interaction
     const chessboard = document.getElementById('chessboard');
     if (chessboard) {
