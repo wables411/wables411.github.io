@@ -336,16 +336,17 @@ class LeaderboardManager {
                 
             console.log('Fetch result:', { existingRecord, fetchError });
     
-            // Prepare the record - using camelCase to match database columns
+            // Prepare the record
             const record = {
                 username: walletAddress,
                 chain_type: chainType || 'evm',
                 wins: (existingRecord?.wins || 0) + (gameResult === 'win' ? 1 : 0),
                 losses: (existingRecord?.losses || 0) + (gameResult === 'loss' ? 1 : 0),
                 draws: (existingRecord?.draws || 0) + (gameResult === 'draw' ? 1 : 0),
-                totalGames: (existingRecord?.totalGames || 0) + 1,  // Changed from total_games to totalGames
+                total_games: (existingRecord?.total_games || 0) + 1,
                 points: (existingRecord?.points || 0) + (gameResult === 'win' ? 3 : gameResult === 'draw' ? 1 : 0),
-                created_at: existingRecord?.created_at || new Date().toISOString()
+                created_at: existingRecord?.created_at || new Date().toISOString(),
+                updated_at: new Date().toISOString()
             };
     
             console.log('Attempting to upsert record:', record);
@@ -401,7 +402,7 @@ class LeaderboardManager {
             return [];
         }
     }
-    
+
     async displayLeaderboard() {
         const tbody = document.getElementById('leaderboard-body');
         if (!tbody) {
@@ -424,7 +425,7 @@ class LeaderboardManager {
                         <td>${chainIndicator} ${this.formatAddress(username)}</td>
                         <td>${player.points}</td>
                         <td>${player.wins}/${player.losses}/${player.draws}</td>
-                        <td>${player.totalGames}</td>
+                        <td>${player.total_games}</td>
                     </tr>
                 `;
             }).join('');
@@ -522,7 +523,7 @@ window.updateGameResult = function(winner) {
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Initializing leaderboard and wallet connection...');
-    const manager = new LeaderboardManager();
-    await manager.loadLeaderboard();
+    window.leaderboardManager = new LeaderboardManager();
+    await window.leaderboardManager.loadLeaderboard();
     initializeWalletConnection();
 });
