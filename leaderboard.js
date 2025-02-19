@@ -1,9 +1,8 @@
-// Add Web3 for EVM chain interaction
+// Initialize core Supabase reference
 const supabase = window.gameDatabase;
-
 let leaderboardManagerInstance = null;
 
-// Function to check if a string is a valid wallet address
+// Validation functions
 function isValidSolanaAddress(address) {
     return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
 }
@@ -29,6 +28,186 @@ const SANKO_CHAIN_CONFIG = {
     rpcUrls: ['https://mainnet.sanko.xyz'],
     blockExplorerUrls: ['https://explorer.sanko.xyz/']
 };
+
+class LeaderboardManager {
+    constructor() {
+        if (leaderboardManagerInstance) {
+            return leaderboardManagerInstance;
+        }
+        leaderboardManagerInstance = this;
+        this.loadLeaderboard();
+        this.setupRealtimeSubscription();
+    }
+
+    setupRealtimeSubscription() {
+        this.subscription = supabase
+            .channel('public:leaderboard')
+            .on('postgres_changes', 
+                { event: '*', schema: 'public', table: 'leaderboard' },
+                () => this.loadLeaderboard()
+            )
+            .subscribe();
+    }
+
+    async loadLeaderboard() {
+        try {
+            console.log('Loading leaderboard...');
+            const { data, error } = await supabase
+                .from('leaderboard')
+                .select('*')
+                .order('points', { ascending: false });
+
+            if (error) {
+                console.error('Supabase error loading leaderboard:', error);
+                throw error;
+            }
+            
+            console.log('Leaderboard data loaded:', data);
+            this.leaderboardData = data || [];
+            await this.displayLeaderboard();
+        } catch (error) {
+            console.error('Error loading leaderboard:', error);
+        }
+    }
+
+    async updateScore(walletAddress, gameResult) {
+        const chainType = localStorage.getItem('chainType');
+        console.log('Attempting to update score:', {
+            walletAddress,
+            chainType,
+            gameResult
+        });
+    
+        if (!walletAddress) {
+            console.error('No wallet address provided');
+            return;
+        }
+    
+        // Convert EVM addresses to lowercase for consistency
+        if (chainType === 'evm') {
+            walletAddress = walletAddress.toLowerCase();
+        }
+    
+        try {
+            // First get existing record
+            const { data: existingRecord } = await supabase
+                .from('leaderboard')
+                .select('*')
+                .eq('username', walletAddress)
+                .maybeSingle();
+    
+            console.log('Existing record:', existingRecord);
+    
+            // Initialize counts
+            const wins = (existingRecord?.wins || 0) + (gameResult === 'win' ? 1 : 0);
+            const losses = (existingRecord?.losses || 0) + (gameResult === 'loss' ? 1 : 0);
+            const draws = (existingRecord?.draws || 0) + (gameResult === 'draw' ? 1 : 0);
+            const total_games = wins + losses + draws;
+            const points = (existingRecord?.points || 0) + (
+                gameResult === 'win' ? 3 : 
+                gameResult === 'draw' ? 1 : 0
+            );
+    
+            // Prepare the record
+            const record = {
+                username: walletAddress,
+                chain_type: chainType || 'evm',
+                wins,
+                losses, 
+                draws,
+                total_games,
+                points,
+                updated_at: new Date().toISOString()
+            };
+    
+            console.log('Upserting record:', record);
+    
+            const { error: upsertError } = await supabase
+                .from('leaderboard')
+                .upsert(record, {
+                    onConflict: 'username'
+                });
+    
+            if (upsertError) throw upsertError;
+    
+            console.log('Successfully updated leaderboard');
+            await this.loadLeaderboard();
+    
+        } catch (error) {
+            console.error('Error updating score:', error);
+            console.error('Error details:', {
+                message: error.message,
+                details: error.details,
+                hint: error.hint
+            });
+        }
+    }
+
+    async getTopPlayers(limit = 10) {
+        try {
+            const { data, error } = await supabase
+                .from('leaderboard')
+                .select('*')
+                .order('points', { ascending: false })
+                .limit(limit);
+
+            if (error) {
+                console.error('Error getting top players:', error);
+                throw error;
+            }
+            
+            // Filter valid addresses for both chains
+            const validData = data ? data.filter(player => {
+                if (player.chain_type === 'evm') {
+                    return isValidEVMAddress(player.username);
+                } else {
+                    return isValidSolanaAddress(player.username);
+                }
+            }) : [];
+            
+            return validData;
+        } catch (error) {
+            console.error('Error getting top players:', error);
+            return [];
+        }
+    }
+
+    async displayLeaderboard() {
+        const tbody = document.getElementById('leaderboard-body');
+        if (!tbody) {
+            console.error('Leaderboard tbody element not found');
+            return;
+        }
+
+        try {
+            const topPlayers = await this.getTopPlayers();
+            console.log('Displaying top players:', topPlayers);
+            
+            tbody.innerHTML = topPlayers.map((player, index) => {
+                const chainIndicator = player.chain_type === 'evm' ? '[DMT]' : '[SOL]';
+                const username = player.chain_type === 'evm' ? 
+                    player.username.toLowerCase() : player.username;
+                    
+                return `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${chainIndicator} ${this.formatAddress(username)}</td>
+                        <td>${player.points}</td>
+                        <td>${player.wins}/${player.losses}/${player.draws}</td>
+                        <td>${player.total_games}</td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (error) {
+            console.error('Error displaying leaderboard:', error);
+        }
+    }
+
+    formatAddress(address) {
+        if (!address) return '';
+        return `${address.slice(0, 4)}...${address.slice(-4)}`;
+    }
+}
 
 class WalletConnector {
     constructor() {
@@ -275,168 +454,6 @@ class WalletConnector {
             this.disconnectWallet();
         }
         return false;
-    }
-}
-
-class LeaderboardManager {
-    constructor() {
-        if (leaderboardManagerInstance) {
-            return leaderboardManagerInstance;
-        }
-        leaderboardManagerInstance = this;
-        this.loadLeaderboard();
-    }
-
-    async loadLeaderboard() {
-        try {
-            console.log('Loading leaderboard...');
-            const { data, error } = await supabase
-                .from('leaderboard')
-                .select('*')
-                .order('points', { ascending: false });
-
-            if (error) {
-                console.error('Supabase error loading leaderboard:', error);
-                throw error;
-            }
-            
-            console.log('Leaderboard data loaded:', data);
-            this.leaderboardData = data || [];
-            await this.displayLeaderboard();
-        } catch (error) {
-            console.error('Error loading leaderboard:', error);
-        }
-    }
-
-    async updateScore(walletAddress, gameResult) {
-        const chainType = localStorage.getItem('chainType');
-        console.log('Attempting to update score:', {
-            walletAddress,
-            chainType,
-            gameResult
-        });
-    
-        if (!walletAddress) {
-            console.error('No wallet address provided');
-            return;
-        }
-    
-        // Convert EVM addresses to lowercase for consistency
-        if (chainType === 'evm') {
-            walletAddress = walletAddress.toLowerCase();
-        }
-    
-        try {
-            // First try to get existing record
-            const { data: existingRecord, error: fetchError } = await supabase
-                .from('leaderboard')
-                .select()
-                .eq('username', walletAddress)
-                .maybeSingle();
-                
-            console.log('Fetch result:', { existingRecord, fetchError });
-    
-            // Prepare the record
-            const record = {
-                username: walletAddress,
-                chain_type: chainType || 'evm',
-                wins: (existingRecord?.wins || 0) + (gameResult === 'win' ? 1 : 0),
-                losses: (existingRecord?.losses || 0) + (gameResult === 'loss' ? 1 : 0),
-                draws: (existingRecord?.draws || 0) + (gameResult === 'draw' ? 1 : 0),
-                total_games: (existingRecord?.total_games || 0) + 1,
-                points: (existingRecord?.points || 0) + (gameResult === 'win' ? 3 : gameResult === 'draw' ? 1 : 0),
-                created_at: existingRecord?.created_at || new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            };
-    
-            console.log('Attempting to upsert record:', record);
-    
-            const { data: upsertData, error: upsertError } = await supabase
-                .from('leaderboard')
-                .upsert(record)
-                .select();
-    
-            if (upsertError) {
-                console.error('Upsert error:', upsertError);
-                throw upsertError;
-            }
-    
-            console.log('Upsert successful:', upsertData);
-            await this.loadLeaderboard();
-    
-        } catch (error) {
-            console.error('Error updating score:', error);
-            console.error('Error details:', {
-                message: error.message,
-                details: error.details,
-                hint: error.hint
-            });
-        }
-    }
-
-    async getTopPlayers(limit = 10) {
-        try {
-            const { data, error } = await supabase
-                .from('leaderboard')
-                .select('*')
-                .order('points', { ascending: false })
-                .limit(limit);
-
-            if (error) {
-                console.error('Error getting top players:', error);
-                throw error;
-            }
-            
-            // Filter valid addresses for both chains
-            const validData = data ? data.filter(player => {
-                if (player.chain_type === 'evm') {
-                    return isValidEVMAddress(player.username);
-                } else {
-                    return isValidSolanaAddress(player.username);
-                }
-            }) : [];
-            
-            return validData;
-        } catch (error) {
-            console.error('Error getting top players:', error);
-            return [];
-        }
-    }
-
-    async displayLeaderboard() {
-        const tbody = document.getElementById('leaderboard-body');
-        if (!tbody) {
-            console.error('Leaderboard tbody element not found');
-            return;
-        }
-
-        try {
-            const topPlayers = await this.getTopPlayers();
-            console.log('Displaying top players:', topPlayers);
-            
-            tbody.innerHTML = topPlayers.map((player, index) => {
-                const chainIndicator = player.chain_type === 'evm' ? '[DMT]' : '[SOL]';
-                const username = player.chain_type === 'evm' ? 
-                    player.username.toLowerCase() : player.username;
-                    
-                return `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>${chainIndicator} ${this.formatAddress(username)}</td>
-                        <td>${player.points}</td>
-                        <td>${player.wins}/${player.losses}/${player.draws}</td>
-                        <td>${player.total_games}</td>
-                    </tr>
-                `;
-            }).join('');
-        } catch (error) {
-            console.error('Error displaying leaderboard:', error);
-        }
-    }
-
-    formatAddress(address) {
-        if (!address) return '';
-        return `${address.slice(0, 4)}...${address.slice(-4)}`;
     }
 }
 
