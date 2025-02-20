@@ -515,25 +515,92 @@ function initializeWalletConnection() {
 }
 
 // Update game result
-window.updateGameResult = function(winner) {
+// Update game result
+window.updateGameResult = async function(result) {
     const currentPlayer = localStorage.getItem('currentPlayer');
     if (!currentPlayer) {
-        console.warn('No wallet address found');
+        console.warn('No wallet address found for leaderboard update');
         return;
     }
 
-    console.log(`Game ended with winner: ${winner}, current player: ${currentPlayer}`);
+    const chainType = localStorage.getItem('chainType') || 'evm';
+    console.log('Updating leaderboard:', {
+        player: currentPlayer,
+        chainType: chainType,
+        result: result
+    });
 
-    if (leaderboardManagerInstance) {
-        if (winner === 'draw') {
-            leaderboardManagerInstance.updateScore(currentPlayer, 'draw');
-        } else if (winner === 'blue') {
-            leaderboardManagerInstance.updateScore(currentPlayer, 'win');
-        } else {
-            leaderboardManagerInstance.updateScore(currentPlayer, 'loss');
+    try {
+        // First check if database is initialized
+        if (!window.gameDatabase) {
+            console.error('Database not initialized');
+            // Try to reinitialize
+            window.gameDatabase = window.supabase.createClient(
+                'https://roxwocgknkiqnsgiojgz.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
+            );
         }
-    } else {
-        console.error('LeaderboardManager instance not found');
+
+        // Get existing record
+        const { data: existingRecord, error: fetchError } = await window.gameDatabase
+            .from('leaderboard')
+            .select('*')
+            .eq('username', currentPlayer)
+            .maybeSingle();
+
+        if (fetchError) {
+            console.error('Error fetching existing record:', fetchError);
+            return;
+        }
+
+        console.log('Existing record:', existingRecord);
+
+        // Calculate new stats
+        const wins = (existingRecord?.wins || 0) + (result === 'win' ? 1 : 0);
+        const losses = (existingRecord?.losses || 0) + (result === 'loss' ? 1 : 0);
+        const draws = (existingRecord?.draws || 0) + (result === 'draw' ? 1 : 0);
+        const total_games = wins + losses + draws;
+        const points = (existingRecord?.points || 0) + (
+            result === 'win' ? 3 : 
+            result === 'draw' ? 1 : 0
+        );
+
+        // Prepare update record
+        const record = {
+            username: currentPlayer,
+            chain_type: chainType,
+            wins,
+            losses,
+            draws,
+            total_games,
+            points,
+            updated_at: new Date().toISOString()
+        };
+
+        console.log('Updating record:', record);
+
+        // Perform upsert
+        const { error: upsertError } = await window.gameDatabase
+            .from('leaderboard')
+            .upsert(record, {
+                onConflict: 'username',
+                returning: 'minimal'
+            });
+
+        if (upsertError) {
+            console.error('Error updating leaderboard:', upsertError);
+            return;
+        }
+
+        console.log('Successfully updated leaderboard');
+        
+        // Refresh leaderboard display
+        if (window.leaderboardManager) {
+            await window.leaderboardManager.loadLeaderboard();
+        }
+
+    } catch (error) {
+        console.error('Error in updateGameResult:', error);
     }
 };
 

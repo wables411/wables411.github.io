@@ -312,28 +312,73 @@
     </div>
 
     <!-- Supabase -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-    <!-- Initialize Core Systems -->
-    <script>
-        // Initialize Supabase
+<!-- Initialize Core Systems -->
+<script>
+    // Initialize Supabase
+    (function initializeSupabase() {
         try {
-            if (!window.gameDatabase) {
-                window.gameDatabase = window.supabase.createClient(
-                    'https://roxwocgknkiqnsgiojgz.supabase.co',
-                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
-                );
+            console.log('Initializing Supabase...');
+            if (!window.supabase) {
+                console.error('Supabase library not loaded');
+                return;
             }
+            
+            window.gameDatabase = window.supabase.createClient(
+                'https://roxwocgknkiqnsgiojgz.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
+            );
+
+            // Test the connection
+            window.gameDatabase.from('leaderboard').select('count').single()
+                .then(() => console.log('Supabase connection successful'))
+                .catch(err => console.error('Supabase connection test failed:', err));
+
+            console.log('Supabase initialization complete');
         } catch (error) {
             console.error('Error initializing Supabase:', error);
         }
-    </script>
+    })();
+</script>
 
-    <!-- Load Game Scripts in Order -->
-    <script src="loadImages.js"></script>
-    <script src="leaderboard.js"></script>
-    <script src="multiplayer.js"></script>
-    <script src="chess.js"></script>
+<!-- Load Game Scripts in Order -->
+<script>
+    // Function to load scripts sequentially
+    function loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = resolve;
+            script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+            document.body.appendChild(script);
+        });
+    }
+
+    // Load scripts in sequence
+    async function loadGameScripts() {
+        try {
+            await loadScript('loadImages.js');
+            console.log('loadImages.js loaded');
+            
+            await loadScript('leaderboard.js');
+            console.log('leaderboard.js loaded');
+            
+            await loadScript('multiplayer.js');
+            console.log('multiplayer.js loaded');
+            
+            await loadScript('chess.js');
+            console.log('chess.js loaded');
+            
+            console.log('All game scripts loaded successfully');
+        } catch (error) {
+            console.error('Error loading game scripts:', error);
+        }
+    }
+
+    // Start loading scripts
+    loadGameScripts();
+</script>
 
     <!-- Initialize Game Systems -->
     <script>
