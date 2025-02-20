@@ -1,5 +1,4 @@
 // Initialize core Supabase reference
-const supabase = window.gameDatabase;
 let leaderboardManagerInstance = null;
 
 // Validation functions
@@ -35,70 +34,95 @@ class LeaderboardManager {
             return leaderboardManagerInstance;
         }
         leaderboardManagerInstance = this;
-        this.loadLeaderboard();
-        this.setupRealtimeSubscription();
+        
+        // Wait for Supabase initialization before loading
+        this.waitForSupabase().then(() => {
+            this.loadLeaderboard();
+            this.setupRealtimeSubscription();
+        });
+    }
+
+    async waitForSupabase() {
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        while (attempts < maxAttempts) {
+            if (window.gameDatabase) {
+                console.log('Supabase connection found');
+                return true;
+            }
+            await new Promise(resolve => setTimeout(resolve, 500));
+            attempts++;
+        }
+        console.error('Failed to find Supabase connection');
+        return false;
     }
 
     setupRealtimeSubscription() {
-        this.subscription = supabase
-            .channel('public:leaderboard')
-            .on('postgres_changes', 
-                { event: '*', schema: 'public', table: 'leaderboard' },
-                () => this.loadLeaderboard()
-            )
-            .subscribe();
+        try {
+            this.subscription = window.gameDatabase
+                .channel('public:leaderboard')
+                .on('postgres_changes', 
+                    { event: '*', schema: 'public', table: 'leaderboard' },
+                    () => this.loadLeaderboard()
+                )
+                .subscribe();
+            console.log('Realtime subscription setup complete');
+        } catch (error) {
+            console.error('Error setting up realtime subscription:', error);
+        }
     }
 
     async loadLeaderboard() {
         try {
             console.log('Loading leaderboard...');
-            const { data, error } = await supabase
+            const { data, error } = await window.gameDatabase
                 .from('leaderboard')
                 .select('*')
                 .order('points', { ascending: false });
 
             if (error) {
-                console.error('Supabase error loading leaderboard:', error);
-                throw error;
+                console.error('Error loading leaderboard:', error);
+                return;
             }
             
             console.log('Leaderboard data loaded:', data);
             this.leaderboardData = data || [];
             await this.displayLeaderboard();
+            
         } catch (error) {
-            console.error('Error loading leaderboard:', error);
+            console.error('Error in loadLeaderboard:', error);
         }
     }
 
     async updateScore(walletAddress, gameResult) {
-        const chainType = localStorage.getItem('chainType');
-        console.log('Attempting to update score:', {
-            walletAddress,
-            chainType,
-            gameResult
-        });
-    
         if (!walletAddress) {
             console.error('No wallet address provided');
             return;
         }
-    
-        // Convert EVM addresses to lowercase for consistency
-        if (chainType === 'evm') {
-            walletAddress = walletAddress.toLowerCase();
-        }
-    
+
+        const chainType = localStorage.getItem('chainType') || 'evm';
+        
         try {
-            // First get existing record
-            const { data: existingRecord } = await supabase
+            console.log('Updating score for:', {
+                walletAddress,
+                chainType,
+                gameResult
+            });
+
+            // Get existing record
+            const { data: existingRecord, error: fetchError } = await window.gameDatabase
                 .from('leaderboard')
                 .select('*')
                 .eq('username', walletAddress)
                 .maybeSingle();
-    
-            console.log('Existing record:', existingRecord);
-    
-            // Initialize counts
+
+            if (fetchError) {
+                console.error('Error fetching existing record:', fetchError);
+                return;
+            }
+
+            // Calculate new stats
             const wins = (existingRecord?.wins || 0) + (gameResult === 'win' ? 1 : 0);
             const losses = (existingRecord?.losses || 0) + (gameResult === 'loss' ? 1 : 0);
             const draws = (existingRecord?.draws || 0) + (gameResult === 'draw' ? 1 : 0);
@@ -107,68 +131,34 @@ class LeaderboardManager {
                 gameResult === 'win' ? 3 : 
                 gameResult === 'draw' ? 1 : 0
             );
-    
-            // Prepare the record
+
             const record = {
                 username: walletAddress,
-                chain_type: chainType || 'evm',
+                chain_type: chainType,
                 wins,
-                losses, 
+                losses,
                 draws,
                 total_games,
                 points,
                 updated_at: new Date().toISOString()
             };
-    
+
             console.log('Upserting record:', record);
-    
-            const { error: upsertError } = await supabase
+
+            const { error: upsertError } = await window.gameDatabase
                 .from('leaderboard')
-                .upsert(record, {
-                    onConflict: 'username'
-                });
-    
-            if (upsertError) throw upsertError;
-    
+                .upsert(record);
+
+            if (upsertError) {
+                console.error('Error updating leaderboard:', upsertError);
+                return;
+            }
+
             console.log('Successfully updated leaderboard');
             await this.loadLeaderboard();
-    
+
         } catch (error) {
             console.error('Error updating score:', error);
-            console.error('Error details:', {
-                message: error.message,
-                details: error.details,
-                hint: error.hint
-            });
-        }
-    }
-
-    async getTopPlayers(limit = 10) {
-        try {
-            const { data, error } = await supabase
-                .from('leaderboard')
-                .select('*')
-                .order('points', { ascending: false })
-                .limit(limit);
-
-            if (error) {
-                console.error('Error getting top players:', error);
-                throw error;
-            }
-            
-            // Filter valid addresses for both chains
-            const validData = data ? data.filter(player => {
-                if (player.chain_type === 'evm') {
-                    return isValidEVMAddress(player.username);
-                } else {
-                    return isValidSolanaAddress(player.username);
-                }
-            }) : [];
-            
-            return validData;
-        } catch (error) {
-            console.error('Error getting top players:', error);
-            return [];
         }
     }
 
@@ -180,24 +170,27 @@ class LeaderboardManager {
         }
 
         try {
-            const topPlayers = await this.getTopPlayers();
-            console.log('Displaying top players:', topPlayers);
-            
-            tbody.innerHTML = topPlayers.map((player, index) => {
+            if (!this.leaderboardData) {
+                console.error('No leaderboard data available');
+                return;
+            }
+
+            tbody.innerHTML = this.leaderboardData.map((player, index) => {
                 const chainIndicator = player.chain_type === 'evm' ? '[DMT]' : '[SOL]';
-                const username = player.chain_type === 'evm' ? 
-                    player.username.toLowerCase() : player.username;
+                const username = this.formatAddress(player.username);
                     
                 return `
                     <tr>
                         <td>${index + 1}</td>
-                        <td>${chainIndicator} ${this.formatAddress(username)}</td>
+                        <td>${chainIndicator} ${username}</td>
                         <td>${player.points}</td>
                         <td>${player.wins}/${player.losses}/${player.draws}</td>
                         <td>${player.total_games}</td>
                     </tr>
                 `;
             }).join('');
+
+            console.log('Leaderboard displayed successfully');
         } catch (error) {
             console.error('Error displaying leaderboard:', error);
         }
@@ -515,92 +508,25 @@ function initializeWalletConnection() {
 }
 
 // Update game result
-// Update game result
-window.updateGameResult = async function(result) {
+window.updateGameResult = async function(winner) {
     const currentPlayer = localStorage.getItem('currentPlayer');
     if (!currentPlayer) {
-        console.warn('No wallet address found for leaderboard update');
+        console.warn('No wallet address found');
         return;
     }
 
-    const chainType = localStorage.getItem('chainType') || 'evm';
-    console.log('Updating leaderboard:', {
-        player: currentPlayer,
-        chainType: chainType,
-        result: result
-    });
+    console.log(`Game ended with winner: ${winner}, current player: ${currentPlayer}`);
 
-    try {
-        // First check if database is initialized
-        if (!window.gameDatabase) {
-            console.error('Database not initialized');
-            // Try to reinitialize
-            window.gameDatabase = window.supabase.createClient(
-                'https://roxwocgknkiqnsgiojgz.supabase.co',
-                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
-            );
+    if (leaderboardManagerInstance) {
+        if (winner === 'draw') {
+            leaderboardManagerInstance.updateScore(currentPlayer, 'draw');
+        } else if (winner === 'blue') {
+            leaderboardManagerInstance.updateScore(currentPlayer, 'win');
+        } else {
+            leaderboardManagerInstance.updateScore(currentPlayer, 'loss');
         }
-
-        // Get existing record
-        const { data: existingRecord, error: fetchError } = await window.gameDatabase
-            .from('leaderboard')
-            .select('*')
-            .eq('username', currentPlayer)
-            .maybeSingle();
-
-        if (fetchError) {
-            console.error('Error fetching existing record:', fetchError);
-            return;
-        }
-
-        console.log('Existing record:', existingRecord);
-
-        // Calculate new stats
-        const wins = (existingRecord?.wins || 0) + (result === 'win' ? 1 : 0);
-        const losses = (existingRecord?.losses || 0) + (result === 'loss' ? 1 : 0);
-        const draws = (existingRecord?.draws || 0) + (result === 'draw' ? 1 : 0);
-        const total_games = wins + losses + draws;
-        const points = (existingRecord?.points || 0) + (
-            result === 'win' ? 3 : 
-            result === 'draw' ? 1 : 0
-        );
-
-        // Prepare update record
-        const record = {
-            username: currentPlayer,
-            chain_type: chainType,
-            wins,
-            losses,
-            draws,
-            total_games,
-            points,
-            updated_at: new Date().toISOString()
-        };
-
-        console.log('Updating record:', record);
-
-        // Perform upsert
-        const { error: upsertError } = await window.gameDatabase
-            .from('leaderboard')
-            .upsert(record, {
-                onConflict: 'username',
-                returning: 'minimal'
-            });
-
-        if (upsertError) {
-            console.error('Error updating leaderboard:', upsertError);
-            return;
-        }
-
-        console.log('Successfully updated leaderboard');
-        
-        // Refresh leaderboard display
-        if (window.leaderboardManager) {
-            await window.leaderboardManager.loadLeaderboard();
-        }
-
-    } catch (error) {
-        console.error('Error in updateGameResult:', error);
+    } else {
+        console.error('LeaderboardManager instance not found');
     }
 };
 
