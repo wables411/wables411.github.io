@@ -28,54 +28,37 @@ const SANKO_CHAIN_CONFIG = {
     blockExplorerUrls: ['https://explorer.sanko.xyz/']
 };
 
+// LeaderboardManager class
 class LeaderboardManager {
     constructor() {
         if (leaderboardManagerInstance) {
             return leaderboardManagerInstance;
         }
         leaderboardManagerInstance = this;
-        
-        // Wait for Supabase initialization before loading
-        this.waitForSupabase().then(() => {
-            this.loadLeaderboard();
-            this.setupRealtimeSubscription();
-        });
-    }
-
-    async waitForSupabase() {
-        let attempts = 0;
-        const maxAttempts = 10;
-        
-        while (attempts < maxAttempts) {
-            if (window.gameDatabase) {
-                console.log('Supabase connection found');
-                return true;
-            }
-            await new Promise(resolve => setTimeout(resolve, 500));
-            attempts++;
-        }
-        console.error('Failed to find Supabase connection');
-        return false;
+        this.loadLeaderboard();
+        this.setupRealtimeSubscription();
     }
 
     setupRealtimeSubscription() {
-        try {
-            this.subscription = window.gameDatabase
-                .channel('public:leaderboard')
-                .on('postgres_changes', 
-                    { event: '*', schema: 'public', table: 'leaderboard' },
-                    () => this.loadLeaderboard()
-                )
-                .subscribe();
-            console.log('Realtime subscription setup complete');
-        } catch (error) {
-            console.error('Error setting up realtime subscription:', error);
-        }
+        if (!window.gameDatabase) return;
+        
+        this.subscription = window.gameDatabase
+            .channel('public:leaderboard')
+            .on('postgres_changes', 
+                { event: '*', schema: 'public', table: 'leaderboard' },
+                () => this.loadLeaderboard()
+            )
+            .subscribe();
     }
 
     async loadLeaderboard() {
         try {
             console.log('Loading leaderboard...');
+            if (!window.gameDatabase) {
+                console.error('Database not initialized');
+                return;
+            }
+
             const { data, error } = await window.gameDatabase
                 .from('leaderboard')
                 .select('*')
@@ -89,7 +72,7 @@ class LeaderboardManager {
             console.log('Leaderboard data loaded:', data);
             this.leaderboardData = data || [];
             await this.displayLeaderboard();
-            
+
         } catch (error) {
             console.error('Error in loadLeaderboard:', error);
         }
@@ -110,19 +93,16 @@ class LeaderboardManager {
                 gameResult
             });
 
-            // Get existing record
-            const { data: existingRecord, error: fetchError } = await window.gameDatabase
+            // First get existing record
+            const { data: existingRecord } = await window.gameDatabase
                 .from('leaderboard')
                 .select('*')
                 .eq('username', walletAddress)
                 .maybeSingle();
 
-            if (fetchError) {
-                console.error('Error fetching existing record:', fetchError);
-                return;
-            }
+            console.log('Existing record:', existingRecord);
 
-            // Calculate new stats
+            // Initialize counts
             const wins = (existingRecord?.wins || 0) + (gameResult === 'win' ? 1 : 0);
             const losses = (existingRecord?.losses || 0) + (gameResult === 'loss' ? 1 : 0);
             const draws = (existingRecord?.draws || 0) + (gameResult === 'draw' ? 1 : 0);
@@ -132,6 +112,7 @@ class LeaderboardManager {
                 gameResult === 'draw' ? 1 : 0
             );
 
+            // Prepare the record
             const record = {
                 username: walletAddress,
                 chain_type: chainType,
@@ -147,12 +128,11 @@ class LeaderboardManager {
 
             const { error: upsertError } = await window.gameDatabase
                 .from('leaderboard')
-                .upsert(record);
+                .upsert(record, {
+                    onConflict: 'username'
+                });
 
-            if (upsertError) {
-                console.error('Error updating leaderboard:', upsertError);
-                return;
-            }
+            if (upsertError) throw upsertError;
 
             console.log('Successfully updated leaderboard');
             await this.loadLeaderboard();
@@ -200,8 +180,9 @@ class LeaderboardManager {
         if (!address) return '';
         return `${address.slice(0, 4)}...${address.slice(-4)}`;
     }
-}
+} // End of LeaderboardManager class
 
+// WalletConnector class
 class WalletConnector {
     constructor() {
         this.supportedWallets = {
@@ -448,11 +429,12 @@ class WalletConnector {
         }
         return false;
     }
-}
+} // End of WalletConnector class
 
 // Initialize wallet connector
 const walletConnector = new WalletConnector();
 
+// Helper function for button color gradient
 function adjustColor(color, percent) {
     const num = parseInt(color.replace('#', ''), 16);
     const amt = Math.round(2.55 * percent);
@@ -531,9 +513,8 @@ window.updateGameResult = async function(winner) {
 };
 
 // Initialize everything when DOM is loaded
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
     console.log('Initializing leaderboard and wallet connection...');
     window.leaderboardManager = new LeaderboardManager();
-    await window.leaderboardManager.loadLeaderboard();
     initializeWalletConnection();
 });
