@@ -31,32 +31,60 @@ const SANKO_CHAIN_CONFIG = {
 // LeaderboardManager class
 class LeaderboardManager {
     constructor() {
+        console.log('Initializing LeaderboardManager...');
         if (leaderboardManagerInstance) {
+            console.log('Returning existing LeaderboardManager instance');
             return leaderboardManagerInstance;
         }
         leaderboardManagerInstance = this;
+        
+        // Initialize properties
+        this.leaderboardData = [];
+        this.subscription = null;
+        
+        // Ensure we have the database connection
+        if (!window.gameDatabase) {
+            console.error('Error: gameDatabase not initialized');
+            return;
+        }
+        
+        // Load initial data and setup subscription
         this.loadLeaderboard();
         this.setupRealtimeSubscription();
+        console.log('LeaderboardManager initialization complete');
     }
 
     setupRealtimeSubscription() {
-        if (!window.gameDatabase) return;
-        
-        this.subscription = window.gameDatabase
-            .channel('public:leaderboard')
-            .on('postgres_changes', 
-                { event: '*', schema: 'public', table: 'leaderboard' },
-                () => this.loadLeaderboard()
-            )
-            .subscribe();
+        try {
+            console.log('Setting up realtime subscription...');
+            if (!window.gameDatabase) {
+                throw new Error('Database not initialized');
+            }
+            
+            this.subscription = window.gameDatabase
+                .channel('public:leaderboard')
+                .on('postgres_changes', 
+                    { event: '*', schema: 'public', table: 'leaderboard' },
+                    (payload) => {
+                        console.log('Received leaderboard update:', payload);
+                        this.loadLeaderboard();
+                    }
+                )
+                .subscribe((status) => {
+                    console.log('Subscription status:', status);
+                });
+                
+            console.log('Realtime subscription setup complete');
+        } catch (error) {
+            console.error('Error setting up subscription:', error);
+        }
     }
 
     async loadLeaderboard() {
         try {
-            console.log('Loading leaderboard...');
+            console.log('Loading leaderboard data...');
             if (!window.gameDatabase) {
-                console.error('Database not initialized');
-                return;
+                throw new Error('Database not initialized');
             }
 
             const { data, error } = await window.gameDatabase
@@ -65,8 +93,7 @@ class LeaderboardManager {
                 .order('points', { ascending: false });
 
             if (error) {
-                console.error('Error loading leaderboard:', error);
-                return;
+                throw error;
             }
             
             console.log('Leaderboard data loaded:', data);
@@ -74,7 +101,51 @@ class LeaderboardManager {
             await this.displayLeaderboard();
 
         } catch (error) {
-            console.error('Error in loadLeaderboard:', error);
+            console.error('Error loading leaderboard:', error);
+            // Try to display error message in leaderboard
+            const tbody = document.getElementById('leaderboard-body');
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="5">Error loading leaderboard: ${error.message}</td></tr>`;
+            }
+        }
+    }
+
+    async displayLeaderboard() {
+        try {
+            console.log('Displaying leaderboard...');
+            const tbody = document.getElementById('leaderboard-body');
+            if (!tbody) {
+                throw new Error('Leaderboard tbody element not found');
+            }
+
+            if (!this.leaderboardData) {
+                throw new Error('No leaderboard data available');
+            }
+
+            console.log('Generating leaderboard HTML for', this.leaderboardData.length, 'entries');
+            tbody.innerHTML = this.leaderboardData.map((player, index) => {
+                const chainIndicator = player.chain_type === 'evm' ? '[DMT]' : '[SOL]';
+                const username = this.formatAddress(player.username);
+                    
+                return `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${chainIndicator} ${username}</td>
+                        <td>${player.points}</td>
+                        <td>${player.wins}/${player.losses}/${player.draws}</td>
+                        <td>${player.total_games}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            console.log('Leaderboard displayed successfully');
+        } catch (error) {
+            console.error('Error displaying leaderboard:', error);
+            // Try to display error in the table
+            const tbody = document.getElementById('leaderboard-body');
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="5">Error displaying leaderboard: ${error.message}</td></tr>`;
+            }
         }
     }
 
@@ -139,40 +210,6 @@ class LeaderboardManager {
 
         } catch (error) {
             console.error('Error updating score:', error);
-        }
-    }
-
-    async displayLeaderboard() {
-        const tbody = document.getElementById('leaderboard-body');
-        if (!tbody) {
-            console.error('Leaderboard tbody element not found');
-            return;
-        }
-
-        try {
-            if (!this.leaderboardData) {
-                console.error('No leaderboard data available');
-                return;
-            }
-
-            tbody.innerHTML = this.leaderboardData.map((player, index) => {
-                const chainIndicator = player.chain_type === 'evm' ? '[DMT]' : '[SOL]';
-                const username = this.formatAddress(player.username);
-                    
-                return `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>${chainIndicator} ${username}</td>
-                        <td>${player.points}</td>
-                        <td>${player.wins}/${player.losses}/${player.draws}</td>
-                        <td>${player.total_games}</td>
-                    </tr>
-                `;
-            }).join('');
-
-            console.log('Leaderboard displayed successfully');
-        } catch (error) {
-            console.error('Error displaying leaderboard:', error);
         }
     }
 
