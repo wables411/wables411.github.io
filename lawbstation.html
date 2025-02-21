@@ -440,29 +440,28 @@
         }
 
         async function loadGameScripts() {
-            try {
-                const scripts = [
-                    'loadImages.js',
-                    'leaderboard.js',
-                    'multiplayer.js',
-                    'chess.js'
-                ];
+    try {
+        const scripts = [
+            'loadImages.js',
+            'leaderboard.js',
+            'multiplayer.js',
+            'chess.js'
+        ];
 
-                for (const script of scripts) {
-                    await loadScript(script);
-                    
-                    // Special handling for leaderboard.js
-                    if (script === 'leaderboard.js') {
-                        // Wait for DOM elements to be ready
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                        
-                        // Force LeaderboardManager initialization if needed
-                        if (!window.leaderboardManager && window.LeaderboardManager) {
-                            console.log('Initializing LeaderboardManager');
-                            window.leaderboardManager = new LeaderboardManager();
-                        }
-                    }
-                }
+        for (const script of scripts) {
+            await loadScript(script);
+            
+            // Special handling for leaderboard.js
+            if (script === 'leaderboard.js') {
+                // Wait for DOM elements to be ready
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Force LeaderboardManager initialization
+                console.log('Forcing LeaderboardManager initialization');
+                window.leaderboardManager = new LeaderboardManager();
+                console.log('LeaderboardManager created:', window.leaderboardManager);
+            }
+        }
 
                 console.log('All game scripts loaded successfully');
 
