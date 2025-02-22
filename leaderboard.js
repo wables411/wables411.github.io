@@ -556,7 +556,7 @@ function initializeWalletUI() {
         const wallets = [
             { name: 'Phantom', type: 'phantom', color: '#AB9FF2' },
             { name: 'Solflare', type: 'solflare', color: '#FC822B' },
-            { name: 'Magic Eden', type: 'magicEden', color: '#E42575' },
+            { name: 'M.E.', type: 'magicEden', color: '#E42575' },
             { name: 'Sanko', type: 'sanko', color: '#4CAF50' }
         ];
 
