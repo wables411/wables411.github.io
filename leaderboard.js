@@ -3,7 +3,7 @@
 // Initialize core Supabase reference
 let leaderboardManagerInstance = null;
 
-// Constants
+// Constants 
 const WALLET_CONNECT_TIMEOUT = 30000; // 30 seconds
 const SANKO_CHAIN_ID = '0x7CC'; // 1996 in hex
 const SANKO_CHAIN_CONFIG = {
@@ -11,7 +11,7 @@ const SANKO_CHAIN_CONFIG = {
     chainName: 'Sanko',
     nativeCurrency: {
         name: 'DMT',
-        symbol: 'DMT',
+        symbol: 'DMT', 
         decimals: 18
     },
     rpcUrls: ['https://mainnet.sanko.xyz'],
@@ -121,7 +121,6 @@ class LeaderboardManager {
 
         } catch (error) {
             console.error('Error loading leaderboard:', error);
-            // Try to display error message in leaderboard
             const tbody = document.getElementById('leaderboard-body');
             if (tbody) {
                 tbody.innerHTML = `<tr><td colspan="5">Error loading leaderboard: ${error.message}</td></tr>`;
@@ -160,7 +159,6 @@ class LeaderboardManager {
             console.log('Leaderboard displayed successfully');
         } catch (error) {
             console.error('Error displaying leaderboard:', error);
-            // Try to display error in the table
             const tbody = document.getElementById('leaderboard-body');
             if (tbody) {
                 tbody.innerHTML = `<tr><td colspan="5">Error displaying leaderboard: ${error.message}</td></tr>`;
@@ -242,6 +240,7 @@ class LeaderboardManager {
 
 class WalletConnector {
     constructor() {
+        console.log('Initializing WalletConnector...');
         this.supportedWallets = {
             phantom: window.solana,
             solflare: window.solflare,
@@ -252,6 +251,7 @@ class WalletConnector {
     }
 
     async connectWallet(walletType) {
+        console.log(`Attempting to connect ${walletType} wallet...`);
         try {
             if (walletType === 'sanko') {
                 return await this.connectEVMWallet();
@@ -266,6 +266,7 @@ class WalletConnector {
     }
 
     async connectEVMWallet() {
+        console.log('Connecting EVM wallet...');
         if (!this.evmProvider) {
             window.open('https://tools.sanko.xyz/', '_blank');
             throw new Error('Please install a Web3 wallet that supports Sanko chain');
@@ -315,6 +316,7 @@ class WalletConnector {
             // Setup EVM event listeners
             this.setupEVMEventListeners();
 
+            console.log('EVM wallet connected successfully:', walletAddress);
             return walletAddress;
         } catch (error) {
             console.error('EVM wallet connection error:', error);
@@ -323,6 +325,7 @@ class WalletConnector {
     }
 
     async connectSolanaWallet(walletType) {
+        console.log(`Connecting Solana wallet: ${walletType}...`);
         const wallet = this.supportedWallets[walletType];
         
         if (!wallet) {
@@ -336,33 +339,40 @@ class WalletConnector {
             throw new Error(`Please install ${walletType} wallet`);
         }
 
-        let response;
-        if (walletType === 'solflare') {
-            if (!wallet.isConnected) {
+        try {
+            let response;
+            if (walletType === 'solflare') {
+                if (!wallet.isConnected) {
+                    response = await wallet.connect();
+                }
+                response = { publicKey: wallet.publicKey };
+            } else {
                 response = await wallet.connect();
             }
-            response = { publicKey: wallet.publicKey };
-        } else {
-            response = await wallet.connect();
-        }
 
-        const walletAddress = response.publicKey.toString();
-        
-        // Save wallet info
-        localStorage.setItem('currentPlayer', walletAddress);
-        localStorage.setItem('walletType', walletType);
-        localStorage.setItem('chainType', 'solana');
-        
-        // Update UI
-        this.updateWalletUI(walletAddress, walletType);
-        
-        return walletAddress;
+            const walletAddress = response.publicKey.toString();
+            
+            // Save wallet info
+            localStorage.setItem('currentPlayer', walletAddress);
+            localStorage.setItem('walletType', walletType);
+            localStorage.setItem('chainType', 'solana');
+            
+            // Update UI
+            this.updateWalletUI(walletAddress, walletType);
+            
+            console.log('Solana wallet connected successfully:', walletAddress);
+            return walletAddress;
+        } catch (error) {
+            console.error('Solana wallet connection error:', error);
+            throw error;
+        }
     }
 
     setupEVMEventListeners() {
         if (!this.evmProvider) return;
 
         this.evmProvider.on('accountsChanged', (accounts) => {
+            console.log('EVM accounts changed:', accounts);
             if (accounts.length === 0) {
                 this.disconnectWallet();
             } else {
@@ -375,6 +385,7 @@ class WalletConnector {
         });
 
         this.evmProvider.on('chainChanged', (chainId) => {
+            console.log('EVM chain changed:', chainId);
             if (chainId !== SANKO_CHAIN_ID) {
                 this.disconnectWallet();
                 alert('Please switch to Sanko network');
@@ -383,15 +394,18 @@ class WalletConnector {
     }
 
     updateWalletUI(walletAddress, walletType) {
+        console.log('Updating wallet UI:', { walletAddress, walletType });
+        
         // Hide all connect buttons
-        document.querySelectorAll('.wallet-btn').forEach(btn => {
-            btn.style.display = 'none';
+        const walletButtons = document.querySelectorAll('.wallet-btn');
+        walletButtons.forEach(btn => {
+            btn.style.cssText = 'display: none !important;';
         });
         
         // Show wallet address with chain indicator
         const addressDisplay = document.getElementById('wallet-address');
         if (addressDisplay) {
-            addressDisplay.style.display = 'block';
+            addressDisplay.style.cssText = 'display: block !important;';
             const chainIndicator = walletType === 'sanko' ? '[DMT]' : '[SOL]';
             addressDisplay.textContent = `Connected ${chainIndicator}: ${this.formatAddress(walletAddress)}`;
         }
@@ -399,7 +413,7 @@ class WalletConnector {
         // Show difficulty screen
         const difficultyScreen = document.getElementById('difficulty-screen');
         if (difficultyScreen) {
-            difficultyScreen.style.display = 'flex';
+            difficultyScreen.style.cssText = 'display: flex !important;';
         }
 
         // Update status
@@ -410,25 +424,27 @@ class WalletConnector {
     }
 
     disconnectWallet() {
+        console.log('Disconnecting wallet...');
         localStorage.removeItem('currentPlayer');
         localStorage.removeItem('walletType');
         localStorage.removeItem('chainType');
         
         // Show all wallet buttons
-        document.querySelectorAll('.wallet-btn').forEach(btn => {
-            btn.style.display = 'block';
+        const walletButtons = document.querySelectorAll('.wallet-btn');
+        walletButtons.forEach(btn => {
+            btn.style.cssText = 'display: block !important;';
         });
         
         // Hide wallet address
         const addressDisplay = document.getElementById('wallet-address');
         if (addressDisplay) {
-            addressDisplay.style.display = 'none';
+            addressDisplay.style.cssText = 'display: none !important;';
         }
 
         // Hide difficulty screen
         const difficultyScreen = document.getElementById('difficulty-screen');
         if (difficultyScreen) {
-            difficultyScreen.style.display = 'none';
+            difficultyScreen.style.cssText = 'display: none !important;';
         }
 
         // Update status
@@ -436,6 +452,8 @@ class WalletConnector {
         if (statusElement) {
             statusElement.textContent = 'Connect to play';
         }
+        
+        console.log('Wallet disconnected successfully');
     }
 
     formatAddress(address) {
@@ -448,6 +466,8 @@ class WalletConnector {
         const savedAddress = localStorage.getItem('currentPlayer');
         
         if (!savedWalletType || !savedAddress) return false;
+
+        console.log('Attempting to reconnect wallet:', { savedWalletType, savedAddress });
 
         try {
             if (savedWalletType === 'sanko') {
@@ -490,20 +510,19 @@ class WalletConnector {
 
 // Part 4: Initialization and Setup
 
-// Initialize wallet connector
-const walletConnector = new WalletConnector();
+// Initialize wallet connector globally
+let walletConnector = null;
 
 function initializeWalletUI() {
-    console.log('Starting wallet UI initialization check...');
+    console.log('Starting wallet UI initialization...');
     
     function attemptInitialization(attempt = 1) {
-        console.log(`Wallet initialization attempt ${attempt}`);
+        console.log(`Wallet initialization attempt ${attempt}, document.readyState:`, document.readyState);
         
         const walletConnection = document.querySelector('.wallet-connection');
         if (!walletConnection) {
-            console.log('Wallet connection div not found');
+            console.log('Wallet connection div not found, retrying...');
             if (attempt < 10) {
-                console.log(`Retrying in 1s... (attempt ${attempt})`);
                 setTimeout(() => attemptInitialization(attempt + 1), 1000);
                 return;
             } else {
@@ -512,13 +531,28 @@ function initializeWalletUI() {
             }
         }
 
-        console.log('Found wallet connection div, setting up buttons...');
+        console.log('Found wallet connection div, creating buttons...');
+
+        // Initialize wallet connector if not already done
+        if (!walletConnector) {
+            walletConnector = new WalletConnector();
+            window.walletConnector = walletConnector;
+        }
         
         // Create wallet buttons container
         const walletButtons = document.createElement('div');
         walletButtons.className = 'wallet-buttons';
+        walletButtons.style.cssText = `
+            display: flex !important;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 15px;
+            opacity: 1 !important;
+            visibility: visible !important;
+        `;
 
-        // Create buttons for each wallet
+        // Define wallets
         const wallets = [
             { name: 'Phantom', type: 'phantom', color: '#AB9FF2' },
             { name: 'Solflare', type: 'solflare', color: '#FC822B' },
@@ -526,10 +560,11 @@ function initializeWalletUI() {
             { name: 'Sanko', type: 'sanko', color: '#4CAF50' }
         ];
 
+        // Create buttons for each wallet
         wallets.forEach(wallet => {
             const button = document.createElement('button');
             button.className = 'wallet-btn';
-            button.textContent = `Connect ${wallet.name}`;
+            button.innerHTML = `Connect ${wallet.name}`;
             button.style.cssText = `
                 display: block !important;
                 padding: 10px 20px;
@@ -541,24 +576,39 @@ function initializeWalletUI() {
                 color: white;
                 min-width: 180px;
                 background: linear-gradient(45deg, ${wallet.color}, ${adjustColor(wallet.color, 20)});
+                opacity: 1 !important;
+                visibility: visible !important;
+                z-index: 1000;
+                position: relative;
             `;
-            button.onclick = () => walletConnector.connectWallet(wallet.type);
+            
+            button.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                try {
+                    await walletConnector.connectWallet(wallet.type);
+                } catch (error) {
+                    console.error(`Failed to connect ${wallet.name}:`, error);
+                }
+            });
+            
             walletButtons.appendChild(button);
-            console.log(`Created wallet button: ${wallet.name}`);
+            console.log(`Created button for ${wallet.name}`);
         });
 
-        // Add wallet address display
+        // Create address display
         const addressDisplay = document.createElement('div');
         addressDisplay.id = 'wallet-address';
         addressDisplay.className = 'wallet-address';
-        addressDisplay.style.display = 'none';
+        addressDisplay.style.cssText = 'display: none !important;';
 
-        // Clear and update wallet connection UI
+        // Update wallet connection div
         walletConnection.innerHTML = '';
-        walletConnection.style.display = 'block';
+        walletConnection.style.cssText = 'display: block !important;';
         walletConnection.appendChild(walletButtons);
         walletConnection.appendChild(addressDisplay);
-        console.log('Wallet UI successfully initialized');
+
+        console.log('Wallet UI initialization complete');
 
         // Try to reconnect existing wallet
         walletConnector.reconnectWallet();
@@ -568,42 +618,69 @@ function initializeWalletUI() {
     attemptInitialization();
 }
 
-// Update game result
+// Update game result handling
 window.updateGameResult = async function(winner) {
     const currentPlayer = localStorage.getItem('currentPlayer');
     if (!currentPlayer) {
-        console.warn('No wallet address found');
+        console.warn('No wallet address found for game result update');
         return;
     }
 
-    console.log(`Game ended with winner: ${winner}, current player: ${currentPlayer}`);
+    console.log(`Game ended. Winner: ${winner}, Current player: ${currentPlayer}`);
 
     if (leaderboardManagerInstance) {
         if (winner === 'draw') {
-            leaderboardManagerInstance.updateScore(currentPlayer, 'draw');
+            await leaderboardManagerInstance.updateScore(currentPlayer, 'draw');
         } else if (winner === 'blue') {
-            leaderboardManagerInstance.updateScore(currentPlayer, 'win');
+            await leaderboardManagerInstance.updateScore(currentPlayer, 'win');
         } else {
-            leaderboardManagerInstance.updateScore(currentPlayer, 'loss');
+            await leaderboardManagerInstance.updateScore(currentPlayer, 'loss');
         }
     } else {
-        console.error('LeaderboardManager instance not found');
+        console.error('LeaderboardManager instance not found for game result update');
     }
 };
 
-// Ensure initialization runs both on DOMContentLoaded and if already loaded
+// Component initialization
 function initializeComponents() {
-    console.log('Initializing components...');
+    console.log('Initializing all components...');
+    
+    // Initialize LeaderboardManager if not already done
     if (!window.leaderboardManager) {
+        console.log('Creating new LeaderboardManager...');
         window.leaderboardManager = new LeaderboardManager();
     }
+
+    // Initialize wallet UI
     initializeWalletUI();
+
+    // Add CSS to ensure wallet buttons are visible
+    const style = document.createElement('style');
+    style.textContent = `
+        .wallet-connection {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        .wallet-buttons {
+            display: flex !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        .wallet-btn {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+    `;
+    document.head.appendChild(style);
 }
 
+// Setup initialization triggers
 document.addEventListener('DOMContentLoaded', initializeComponents);
 
-// Backup check in case DOMContentLoaded already fired
-if (document.readyState === 'complete') {
+// Backup initialization if DOMContentLoaded already fired
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
     console.log('Document already loaded, running initialization...');
     initializeComponents();
 }
