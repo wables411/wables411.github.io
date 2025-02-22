@@ -488,85 +488,84 @@ class WalletConnector {
     }
 }
 
-// Initialize wallet connector
 // Part 4: Initialization and Setup
 
 // Initialize wallet connector
 const walletConnector = new WalletConnector();
 
-function tryInitializeWalletUI(retryCount = 0) {
-    console.log('Attempting wallet UI initialization...', retryCount);
+function initializeWalletUI() {
+    console.log('Starting wallet UI initialization check...');
     
-    const walletConnection = document.querySelector('.wallet-connection');
-    if (!walletConnection) {
-        if (retryCount < 10) {
-            console.log('Wallet connection container not found, retrying...');
-            setTimeout(() => tryInitializeWalletUI(retryCount + 1), 500);
-            return;
-        } else {
-            console.error('Failed to find wallet connection container after max retries');
-            return;
+    function attemptInitialization(attempt = 1) {
+        console.log(`Wallet initialization attempt ${attempt}`);
+        
+        const walletConnection = document.querySelector('.wallet-connection');
+        if (!walletConnection) {
+            console.log('Wallet connection div not found');
+            if (attempt < 10) {
+                console.log(`Retrying in 1s... (attempt ${attempt})`);
+                setTimeout(() => attemptInitialization(attempt + 1), 1000);
+                return;
+            } else {
+                console.error('Failed to find wallet connection after 10 attempts');
+                return;
+            }
         }
+
+        console.log('Found wallet connection div, setting up buttons...');
+        
+        // Create wallet buttons container
+        const walletButtons = document.createElement('div');
+        walletButtons.className = 'wallet-buttons';
+
+        // Create buttons for each wallet
+        const wallets = [
+            { name: 'Phantom', type: 'phantom', color: '#AB9FF2' },
+            { name: 'Solflare', type: 'solflare', color: '#FC822B' },
+            { name: 'Magic Eden', type: 'magicEden', color: '#E42575' },
+            { name: 'Sanko', type: 'sanko', color: '#4CAF50' }
+        ];
+
+        wallets.forEach(wallet => {
+            const button = document.createElement('button');
+            button.className = 'wallet-btn';
+            button.textContent = `Connect ${wallet.name}`;
+            button.style.cssText = `
+                display: block !important;
+                padding: 10px 20px;
+                margin: 5px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-family: Impact, sans-serif;
+                border: none;
+                color: white;
+                min-width: 180px;
+                background: linear-gradient(45deg, ${wallet.color}, ${adjustColor(wallet.color, 20)});
+            `;
+            button.onclick = () => walletConnector.connectWallet(wallet.type);
+            walletButtons.appendChild(button);
+            console.log(`Created wallet button: ${wallet.name}`);
+        });
+
+        // Add wallet address display
+        const addressDisplay = document.createElement('div');
+        addressDisplay.id = 'wallet-address';
+        addressDisplay.className = 'wallet-address';
+        addressDisplay.style.display = 'none';
+
+        // Clear and update wallet connection UI
+        walletConnection.innerHTML = '';
+        walletConnection.style.display = 'block';
+        walletConnection.appendChild(walletButtons);
+        walletConnection.appendChild(addressDisplay);
+        console.log('Wallet UI successfully initialized');
+
+        // Try to reconnect existing wallet
+        walletConnector.reconnectWallet();
     }
 
-    console.log('Found wallet connection container, creating buttons...');
-    
-    // Ensure container is visible
-    walletConnection.style.display = 'block';
-
-    // Create wallet buttons container
-    const walletButtons = document.createElement('div');
-    walletButtons.className = 'wallet-buttons';
-    walletButtons.style.display = 'flex';
-    walletButtons.style.flexWrap = 'wrap';
-    walletButtons.style.gap = '10px';
-    walletButtons.style.justifyContent = 'center';
-
-    // Create buttons for each wallet
-    const wallets = [
-        { name: 'Phantom', type: 'phantom', color: '#AB9FF2' },
-        { name: 'Solflare', type: 'solflare', color: '#FC822B' },
-        { name: 'Magic Eden', type: 'magicEden', color: '#E42575' },
-        { name: 'Sanko', type: 'sanko', color: '#4CAF50' }
-    ];
-
-    wallets.forEach(wallet => {
-        const button = document.createElement('button');
-        button.className = 'wallet-btn';
-        button.textContent = `Connect ${wallet.name}`;
-        button.style.cssText = `
-            display: block;
-            padding: 10px 20px;
-            margin: 5px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-family: Impact, sans-serif;
-            border: none;
-            color: white;
-            min-width: 180px;
-            background: linear-gradient(45deg, ${wallet.color}, ${adjustColor(wallet.color, 20)});
-        `;
-        button.onclick = () => walletConnector.connectWallet(wallet.type);
-        walletButtons.appendChild(button);
-        console.log(`Created button for ${wallet.name}`);
-    });
-
-    // Add wallet address display
-    const addressDisplay = document.createElement('div');
-    addressDisplay.id = 'wallet-address';
-    addressDisplay.className = 'wallet-address';
-    addressDisplay.style.display = 'none';
-    addressDisplay.style.marginTop = '10px';
-    addressDisplay.style.textAlign = 'center';
-
-    // Clear and update wallet connection container
-    walletConnection.innerHTML = '';
-    walletConnection.appendChild(walletButtons);
-    walletConnection.appendChild(addressDisplay);
-    console.log('Wallet UI updated successfully');
-
-    // Try to reconnect existing wallet
-    walletConnector.reconnectWallet();
+    // Start initialization attempts
+    attemptInitialization();
 }
 
 // Update game result
@@ -592,18 +591,19 @@ window.updateGameResult = async function(winner) {
     }
 };
 
-// Initialize everything when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing components...');
-    // Initialize leaderboard first
-    window.leaderboardManager = new LeaderboardManager();
-    // Start wallet UI initialization attempts
-    tryInitializeWalletUI();
-});
+// Ensure initialization runs both on DOMContentLoaded and if already loaded
+function initializeComponents() {
+    console.log('Initializing components...');
+    if (!window.leaderboardManager) {
+        window.leaderboardManager = new LeaderboardManager();
+    }
+    initializeWalletUI();
+}
 
-// Backup initialization
+document.addEventListener('DOMContentLoaded', initializeComponents);
+
+// Backup check in case DOMContentLoaded already fired
 if (document.readyState === 'complete') {
-    console.log('Document already complete, starting initialization...');
-    window.leaderboardManager = new LeaderboardManager();
-    tryInitializeWalletUI();
+    console.log('Document already loaded, running initialization...');
+    initializeComponents();
 }
