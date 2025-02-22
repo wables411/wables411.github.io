@@ -488,27 +488,39 @@ class WalletConnector {
     }
 }
 
+// Initialize wallet connector
 // Part 4: Initialization and Setup
 
 // Initialize wallet connector
 const walletConnector = new WalletConnector();
 
-function initializeWalletConnection() {
-    console.log('Starting wallet UI initialization...');
+function tryInitializeWalletUI(retryCount = 0) {
+    console.log('Attempting wallet UI initialization...', retryCount);
     
-    // Check for wallet-connection element
     const walletConnection = document.querySelector('.wallet-connection');
     if (!walletConnection) {
-        console.error('Wallet connection container not found, retrying in 1 second...');
-        setTimeout(initializeWalletConnection, 1000);
-        return;
+        if (retryCount < 10) {
+            console.log('Wallet connection container not found, retrying...');
+            setTimeout(() => tryInitializeWalletUI(retryCount + 1), 500);
+            return;
+        } else {
+            console.error('Failed to find wallet connection container after max retries');
+            return;
+        }
     }
 
     console.log('Found wallet connection container, creating buttons...');
+    
+    // Ensure container is visible
+    walletConnection.style.display = 'block';
 
     // Create wallet buttons container
     const walletButtons = document.createElement('div');
     walletButtons.className = 'wallet-buttons';
+    walletButtons.style.display = 'flex';
+    walletButtons.style.flexWrap = 'wrap';
+    walletButtons.style.gap = '10px';
+    walletButtons.style.justifyContent = 'center';
 
     // Create buttons for each wallet
     const wallets = [
@@ -522,8 +534,18 @@ function initializeWalletConnection() {
         const button = document.createElement('button');
         button.className = 'wallet-btn';
         button.textContent = `Connect ${wallet.name}`;
-        button.style.background = `linear-gradient(45deg, ${wallet.color}, ${adjustColor(wallet.color, 20)})`;
-        button.style.display = 'block'; // Force display
+        button.style.cssText = `
+            display: block;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: Impact, sans-serif;
+            border: none;
+            color: white;
+            min-width: 180px;
+            background: linear-gradient(45deg, ${wallet.color}, ${adjustColor(wallet.color, 20)});
+        `;
         button.onclick = () => walletConnector.connectWallet(wallet.type);
         walletButtons.appendChild(button);
         console.log(`Created button for ${wallet.name}`);
@@ -534,8 +556,10 @@ function initializeWalletConnection() {
     addressDisplay.id = 'wallet-address';
     addressDisplay.className = 'wallet-address';
     addressDisplay.style.display = 'none';
+    addressDisplay.style.marginTop = '10px';
+    addressDisplay.style.textAlign = 'center';
 
-    // Replace old wallet connection UI
+    // Clear and update wallet connection container
     walletConnection.innerHTML = '';
     walletConnection.appendChild(walletButtons);
     walletConnection.appendChild(addressDisplay);
@@ -571,18 +595,15 @@ window.updateGameResult = async function(winner) {
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing components...');
-    // Wait a short moment to ensure Supabase is ready
-    setTimeout(() => {
-        window.leaderboardManager = new LeaderboardManager();
-        initializeWalletConnection();
-    }, 500);
+    // Initialize leaderboard first
+    window.leaderboardManager = new LeaderboardManager();
+    // Start wallet UI initialization attempts
+    tryInitializeWalletUI();
 });
 
-// Add a backup check in case DOMContentLoaded already fired
+// Backup initialization
 if (document.readyState === 'complete') {
-    console.log('DOM already loaded, initializing components...');
-    setTimeout(() => {
-        window.leaderboardManager = new LeaderboardManager();
-        initializeWalletConnection();
-    }, 500);
+    console.log('Document already complete, starting initialization...');
+    window.leaderboardManager = new LeaderboardManager();
+    tryInitializeWalletUI();
 }
