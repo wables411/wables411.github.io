@@ -1,19 +1,7 @@
 // Initialize core Supabase reference
 let leaderboardManagerInstance = null;
 
-// Validation functions
-function isValidSolanaAddress(address) {
-    return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
-}
-
-function isValidEVMAddress(address) {
-    return /^0x[a-fA-F0-9]{40}$/.test(address);
-}
-
-function isValidWalletAddress(address, chainType) {
-    return chainType === 'evm' ? isValidEVMAddress(address) : isValidSolanaAddress(address);
-}
-
+// Constants
 const WALLET_CONNECT_TIMEOUT = 30000; // 30 seconds
 const SANKO_CHAIN_ID = '0x7CC'; // 1996 in hex
 const SANKO_CHAIN_CONFIG = {
@@ -27,6 +15,34 @@ const SANKO_CHAIN_CONFIG = {
     rpcUrls: ['https://mainnet.sanko.xyz'],
     blockExplorerUrls: ['https://explorer.sanko.xyz/']
 };
+
+// Validation functions
+function isValidSolanaAddress(address) {
+    return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
+}
+
+function isValidEVMAddress(address) {
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
+}
+
+function isValidWalletAddress(address, chainType) {
+    return chainType === 'evm' ? isValidEVMAddress(address) : isValidSolanaAddress(address);
+}
+
+// Helper function for button color gradient
+function adjustColor(color, percent) {
+    const num = parseInt(color.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) + amt;
+    const G = (num >> 8 & 0x00FF) + amt;
+    const B = (num & 0x0000FF) + amt;
+    return '#' + (
+        0x1000000 +
+        (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+        (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+        (B < 255 ? B < 1 ? 0 : B : 255)
+    ).toString(16).slice(1);
+}
 
 // LeaderboardManager class
 class LeaderboardManager {
@@ -217,7 +233,7 @@ class LeaderboardManager {
         if (!address) return '';
         return `${address.slice(0, 4)}...${address.slice(-4)}`;
     }
-} // End of LeaderboardManager class
+}
 
 // WalletConnector class
 class WalletConnector {
@@ -466,25 +482,10 @@ class WalletConnector {
         }
         return false;
     }
-} // End of WalletConnector class
+}
 
 // Initialize wallet connector
 const walletConnector = new WalletConnector();
-
-// Helper function for button color gradient
-function adjustColor(color, percent) {
-    const num = parseInt(color.replace('#', ''), 16);
-    const amt = Math.round(2.55 * percent);
-    const R = (num >> 16) + amt;
-    const G = (num >> 8 & 0x00FF) + amt;
-    const B = (num & 0x0000FF) + amt;
-    return '#' + (
-        0x1000000 +
-        (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
-        (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
-        (B < 255 ? B < 1 ? 0 : B : 255)
-    ).toString(16).slice(1);
-}
 
 function initializeWalletConnection() {
     // Create wallet buttons container
