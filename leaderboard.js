@@ -1,3 +1,5 @@
+// Part 1: Core Setup and Constants
+
 // Initialize core Supabase reference
 let leaderboardManagerInstance = null;
 
@@ -44,7 +46,8 @@ function adjustColor(color, percent) {
     ).toString(16).slice(1);
 }
 
-// LeaderboardManager class
+// Part 2: LeaderboardManager Class
+
 class LeaderboardManager {
     constructor() {
         console.log('Initializing LeaderboardManager...');
@@ -235,7 +238,8 @@ class LeaderboardManager {
     }
 }
 
-// WalletConnector class
+// Part 3: WalletConnector Class
+
 class WalletConnector {
     constructor() {
         this.supportedWallets = {
@@ -484,10 +488,24 @@ class WalletConnector {
     }
 }
 
+// Part 4: Initialization and Setup
+
 // Initialize wallet connector
 const walletConnector = new WalletConnector();
 
 function initializeWalletConnection() {
+    console.log('Starting wallet UI initialization...');
+    
+    // Check for wallet-connection element
+    const walletConnection = document.querySelector('.wallet-connection');
+    if (!walletConnection) {
+        console.error('Wallet connection container not found, retrying in 1 second...');
+        setTimeout(initializeWalletConnection, 1000);
+        return;
+    }
+
+    console.log('Found wallet connection container, creating buttons...');
+
     // Create wallet buttons container
     const walletButtons = document.createElement('div');
     walletButtons.className = 'wallet-buttons';
@@ -505,8 +523,10 @@ function initializeWalletConnection() {
         button.className = 'wallet-btn';
         button.textContent = `Connect ${wallet.name}`;
         button.style.background = `linear-gradient(45deg, ${wallet.color}, ${adjustColor(wallet.color, 20)})`;
+        button.style.display = 'block'; // Force display
         button.onclick = () => walletConnector.connectWallet(wallet.type);
         walletButtons.appendChild(button);
+        console.log(`Created button for ${wallet.name}`);
     });
 
     // Add wallet address display
@@ -516,12 +536,10 @@ function initializeWalletConnection() {
     addressDisplay.style.display = 'none';
 
     // Replace old wallet connection UI
-    const walletConnection = document.querySelector('.wallet-connection');
-    if (walletConnection) {
-        walletConnection.innerHTML = '';
-        walletConnection.appendChild(walletButtons);
-        walletConnection.appendChild(addressDisplay);
-    }
+    walletConnection.innerHTML = '';
+    walletConnection.appendChild(walletButtons);
+    walletConnection.appendChild(addressDisplay);
+    console.log('Wallet UI updated successfully');
 
     // Try to reconnect existing wallet
     walletConnector.reconnectWallet();
@@ -552,7 +570,19 @@ window.updateGameResult = async function(winner) {
 
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Initializing leaderboard and wallet connection...');
-    window.leaderboardManager = new LeaderboardManager();
-    initializeWalletConnection();
+    console.log('DOM loaded, initializing components...');
+    // Wait a short moment to ensure Supabase is ready
+    setTimeout(() => {
+        window.leaderboardManager = new LeaderboardManager();
+        initializeWalletConnection();
+    }, 500);
 });
+
+// Add a backup check in case DOMContentLoaded already fired
+if (document.readyState === 'complete') {
+    console.log('DOM already loaded, initializing components...');
+    setTimeout(() => {
+        window.leaderboardManager = new LeaderboardManager();
+        initializeWalletConnection();
+    }, 500);
+}
