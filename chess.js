@@ -329,6 +329,14 @@ function getValidMoves(row, col) {
 
 window.getValidMoves = getValidMoves;
 
+function showLegalMoves(row, col) {
+    const validMoves = getValidMoves(row, col);
+    validMoves.forEach(move => {
+        const isCapture = window.board[move.row][move.col] !== null;
+        highlightSquare(move.row, move.col, isCapture);
+    });
+}
+
 function promptPawnPromotion(startRow, startCol, endRow, endCol) {
     const dialog = document.createElement('div');
     dialog.className = 'promotion-dialog';
