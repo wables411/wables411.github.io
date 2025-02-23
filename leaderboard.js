@@ -171,7 +171,7 @@ class LeaderboardManager {
             console.error('No wallet address provided');
             return;
         }
-
+    
         const chainType = localStorage.getItem('chainType') || 'evm';
         
         try {
@@ -180,26 +180,26 @@ class LeaderboardManager {
                 chainType,
                 gameResult
             });
-
+    
             // First get existing record
             const { data: existingRecord } = await window.gameDatabase
                 .from('leaderboard')
                 .select('*')
                 .eq('username', walletAddress)
                 .maybeSingle();
-
+    
             console.log('Existing record:', existingRecord);
-
+    
             // Initialize counts
             const wins = (existingRecord?.wins || 0) + (gameResult === 'win' ? 1 : 0);
             const losses = (existingRecord?.losses || 0) + (gameResult === 'loss' ? 1 : 0);
             const draws = (existingRecord?.draws || 0) + (gameResult === 'draw' ? 1 : 0);
             const total_games = wins + losses + draws;
             const points = (existingRecord?.points || 0) + (
-                gameResult === 'win' ? 3 : 
-                gameResult === 'draw' ? 1 : 0
+                gameResult === 'win' ? (gameDifficulty === 'hard' ? 50 : 25) : 
+                gameResult === 'draw' ? 10 : 0
             );
-
+    
             // Prepare the record
             const record = {
                 username: walletAddress,
@@ -211,20 +211,20 @@ class LeaderboardManager {
                 points,
                 updated_at: new Date().toISOString()
             };
-
+    
             console.log('Upserting record:', record);
-
+    
             const { error: upsertError } = await window.gameDatabase
                 .from('leaderboard')
                 .upsert(record, {
                     onConflict: 'username'
                 });
-
+    
             if (upsertError) throw upsertError;
-
+    
             console.log('Successfully updated leaderboard');
             await this.loadLeaderboard();
-
+    
         } catch (error) {
             console.error('Error updating score:', error);
         }
@@ -619,25 +619,51 @@ function initializeWalletUI() {
 }
 
 // Update game result handling
-window.updateGameResult = async function(winner) {
+window.updateGameResult = async function(result) {
     const currentPlayer = localStorage.getItem('currentPlayer');
     if (!currentPlayer) {
         console.warn('No wallet address found for game result update');
         return;
     }
 
-    console.log(`Game ended. Winner: ${winner}, Current player: ${currentPlayer}`);
+    if (!leaderboardManagerInstance) {
+        console.error('LeaderboardManager instance not found for game result update');
+        return;
+    }
 
-    if (leaderboardManagerInstance) {
-        if (winner === 'draw') {
-            await leaderboardManagerInstance.updateScore(currentPlayer, 'draw');
-        } else if (winner === 'blue') {
-            await leaderboardManagerInstance.updateScore(currentPlayer, 'win');
+    if (!window.gameDatabase) {
+        console.error('Supabase client (gameDatabase) not initialized');
+        return;
+    }
+
+    const { winner, mode, difficulty } = result;
+    console.log(`Game ended. Result:`, { winner, player: currentPlayer, mode, difficulty });
+
+    // Determine game outcome for the player (Blue is the player, Red is AI)
+    let gameResult;
+    if (mode === 'ai') {
+        if (winner === 'blue') {
+            gameResult = 'win';
+        } else if (winner === 'red') {
+            gameResult = 'loss';
         } else {
-            await leaderboardManagerInstance.updateScore(currentPlayer, 'loss');
+            gameResult = 'draw';
         }
     } else {
-        console.error('LeaderboardManager instance not found for game result update');
+        console.warn('Multiplayer mode not fully implemented yet');
+        return; // Skip update for now if not AI mode
+    }
+
+    // Update score with difficulty-based points
+    const pointsToAdd = gameResult === 'win' ? (difficulty === 'hard' ? 50 : 25) : 
+                       gameResult === 'draw' ? 10 : 0;
+    console.log(`Updating score for ${currentPlayer}: ${gameResult}, points to add: ${pointsToAdd}`);
+
+    try {
+        await leaderboardManagerInstance.updateScore(currentPlayer, gameResult);
+        console.log('Leaderboard update triggered successfully');
+    } catch (error) {
+        console.error('Failed to update leaderboard:', error);
     }
 };
 

@@ -1292,6 +1292,20 @@ function endGame(winner) {
     if (chessboard) {
         chessboard.style.pointerEvents = 'none'; // Disable further moves
     }
+    
+    // Notify leaderboard of game result
+    debug(`Notifying leaderboard: winner=${winner}, mode=${currentGameMode}, difficulty=${gameDifficulty}`);
+    if (typeof window.updateGameResult === 'function') {
+        window.updateGameResult({
+            winner: winner,
+            player: window.currentPlayer === 'blue' ? 'red' : 'blue', // Loser or drawer
+            mode: currentGameMode,
+            difficulty: gameDifficulty
+        });
+        debug('updateGameResult called successfully');
+    } else {
+        debug('Error: window.updateGameResult not defined');
+    }
 }
 
 // Event Handlers and Game State Management
