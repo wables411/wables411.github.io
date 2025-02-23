@@ -24,13 +24,6 @@ const initialBoard = [
     ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
 ];
 
-// Make core game state globally available
-window.initialBoard = initialBoard;
-window.board = JSON.parse(JSON.stringify(initialBoard));
-window.currentPlayer = 'blue';
-window.isMultiplayerMode = false;
-window.playerColor = null;
-
 // Game state variables
 let selectedPiece = null;
 let moveHistory = [];
@@ -39,6 +32,13 @@ let lastMove = null;
 let hoveredSquare = null;
 let selectedDifficulty = null;
 let gameDifficulty = 'easy';
+
+// Make core game state globally available
+window.initialBoard = initialBoard;
+window.board = JSON.parse(JSON.stringify(initialBoard));
+window.currentPlayer = 'blue';
+window.isMultiplayerMode = false;
+window.playerColor = null;
 
 // Piece movement tracking
 const pieceState = {
@@ -153,6 +153,32 @@ function updateStatusDisplay(message) {
 window.debug = debug;
 window.updateStatusDisplay = updateStatusDisplay;
 
+// Add new function for difficulty button management
+function updateDifficultyButtons(difficultySelected) {
+    const easyBtn = document.getElementById('easy-mode');
+    const hardBtn = document.getElementById('hard-mode');
+    const startBtn = document.getElementById('start-game');
+    
+    if (easyBtn && hardBtn && startBtn) {
+        if (difficultySelected === 'easy') {
+            easyBtn.classList.add('selected');
+            hardBtn.classList.remove('selected');
+        } else if (difficultySelected === 'hard') {
+            hardBtn.classList.add('selected');
+            easyBtn.classList.remove('selected');
+        } else {
+            easyBtn.classList.remove('selected');
+            hardBtn.classList.remove('selected');
+        }
+        startBtn.disabled = !difficultySelected;
+        
+        // Force button styles
+        startBtn.style.cssText = startBtn.disabled ? 
+            'opacity: 0.5; cursor: not-allowed; pointer-events: none;' :
+            'opacity: 1; cursor: pointer; pointer-events: auto;';
+    }
+}
+
 // Access Functions
 function isWalletConnected() {
     return !!localStorage.getItem('currentPlayer');
@@ -193,6 +219,7 @@ window.getPieceColor = getPieceColor;
 window.getPieceName = getPieceName;
 window.isWithinBoard = isWithinBoard;
 window.coordsToAlgebraic = coordsToAlgebraic;
+window.updateDifficultyButtons = updateDifficultyButtons;
 
 // Board display functions
 function placePieces() {
@@ -664,60 +691,6 @@ function getAllLegalMoves(color) {
     return moves;
 }
 
-function findKing(color) {
-    const kingPiece = color === 'blue' ? 'k' : 'K';
-    for (let row = 0; row < BOARD_SIZE; row++) {
-        for (let col = 0; col < BOARD_SIZE; col++) {
-            if (window.board[row][col] === kingPiece) {
-                return { row, col };
-            }
-        }
-    }
-    return null;
-}
-
-function isInCheck(color) {
-    const kingPos = findKing(color);
-    if (!kingPos) return false; // Should never happen in a valid game
-    return isSquareUnderAttack(kingPos.row, kingPos.col, color === 'blue' ? 'red' : 'blue');
-}
-
-function getAttackingPieces(targetRow, targetCol, attackingColor) {
-    const attackers = [];
-    for (let row = 0; row < BOARD_SIZE; row++) {
-        for (let col = 0; col < BOARD_SIZE; col++) {
-            const piece = window.board[row][col];
-            if (piece && getPieceColor(piece) === attackingColor) {
-                if (canPieceMove(piece, row, col, targetRow, targetCol, false)) {
-                    attackers.push({ piece, row, col });
-                }
-            }
-        }
-    }
-    return attackers;
-}
-
-function isPinned(row, col) {
-    const piece = window.board[row][col];
-    if (!piece) return false;
-    
-    const color = getPieceColor(piece);
-    const kingPos = findKing(color);
-    if (!kingPos) return false;
-    
-    // Remove the piece temporarily
-    const originalPiece = window.board[row][col];
-    window.board[row][col] = null;
-    
-    // Check if the king is now under attack through this square
-    const isPinned = isInCheck(color);
-    
-    // Restore the piece
-    window.board[row][col] = originalPiece;
-    
-    return isPinned;
-}
-
 // Make check detection functions globally available
 window.isSquareUnderAttack = isSquareUnderAttack;
 window.isKingInCheck = isKingInCheck;
@@ -726,24 +699,26 @@ window.isCheckmate = isCheckmate;
 window.isStalemate = isStalemate;
 window.hasLegalMoves = hasLegalMoves;
 window.getAllLegalMoves = getAllLegalMoves;
-window.findKing = findKing;
-window.isInCheck = isInCheck;
-window.getAttackingPieces = getAttackingPieces;
-window.isPinned = isPinned;
 
 // AI Move Selection and Evaluation
 function makeAIMove() {
-    if (currentGameMode !== GameMode.AI || window.currentPlayer !== 'red' || window.isMultiplayerMode) return;
+    debug('Making AI move...');
+    if (currentGameMode !== GameMode.AI || window.currentPlayer !== 'red' || window.isMultiplayerMode) {
+        debug('Conditions not met for AI move');
+        return;
+    }
     
     const inCheck = isKingInCheck('red');
     debug(`AI thinking... (in check: ${inCheck}, difficulty: ${gameDifficulty})`);
     
     const move = selectBestMove();
     if (move) {
+        debug('AI selected move: ' + JSON.stringify(move));
         setTimeout(() => {
             executeMove(move.startRow, move.startCol, move.endRow, move.endCol, move.promotionPiece);
         }, 500);
     } else {
+        debug('No legal moves available for AI');
         if (isCheckmate('red')) {
             endGame('blue');
         } else if (isStalemate('red')) {
@@ -862,13 +837,9 @@ function evaluateHardMove(move) {
         score += POSITION_WEIGHTS[pieceType][move.endRow][move.endCol];
     }
 
-    // Piece-specific strategy
+    // Add strategy evaluations
     score += evaluatePieceStrategy(move);
-    
-    // Development and control
     score += evaluatePositionalStrategy(move);
-    
-    // King safety
     score += evaluateKingSafety(move);
 
     // Endgame considerations
@@ -973,32 +944,6 @@ function evaluatePositionalStrategy(move) {
     return score;
 }
 
-function evaluateKingSafety(move) {
-    let score = 0;
-    const piece = move.piece.toLowerCase();
-
-    // King position
-    const kingPos = findKing('red');
-    if (!kingPos) return 0;
-
-    // Pieces defending king
-    if (piece !== 'k' && isNearKing(move.endRow, move.endCol, kingPos)) {
-        score += 20;
-    }
-
-    // Pawn shield
-    if (hasKingPawnShield(move.endRow, move.endCol)) {
-        score += 30;
-    }
-
-    // King exposure
-    if (piece === 'k') {
-        score -= countAttackingSquares(move.endRow, move.endCol) * 10;
-    }
-
-    return score;
-}
-
 function evaluateEndgameStrategy(move) {
     let score = 0;
     const piece = move.piece.toLowerCase();
@@ -1017,196 +962,13 @@ function evaluateEndgameStrategy(move) {
     return score;
 }
 
-// Helper functions for evaluation
-function getMoveCount() {
-    return moveHistory.length;
-}
-
-function isInEndgame() {
-    let materialCount = 0;
-    for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
-            const piece = window.board[row][col];
-            if (piece && piece.toLowerCase() !== 'k') {
-                materialCount += PIECE_VALUES[piece.toLowerCase()];
-            }
-        }
-    }
-    return materialCount < 3000; // Arbitrary threshold for endgame
-}
-
-function distanceFromEdge(row, col) {
-    return Math.min(row, 7 - row, col, 7 - col);
-}
-
-function isKeySquare(row, col) {
-    return (row >= 2 && row <= 5 && col >= 2 && col <= 5);
-}
-
-function isNearKing(row, col, kingPos) {
-    return Math.abs(row - kingPos.row) <= 2 && Math.abs(col - kingPos.col) <= 2;
-}
-
-function hasKingPawnShield(row, col) {
-    // Check if there are pawns protecting the king
-    const direction = -1; // For red pieces
-    for (let c = col - 1; c <= col + 1; c++) {
-        if (c >= 0 && c < 8 && row + direction >= 0) {
-            if (window.board[row + direction][c]?.toLowerCase() === 'p') {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-function countQueenMobility(row, col) {
-    return countDiagonalMoves(row, col) + countOrthogonalMoves(row, col);
-}
-
-function countDiagonalMoves(row, col) {
-    const directions = [[-1,-1], [-1,1], [1,-1], [1,1]];
-    return countMovesInDirections(row, col, directions);
-}
-
-function countOrthogonalMoves(row, col) {
-    const directions = [[-1,0], [1,0], [0,-1], [0,1]];
-    return countMovesInDirections(row, col, directions);
-}
-
-function countMovesInDirections(row, col, directions) {
-    let count = 0;
-    for (const [dr, dc] of directions) {
-        let r = row + dr;
-        let c = col + dc;
-        while (r >= 0 && r < 8 && c >= 0 && c < 8) {
-            if (!window.board[r][c]) count++;
-            else break;
-            r += dr;
-            c += dc;
-        }
-    }
-    return count;
-}
-
-function countAttackingSquares(row, col, attackingColor = 'blue') {
-    let count = 0;
-    for (let r = 0; r < BOARD_SIZE; r++) {
-        for (let c = 0; c < BOARD_SIZE; c++) {
-            const piece = window.board[r][c];
-            if (piece && getPieceColor(piece) === attackingColor) {  // Add this check
-                if (canPieceMove(piece, r, c, row, col, false)) {
-                    count++;
-                }
-            }
-        }
-    }
-    return count;
-}
-
-// Add these helper functions after the existing evaluation helpers
-
-function isPawnPassed(row, col) {
-    // For red pieces (uppercase) moving down
-    const enemyPawn = 'p';  // Look for blue pawns
-    
-    // Check if there are any enemy pawns that could block
-    for (let r = row + 1; r < 8; r++) {
-        for (let c = Math.max(0, col - 1); c <= Math.min(7, col + 1); c++) {
-            if (window.board[r][c] === enemyPawn) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-function hasConnectedPawn(row, col) {
-    // For red pieces
-    const friendlyPawn = 'P';
-    
-    // Check adjacent files for friendly pawns
-    for (let c = Math.max(0, col - 1); c <= Math.min(7, col + 1); c++) {
-        if (c !== col && window.board[row][c] === friendlyPawn) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function hasPawnInFile(col) {
-    let count = 0;
-    for (let row = 0; row < 8; row++) {
-        if (window.board[row][col] === 'P') {
-            count++;
-        }
-    }
-    return count > 1; // Return true if there are doubled pawns
-}
-
-function isKnightOutpost(row, col) {
-    // Check if the knight is protected by a pawn
-    const supportingRow = row + 1;
-    if (supportingRow < 8) {
-        for (let c = Math.max(0, col - 1); c <= Math.min(7, col + 1); c += 2) {
-            if (window.board[supportingRow][c] === 'P') {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-function hasBishopPair() {
-    let lightSquareBishop = false;
-    let darkSquareBishop = false;
-
-    for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
-            if (window.board[row][col] === 'B') {
-                // Check bishop's square color
-                if ((row + col) % 2 === 0) {
-                    lightSquareBishop = true;
-                } else {
-                    darkSquareBishop = true;
-                }
-            }
-            if (lightSquareBishop && darkSquareBishop) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-function isFileOpen(col) {
-    // Check if there are any pawns in the file
-    for (let row = 0; row < 8; row++) {
-        const piece = window.board[row][col];
-        if (piece === 'P' || piece === 'p') {
-            return false;
-        }
-    }
-    return true;
-}
-
 // UI Event Handlers
 function onPieceClick(event) {
     try {
         if (!checkGameAccess()) return;
         
-        // Log current state
-        console.log('Click state:', {
-            isMultiplayerMode: window.isMultiplayerMode,
-            currentPlayer: window.currentPlayer,
-            playerColor: window.playerColor,
-            gameState: gameState
-        });
-
-        // Check game mode restrictions
         if (window.isMultiplayerMode && window.multiplayerManager) {
-            // Let multiplayer manager handle the click
-            return;
+            return; // Let multiplayer manager handle the click
         } else if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') {
             return;
         }
@@ -1216,8 +978,8 @@ function onPieceClick(event) {
         const clickedPiece = event.target;
         const row = parseInt(clickedPiece.getAttribute('data-row'));
         const col = parseInt(clickedPiece.getAttribute('data-col'));
-        const pieceType = window.board[row][col];
-        const pieceColor = getPieceColor(pieceType);
+        const piece = window.board[row][col];
+        const pieceColor = getPieceColor(piece);
 
         // If we have a piece selected and click on an opponent's piece,
         // treat it as a capture attempt
@@ -1255,17 +1017,8 @@ function onPieceClick(event) {
     }
 }
 
-function showLegalMoves(row, col) {
-    const validMoves = getValidMoves(row, col);
-    validMoves.forEach(move => {
-        const isCapture = window.board[move.row][move.col] !== null;
-        highlightSquare(move.row, move.col, isCapture);
-    });
-}
-
 function onSquareClick(row, col) {
     try {
-        // Check game mode restrictions
         if (window.isMultiplayerMode && window.multiplayerManager) {
             return; // Let multiplayer manager handle clicks
         } else if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') {
@@ -1339,16 +1092,6 @@ function executeMove(startRow, startCol, endRow, endCol, promotionPiece = null) 
         }
     }
 
-    // Save move for en passant detection
-    lastMove = {
-        piece,
-        startRow,
-        startCol,
-        endRow,
-        endCol,
-        promotion: promotionPiece
-    };
-
     // Update move history and display
     addMoveToHistory(piece, startRow, startCol, endRow, endCol, capturedPiece);
     window.placePieces();
@@ -1375,56 +1118,137 @@ function executeMove(startRow, startCol, endRow, endCol, promotionPiece = null) 
     return true;
 }
 
-function endGame(winner) {
-    gameState = 'ended';
-    const message = winner === 'draw' ? 
-        "Game Over - Draw!" : 
-        `Game Over - ${winner.charAt(0).toUpperCase() + winner.slice(1)} wins!`;
+// Event Handlers and Game State Management
+function initializeElements() {
+    // Button elements
+    const easyBtn = document.getElementById('easy-mode');
+    const hardBtn = document.getElementById('hard-mode');
+    const startBtn = document.getElementById('start-game');
+    const restartBtn = document.getElementById('restart-game');
+    const aiModeBtn = document.getElementById('ai-mode');
+    const multiplayerModeBtn = document.getElementById('multiplayer-mode');
+
+    // Screen elements
+    const difficultyScreen = document.getElementById('difficulty-screen');
+    const multiplayerMenu = document.querySelector('.multiplayer-menu');
+    const chessGame = document.getElementById('chess-game');
+
+    return {
+        buttons: { easyBtn, hardBtn, startBtn, restartBtn, aiModeBtn, multiplayerModeBtn },
+        screens: { difficultyScreen, multiplayerMenu, chessGame }
+    };
+}
+
+function setupDifficultyButtons() {
+    debug('Setting up difficulty buttons...');
+    const elements = initializeElements();
+    const { easyBtn, hardBtn, startBtn } = elements.buttons;
     
-    updateStatusDisplay(message);
-    
-    // Update leaderboard with the correct result format
-    if (window.updateGameResult) {
-        if (winner === 'draw') {
-            window.updateGameResult('draw');
-        } else {
-            // Get the current player's color from localStorage
-            const playerWallet = localStorage.getItem('currentPlayer');
-            if (playerWallet) {
-                // If player is playing as blue and blue wins -> win
-                const result = (winner === 'blue') ? 'win' : 'loss';
-                window.updateGameResult(result);
+    if (easyBtn && hardBtn && startBtn) {
+        startBtn.disabled = true;
+        easyBtn.classList.remove('selected');
+        hardBtn.classList.remove('selected');
+
+        // Ensure buttons are visible and styled correctly
+        easyBtn.style.cssText = `
+            display: inline-block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+        `;
+        hardBtn.style.cssText = easyBtn.style.cssText;
+
+        // Remove old event listeners
+        easyBtn.replaceWith(easyBtn.cloneNode(true));
+        hardBtn.replaceWith(hardBtn.cloneNode(true));
+        startBtn.replaceWith(startBtn.cloneNode(true));
+
+        // Get fresh references after cloning
+        const newEasyBtn = document.getElementById('easy-mode');
+        const newHardBtn = document.getElementById('hard-mode');
+        const newStartBtn = document.getElementById('start-game');
+
+        // Add new event listeners
+        newEasyBtn.onclick = () => {
+            debug('Easy mode selected');
+            gameDifficulty = 'easy';
+            selectedDifficulty = 'easy';
+            newEasyBtn.classList.add('selected');
+            newHardBtn.classList.remove('selected');
+            newStartBtn.disabled = false;
+            newStartBtn.style.cssText = 'opacity: 1; cursor: pointer; pointer-events: auto;';
+            debug(`Difficulty set to: ${gameDifficulty}`);
+        };
+
+        newHardBtn.onclick = () => {
+            debug('Hard mode selected');
+            gameDifficulty = 'hard';
+            selectedDifficulty = 'hard';
+            newHardBtn.classList.add('selected');
+            newEasyBtn.classList.remove('selected');
+            newStartBtn.disabled = false;
+            newStartBtn.style.cssText = 'opacity: 1; cursor: pointer; pointer-events: auto;';
+            debug(`Difficulty set to: ${gameDifficulty}`);
+        };
+
+        newStartBtn.onclick = () => {
+            if (selectedDifficulty) {
+                debug(`Starting game with ${selectedDifficulty} difficulty`);
+                elements.screens.difficultyScreen.style.display = 'none';
+                elements.screens.chessGame.style.display = 'block';
+                startGame();
             }
-        }
-    }
-    
-    // Disable board interaction
-    const chessboard = document.getElementById('chessboard');
-    if (chessboard) {
-        chessboard.style.pointerEvents = 'none';
+        };
+
+        debug('Difficulty buttons setup complete');
+    } else {
+        debug('Error: Could not find all difficulty buttons');
     }
 }
 
-function addMoveToHistory(piece, startRow, startCol, endRow, endCol, capturedPiece) {
-    const moveText = `${getPieceName(piece)} ${coordsToAlgebraic(startRow, startCol)} to ${coordsToAlgebraic(endRow, endCol)}${capturedPiece ? ' captures ' + getPieceName(capturedPiece) : ''}`;
-    moveHistory.push(moveText);
-    
-    const historyElement = document.getElementById('move-history');
-    if (historyElement) {
-        const moveNumber = Math.floor(moveHistory.length / 2) + 1;
-        const newMove = document.createElement('div');
-        newMove.textContent = `${moveNumber}. ${moveText}`;
-        if (capturedPiece) {
-            newMove.style.color = '#ff6b6b';
-        }
-        historyElement.appendChild(newMove);
-        historyElement.scrollTop = historyElement.scrollHeight;
+function setupModeButtons() {
+    debug('Setting up mode buttons...');
+    const elements = initializeElements();
+    const { aiModeBtn, multiplayerModeBtn } = elements.buttons;
+    const { difficultyScreen, multiplayerMenu, chessGame } = elements.screens;
+
+    if (aiModeBtn && multiplayerModeBtn) {
+        aiModeBtn.onclick = () => {
+            debug('Switching to AI mode');
+            currentGameMode = GameMode.AI;
+            window.isMultiplayerMode = false;
+            aiModeBtn.classList.add('selected');
+            multiplayerModeBtn.classList.remove('selected');
+
+            if (difficultyScreen) {
+                difficultyScreen.style.display = 'flex';
+                setupDifficultyButtons(); // Reinitialize difficulty buttons
+            }
+            if (multiplayerMenu) multiplayerMenu.style.display = 'none';
+            if (chessGame) chessGame.style.display = 'none';
+        };
+
+        multiplayerModeBtn.onclick = () => {
+            debug('Switching to multiplayer mode');
+            currentGameMode = GameMode.ONLINE;
+            window.isMultiplayerMode = true;
+            multiplayerModeBtn.classList.add('selected');
+            aiModeBtn.classList.remove('selected');
+            
+            if (difficultyScreen) difficultyScreen.style.display = 'none';
+            if (multiplayerMenu) multiplayerMenu.style.display = 'block';
+            if (chessGame) chessGame.style.display = 'none';
+        };
+
+        debug('Mode buttons setup complete');
+    } else {
+        debug('Error: Could not find mode buttons');
     }
 }
 
 function startGame() {
     try {
-        console.log("Starting game...");
+        debug("\n----- Starting new game -----");
         if (!checkGameAccess()) {
             return;
         }
@@ -1469,6 +1293,12 @@ function startGame() {
             chessboard.style.pointerEvents = 'auto';
         }
         
+        // Force button styles after game starts
+        const elements = initializeElements();
+        if (elements.buttons.startBtn) {
+            elements.buttons.startBtn.style.cssText = 'opacity: 1; cursor: pointer; pointer-events: auto;';
+        }
+        
     } catch (error) {
         console.error("Error starting game:", error);
         debug(`Error starting game: ${error.message}`);
@@ -1505,6 +1335,10 @@ function resetGame() {
         }
         
         debug('Game reset completed');
+
+        // Reset difficulty selection
+        setupDifficultyButtons();
+        
     } catch (error) {
         console.error("Error resetting game:", error);
         debug(`Error resetting game: ${error.message}`);
@@ -1525,88 +1359,46 @@ function initGame() {
                 removeHighlights();
             }
         });
+
+        setupModeButtons();
+        setupDifficultyButtons();
         
-        // Initialize game mode controls
-        const aiModeBtn = document.getElementById('ai-mode');
-        const multiplayerModeBtn = document.getElementById('multiplayer-mode');
-        const difficultyScreen = document.getElementById('difficulty-screen');
-        const multiplayerMenu = document.querySelector('.multiplayer-menu');
-        const easyBtn = document.getElementById('easy-mode');
-        const hardBtn = document.getElementById('hard-mode');
-        const startBtn = document.getElementById('start-game');
-        const chessGame = document.getElementById('chess-game');
-
-        // Initialize difficulty selection
-        if (easyBtn && hardBtn && startBtn) {
-            startBtn.disabled = true;
-            selectedDifficulty = null;
-
-            easyBtn.addEventListener('click', () => {
-                debug('Easy mode clicked');
-                gameDifficulty = 'easy';
-                selectedDifficulty = 'easy';
-                easyBtn.classList.add('selected');
-                hardBtn.classList.remove('selected');
-                startBtn.disabled = false;
-            });
-
-            hardBtn.addEventListener('click', () => {
-                debug('Hard mode clicked');
-                gameDifficulty = 'hard';
-                selectedDifficulty = 'hard';
-                hardBtn.classList.add('selected');
-                easyBtn.classList.remove('selected');
-                startBtn.disabled = false;
-            });
-
-            startBtn.addEventListener('click', () => {
-                if (selectedDifficulty) {
-                    debug(`Starting game with ${selectedDifficulty} difficulty`);
-                    if (difficultyScreen) difficultyScreen.style.display = 'none';
-                    if (chessGame) chessGame.style.display = 'block';
-                    startGame();
-                }
-            });
-        }
-
-        // Initialize mode switching
-        if (aiModeBtn && multiplayerModeBtn) {
-            aiModeBtn.addEventListener('click', () => {
-                currentGameMode = GameMode.AI;
-                window.isMultiplayerMode = false;
-                aiModeBtn.classList.add('selected');
-                multiplayerModeBtn?.classList.remove('selected');
-                if (difficultyScreen) {
-                    difficultyScreen.style.display = 'flex';
-                    selectedDifficulty = null;
-                    if (startBtn) startBtn.disabled = true;
-                    if (easyBtn) easyBtn.classList.remove('selected');
-                    if (hardBtn) hardBtn.classList.remove('selected');
-                }
-                if (multiplayerMenu) multiplayerMenu.style.display = 'none';
-                if (chessGame) chessGame.style.display = 'none';
-            });
-
-            multiplayerModeBtn.addEventListener('click', () => {
-                currentGameMode = GameMode.ONLINE;
-                window.isMultiplayerMode = true;
-                multiplayerModeBtn.classList.add('selected');
-                aiModeBtn?.classList.remove('selected');
-                if (difficultyScreen) difficultyScreen.style.display = 'none';
-                if (multiplayerMenu) multiplayerMenu.style.display = 'block';
-                if (chessGame) chessGame.style.display = 'none';
-            });
-        }
-
         // Initialize restart button
-        const restartBtn = document.getElementById('restart-game');
-        if (restartBtn) {
-            restartBtn.addEventListener('click', () => {
+        const elements = initializeElements();
+        if (elements.buttons.restartBtn) {
+            elements.buttons.restartBtn.onclick = () => {
                 if (currentGameMode === GameMode.AI) {
                     startGame();
                 }
-            });
+            };
         }
+        
+        // Add CSS to enforce visibility
+        const style = document.createElement('style');
+        style.textContent = `
+            .difficulty-btn {
+                display: inline-block !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+                pointer-events: auto !important;
+            }
+            .difficulty-btn.selected {
+                background: rgba(153, 69, 255, 0.4) !important;
+                transform: scale(1.05) !important;
+                box-shadow: 0 0 25px rgba(153, 69, 255, 0.5) !important;
+            }
+            #start-game:not(:disabled) {
+                opacity: 1 !important;
+                cursor: pointer !important;
+                pointer-events: auto !important;
+            }
+            #start-game:disabled {
+                opacity: 0.5 !important;
+                cursor: not-allowed !important;
+                pointer-events: none !important;
+            }
+        `;
+        document.head.appendChild(style);
         
         debug('Game initialization completed successfully');
     } catch (error) {
@@ -1621,4 +1413,13 @@ window.initGame = initGame;
 window.resetGame = resetGame;
 
 // Initialize game when window loads
-window.onload = initGame;
+window.addEventListener('DOMContentLoaded', () => {
+    debug('DOM Content Loaded - Initializing game...');
+    initGame();
+});
+
+// Backup initialization
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    debug('Document already loaded - Running backup initialization...');
+    initGame();
+}
