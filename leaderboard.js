@@ -654,9 +654,9 @@ window.updateGameResult = async function(result) {
         return; // Skip update for now if not AI mode
     }
 
-    // Update score with difficulty-based points
-    const pointsToAdd = gameResult === 'win' ? (difficulty === 'hard' ? 50 : 25) : 
-                       gameResult === 'draw' ? 10 : 0;
+    // Update score with new points system: draw = 1, easy win = 3, hard win = 5
+    const pointsToAdd = gameResult === 'win' ? (difficulty === 'hard' ? 5 : 3) : 
+                       gameResult === 'draw' ? 1 : 0;
     console.log(`Updating score for ${currentPlayer}: ${gameResult}, points to add: ${pointsToAdd}`);
 
     try {
