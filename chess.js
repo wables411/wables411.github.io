@@ -970,6 +970,148 @@ function evaluateEndgameStrategy(move) {
     return score;
 }
 
+function evaluateKingSafety(move) {
+    let score = 0;
+    const piece = move.piece.toLowerCase();
+    const color = getPieceColor(move.piece);
+    
+    if (piece === 'k') {
+        // Penalize king moving too far from edge in opening/middlegame
+        if (!isInEndgame()) {
+            const distance = distanceFromEdge(move.endRow, move.endCol);
+            score -= distance * 10;
+        }
+        
+        // Check if king is exposed to attacks
+        if (isSquareUnderAttack(move.endRow, move.endCol, color === 'blue' ? 'red' : 'blue')) {
+            score -= 20;
+        }
+    }
+    
+    return score;
+}
+
+// AI Helper Functions
+function isPawnPassed(row, col) {
+    const color = getPieceColor(window.board[row][col]);
+    const direction = color === 'blue' ? -1 : 1;
+    for (let r = row + direction; r >= 0 && r < BOARD_SIZE; r += direction) {
+        if (window.board[r][col] && getPieceColor(window.board[r][col]) !== color) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function hasConnectedPawn(row, col) {
+    const color = getPieceColor(window.board[row][col]);
+    const adjacentCols = [col - 1, col + 1];
+    for (let c of adjacentCols) {
+        if (isWithinBoard(row, c) && window.board[row][c] === (color === 'blue' ? 'p' : 'P')) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function hasPawnInFile(col) {
+    const color = window.currentPlayer;
+    let pawnCount = 0;
+    for (let r = 0; r < BOARD_SIZE; r++) {
+        if (window.board[r][col] === (color === 'blue' ? 'p' : 'P')) {
+            pawnCount++;
+            if (pawnCount > 1) return true;
+        }
+    }
+    return false;
+}
+
+function isKnightOutpost(row, col) {
+    const color = getPieceColor(window.board[row][col]);
+    const pawnColor = color === 'blue' ? 'P' : 'p';
+    const direction = color === 'blue' ? 1 : -1;
+    
+    // Check if supported by a pawn and not attackable by enemy pawns
+    const supportingPawn = isWithinBoard(row + direction, col) && 
+        window.board[row + direction][col] === (color === 'blue' ? 'p' : 'P');
+    const enemyPawnAttack = 
+        (isWithinBoard(row - direction, col - 1) && window.board[row - direction][col - 1] === pawnColor) ||
+        (isWithinBoard(row - direction, col + 1) && window.board[row - direction][col + 1] === pawnColor);
+    
+    return supportingPawn && !enemyPawnAttack;
+}
+
+function hasBishopPair() {
+    let blueBishops = 0, redBishops = 0;
+    for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+            if (window.board[r][c] === 'b') blueBishops++;
+            if (window.board[r][c] === 'B') redBishops++;
+        }
+    }
+    return (window.currentPlayer === 'blue' && blueBishops >= 2) || 
+           (window.currentPlayer === 'red' && redBishops >= 2);
+}
+
+function isFileOpen(col) {
+    for (let r = 0; r < BOARD_SIZE; r++) {
+        if (window.board[r][col] === 'p' || window.board[r][col] === 'P') {
+            return false;
+        }
+    }
+    return true;
+}
+
+function countQueenMobility(row, col) {
+    let moves = 0;
+    const directions = [
+        [-1, 0], [1, 0], [0, -1], [0, 1], // Rook-like
+        [-1, -1], [-1, 1], [1, -1], [1, 1] // Bishop-like
+    ];
+    
+    for (let [dr, dc] of directions) {
+        let r = row + dr, c = col + dc;
+        while (isWithinBoard(r, c)) {
+            moves++;
+            if (window.board[r][c]) break;
+            r += dr;
+            c += dc;
+        }
+    }
+    return moves;
+}
+
+function getMoveCount() {
+    return moveHistory.length;
+}
+
+function isKeySquare(row, col) {
+    // Define key squares (e.g., center squares)
+    const keySquares = [
+        [3, 3], [3, 4], [4, 3], [4, 4] // d4, d5, e4, e5
+    ];
+    return keySquares.some(([r, c]) => r === row && c === col);
+}
+
+function distanceFromEdge(row, col) {
+    const rowDist = Math.min(row, BOARD_SIZE - 1 - row);
+    const colDist = Math.min(col, BOARD_SIZE - 1 - col);
+    return Math.min(rowDist, colDist);
+}
+
+function isInEndgame() {
+    let pieceCount = 0;
+    for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+            const piece = window.board[r][c];
+            if (piece && piece.toLowerCase() !== 'k' && piece.toLowerCase() !== 'p') {
+                pieceCount++;
+            }
+        }
+    }
+    return pieceCount <= 6; // Arbitrary threshold for endgame
+}
+
 // UI Event Handlers
 function onPieceClick(event) {
     try {
@@ -1058,6 +1200,21 @@ function onSquareClick(row, col) {
     }
 }
 
+function addMoveToHistory(piece, startRow, startCol, endRow, endCol, capturedPiece) {
+    const move = {
+        piece,
+        startRow,
+        startCol,
+        endRow,
+        endCol,
+        capturedPiece,
+        notation: `${getPieceName(piece)}${coordsToAlgebraic(startRow, startCol)}${capturedPiece ? 'x' : '-'}${coordsToAlgebraic(endRow, endCol)}`
+    };
+    moveHistory.push(move);
+    lastMove = move; // Update lastMove for en passant
+    debug(`Move recorded: ${move.notation}`);
+}
+
 function executeMove(startRow, startCol, endRow, endCol, promotionPiece = null) {
     if (!canMakeMove(startRow, startCol, endRow, endCol)) return false;
 
@@ -1124,6 +1281,17 @@ function executeMove(startRow, startCol, endRow, endCol, promotionPiece = null) 
     }
 
     return true;
+}
+
+function endGame(winner) {
+    gameState = 'ended';
+    const message = winner === 'draw' ? "Game ended in a draw" : `${winner.charAt(0).toUpperCase() + winner.slice(1)} wins!`;
+    updateStatusDisplay(message);
+    debug(`Game ended: ${message}`);
+    const chessboard = document.getElementById('chessboard');
+    if (chessboard) {
+        chessboard.style.pointerEvents = 'none'; // Disable further moves
+    }
 }
 
 // Event Handlers and Game State Management
