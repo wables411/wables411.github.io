@@ -748,7 +748,7 @@ function selectBestMove() {
         }
     }
 
-    // Move ordering: prioritize captures and checks
+    // Move ordering
     legalMoves.sort((a, b) => {
         const aScore = (a.isCapture ? PIECE_VALUES[window.board[a.endRow][a.endCol]?.toLowerCase() || 0] : 0) + 
                        (wouldMovePutInCheck(a, 'blue') ? 100 : 0);
@@ -757,14 +757,14 @@ function selectBestMove() {
         return bScore - aScore;
     });
 
-    // Use minimax for hard mode, simple eval for easy mode
     if (gameDifficulty === 'hard') {
         let bestMove = null;
         let bestScore = -Infinity;
         const alpha = -Infinity, beta = Infinity;
 
         for (const move of legalMoves) {
-            const score = minimax(move, 1, false, alpha, beta); // Depth 1 (2-ply total)
+            const score = minimax(move, 1, false, alpha, beta); // Depth 1 (2-ply)
+            debug(`Evaluated move ${move.piece}${coordsToAlgebraic(move.startRow, move.startCol)}-${coordsToAlgebraic(move.endRow, move.endCol)}: score=${score}`);
             if (score > bestScore) {
                 bestScore = score;
                 bestMove = move;
@@ -772,7 +772,6 @@ function selectBestMove() {
         }
         return bestMove;
     } else {
-        // Easy mode: original logic
         legalMoves.forEach(move => {
             move.score = evaluateEasyMove(move);
         });
@@ -783,22 +782,24 @@ function selectBestMove() {
 }
 
 function minimax(move, depth, isMaximizing, alpha, beta) {
-    // Simulate move
     const originalPiece = window.board[move.endRow][move.endCol];
     window.board[move.endRow][move.endCol] = move.piece;
     window.board[move.startRow][move.startCol] = null;
 
     let score;
     if (depth === 0 || isCheckmate(isMaximizing ? 'blue' : 'red')) {
-        score = isMaximizing ? -evaluateBoard('red') : evaluateBoard('red');
+        score = evaluateBoard('red'); // Always from Red's perspective
     } else {
         const moves = getAllLegalMoves(isMaximizing ? 'blue' : 'red');
-        if (isMaximizing) {
+        if (moves.length === 0) {
+            score = isKingInCheck(isMaximizing ? 'blue' : 'red') ? 
+                    (isMaximizing ? -10000 : 10000) : 0; // Checkmate or stalemate
+        } else if (isMaximizing) {
             score = -Infinity;
             for (const nextMove of moves) {
                 score = Math.max(score, minimax(nextMove, depth - 1, false, alpha, beta));
                 alpha = Math.max(alpha, score);
-                if (beta <= alpha) break; // Alpha-beta pruning
+                if (beta <= alpha) break;
             }
         } else {
             score = Infinity;
@@ -810,15 +811,15 @@ function minimax(move, depth, isMaximizing, alpha, beta) {
         }
     }
 
-    // Undo move
     window.board[move.startRow][move.startCol] = move.piece;
     window.board[move.endRow][move.endCol] = originalPiece;
-
     return score;
 }
 
 function evaluateBoard(color) {
     let score = 0;
+    const opponentColor = color === 'red' ? 'blue' : 'red';
+
     for (let r = 0; r < BOARD_SIZE; r++) {
         for (let c = 0; c < BOARD_SIZE; c++) {
             const piece = window.board[r][c];
@@ -829,6 +830,11 @@ function evaluateBoard(color) {
             }
         }
     }
+
+    // Adjust for check/checkmate
+    if (isKingInCheck(color)) score -= 50;
+    if (isKingInCheck(opponentColor)) score += 50;
+
     return score;
 }
 
