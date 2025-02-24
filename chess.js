@@ -51,18 +51,18 @@ const pieceState = {
 
 // Piece images mapping
 const pieceImages = {
-    'R': 'images/redrook.png', 
-    'N': 'images/redknight.png', 
+    'R': 'images/redrook.png',
+    'N': 'images/redknight.png',
     'B': 'images/redbishop.png',
-    'Q': 'images/redqueen.png', 
-    'K': 'images/redking.png', 
+    'Q': 'images/redqueen.png',
+    'K': 'images/redking.png',
     'P': 'images/redpawn.png',
-    'r': 'images/bluerook.png', 
-    'n': 'images/blueknight.png', 
+    'r': 'images/bluerook.png',
+    'n': 'images/blueknight.png',
     'b': 'images/bluebishop.png',
-    'q': 'images/bluequeen.png', 
-    'k': 'images/blueking.png', 
-    'p': 'images/bluepawn.png'
+    'q': 'images/bluequeen.png',
+    'k': 'images/blueking.png',
+    'p': 'images/bluepawn.png' || 'images/default-piece.png'
 };
 
 // AI evaluation constants
@@ -237,8 +237,9 @@ function placePieces() {
                 debug(`Placing piece at [${row},${col}]: ${piece || 'null'}`);
                 if (piece) {
                     const pieceElement = createPieceElement(piece, row, col);
-                    pieceElement.style.opacity = '1'; // Force visibility
-                    pieceElement.style.display = 'block'; // Force display
+                    pieceElement.style.opacity = '1 !important'; // Force visibility
+                    pieceElement.style.display = 'block !important'; // Force display
+                    pieceElement.style.zIndex = '10 !important'; // Ensure above board
                     chessboard.appendChild(pieceElement);
                 }
             }
@@ -256,12 +257,20 @@ window.placePieces = placePieces;
 function createPieceElement(piece, row, col) {
     const pieceElement = document.createElement('div');
     pieceElement.className = 'piece';
-    pieceElement.style.backgroundImage = `url('${pieceImages[piece]}')`;
+    const imageUrl = pieceImages[piece];
+    if (!imageUrl) {
+        debug(`Warning: No image URL for piece ${piece} - using default`);
+    }
+    pieceElement.style.backgroundImage = `url('${imageUrl || 'images/default-piece.png'}')`;
     pieceElement.style.left = `${col * 12.5}%`;
     pieceElement.style.top = `${row * 12.5}%`;
+    pieceElement.style.opacity = '1 !important';
+    pieceElement.style.display = 'block !important';
+    pieceElement.style.zIndex = '10 !important';
     pieceElement.setAttribute('data-row', row);
     pieceElement.setAttribute('data-col', col);
     pieceElement.addEventListener('click', onPieceClick);
+    debug(`Created piece ${piece} at [${row},${col}] with image ${imageUrl || 'default'}`);
     return pieceElement;
 }
 
