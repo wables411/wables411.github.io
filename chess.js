@@ -1231,13 +1231,15 @@ function executeMove(startRow, startCol, endRow, endCol, promotionPiece = null) 
         } else if (isKingInCheck(window.currentPlayer)) {
             gameState = 'check';
             updateStatusDisplay(`${window.currentPlayer.charAt(0).toUpperCase() + window.currentPlayer.slice(1)} is in check!`);
+            if (currentGameMode === GameMode.AI && window.currentPlayer === 'red' && !window.isMultiplayerMode) {
+                setTimeout(makeAIMove, 500);
+            }
         } else {
             gameState = 'active';
             updateStatusDisplay(`${window.currentPlayer.charAt(0).toUpperCase() + window.currentPlayer.slice(1)}'s turn`);
-        }
-
-        if (currentGameMode === GameMode.AI && window.currentPlayer === 'red' && !window.isMultiplayerMode) {
-            setTimeout(makeAIMove, 500);
+            if (currentGameMode === GameMode.AI && window.currentPlayer === 'red' && !window.isMultiplayerMode) {
+                setTimeout(makeAIMove, 500);
+            }
         }
     });
 
