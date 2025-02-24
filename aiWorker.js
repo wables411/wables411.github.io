@@ -2,6 +2,11 @@
 self.onmessage = (e) => {
     const { board, difficulty, currentPlayer } = e.data;
 
+    // Constants from chess.js
+    const PIECE_VALUES = {
+        'p': 100, 'n': 320, 'b': 330, 'r': 500, 'q': 900, 'k': 20000
+    };
+
     function getPieceColor(piece) {
         if (!piece) return null;
         return piece === piece.toUpperCase() ? 'red' : 'blue';
@@ -158,6 +163,61 @@ self.onmessage = (e) => {
         return moves;
     }
 
+    function evaluateBoard(board, color) {
+        let score = 0;
+        const opponentColor = color === 'red' ? 'blue' : 'red';
+
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = board[r][c];
+                if (piece) {
+                    const value = PIECE_VALUES[piece.toLowerCase()] || 0;
+                    score += (getPieceColor(piece) === color) ? value : -value;
+                }
+            }
+        }
+
+        if (isKingInCheck(color, board)) score -= 50;
+        if (isKingInCheck(opponentColor, board)) score += 50;
+
+        return score;
+    }
+
+    function minimax(board, move, depth, isMaximizing, alpha, beta) {
+        const originalPiece = board[move.endRow][move.endCol];
+        board[move.endRow][move.endCol] = move.piece;
+        board[move.startRow][move.startCol] = null;
+
+        let score;
+        if (depth === 0) {
+            score = evaluateBoard(board, currentPlayer);
+        } else {
+            const moves = getAllLegalMoves(isMaximizing ? (currentPlayer === 'red' ? 'blue' : 'red') : currentPlayer, board);
+            if (moves.length === 0) {
+                score = isKingInCheck(isMaximizing ? (currentPlayer === 'red' ? 'blue' : 'red') : currentPlayer, board) ? 
+                        (isMaximizing ? -10000 : 10000) : 0;
+            } else if (isMaximizing) {
+                score = -Infinity;
+                for (const nextMove of moves) {
+                    score = Math.max(score, minimax(board, nextMove, depth - 1, false, alpha, beta));
+                    alpha = Math.max(alpha, score);
+                    if (beta <= alpha) break;
+                }
+            } else {
+                score = Infinity;
+                for (const nextMove of moves) {
+                    score = Math.min(score, minimax(board, nextMove, depth - 1, true, alpha, beta));
+                    beta = Math.min(beta, score);
+                    if (beta <= alpha) break;
+                }
+            }
+        }
+
+        board[move.startRow][move.startCol] = move.piece;
+        board[move.endRow][move.endCol] = originalPiece;
+        return score;
+    }
+
     const moves = getAllLegalMoves(currentPlayer, board);
     if (moves.length === 0) {
         self.postMessage(null);
@@ -167,19 +227,19 @@ self.onmessage = (e) => {
     let bestMove = null;
     if (difficulty === 'hard') {
         let bestScore = -Infinity;
-        const pieceValues = { 'p': 100, 'n': 320, 'b': 330, 'r': 500, 'q': 900, 'k': 20000 };
+        const alpha = -Infinity;
+        const beta = Infinity;
+
         for (const move of moves) {
-            let score = 0;
-            if (move.isCapture) {
-                score += pieceValues[board[move.endRow][move.endCol].toLowerCase()] || 0;
-            }
+            const tempBoard = board.map(row => [...row]); // Deep copy
+            const score = minimax(tempBoard, move, 2, false, alpha, beta); // Depth 2
             if (score > bestScore) {
                 bestScore = score;
                 bestMove = move;
             }
         }
     } else {
-        bestMove = moves[Math.floor(Math.random() * moves.length)];
+        bestMove = moves[Math.floor(Math.random() * moves.length)]; // Easy mode: random
     }
 
     self.postMessage(bestMove || moves[0]);
