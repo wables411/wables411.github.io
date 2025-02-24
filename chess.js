@@ -748,7 +748,6 @@ function selectBestMove() {
         }
     }
 
-    // Move ordering
     legalMoves.sort((a, b) => {
         const aScore = (a.isCapture ? PIECE_VALUES[window.board[a.endRow][a.endCol]?.toLowerCase() || 0] : 0) + 
                        (wouldMovePutInCheck(a, 'blue') ? 100 : 0);
@@ -763,12 +762,12 @@ function selectBestMove() {
         const alpha = -Infinity, beta = Infinity;
 
         for (const move of legalMoves) {
-            const score = minimax(move, 2, false, alpha, beta); // Depth 2 (3-ply)
+            const score = minimax(move, 3, false, alpha, beta); // Depth 3 (4-ply)
             debug(`Evaluated move ${move.piece}${coordsToAlgebraic(move.startRow, move.startCol)}-${coordsToAlgebraic(move.endRow, move.endCol)}: score=${score}`);
             if (score > bestScore) {
                 bestScore = score;
                 bestMove = move;
-                bestMove.score = score; // Store the score in the move object
+                bestMove.score = score;
             }
         }
         return bestMove;
@@ -832,20 +831,35 @@ function evaluateBoard(color) {
         }
     }
 
-    // Penalize opponent pawn promotion threats
+    // Stronger penalty for opponent pawn promotion threats
     for (let c = 0; c < BOARD_SIZE; c++) {
-        if (window.board[1][c] === 'p') score -= 100; // Blue pawn on 7th rank
-        if (window.board[6][c] === 'P') score += 100; // Red pawn on 2nd rank
+        if (window.board[0][c] === 'p') score -= 500; // Blue pawn on 8th rank
+        else if (window.board[1][c] === 'p') score -= 300; // 7th rank
+        else if (window.board[2][c] === 'p') score -= 150; // 6th rank
+        if (window.board[7][c] === 'P') score += 500; // Red pawn on 1st rank
+        else if (window.board[6][c] === 'P') score += 300; // 2nd rank
+        else if (window.board[5][c] === 'P') score += 150; // 3rd rank
     }
 
     // Adjust for check/checkmate
     if (isKingInCheck(color)) score -= 50;
     if (isKingInCheck(opponentColor)) score += 50;
 
-    // Endgame king activity
+    // Endgame: king activity and pawn attack bonus
     if (isInEndgame()) {
         const kingPos = findKing(color);
         score += (4 - Math.abs(kingPos.row - 3.5)) * 20 + (4 - Math.abs(kingPos.col - 3.5)) * 20;
+        // Bonus for attacking opponent pawns
+        for (let r = 0; r < BOARD_SIZE; r++) {
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                const piece = window.board[r][c];
+                if (piece && getPieceColor(piece) === opponentColor && piece.toLowerCase() === 'p') {
+                    if (canPieceMove(kingPos.piece, kingPos.row, kingPos.col, r, c, false)) {
+                        score += 50;
+                    }
+                }
+            }
+        }
     }
 
     return score;
