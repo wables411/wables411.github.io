@@ -62,7 +62,7 @@ const pieceImages = {
     'b': 'images/bluebishop.png',
     'q': 'images/bluequeen.png',
     'k': 'images/blueking.png',
-    'p': 'images/bluepawn.png' || 'images/default-piece.png'
+    'p': 'images/bluepawn.png'
 };
 
 // AI evaluation constants
@@ -132,12 +132,23 @@ const POSITION_WEIGHTS = {
 window.pieceImages = pieceImages;
 
 // Core utility functions
+let debugQueue = [];
+let debugTimeout = null;
+
 function debug(message) {
     console.log(message);
-    const debugElement = document.getElementById('debug');
-    if (debugElement) {
-        debugElement.innerHTML += message + '<br>';
-        debugElement.scrollTop = debugElement.scrollHeight;
+    debugQueue.push(message);
+
+    if (!debugTimeout) {
+        debugTimeout = setTimeout(() => {
+            const debugElement = document.getElementById('debug');
+            if (debugElement) {
+                debugElement.innerHTML += debugQueue.join('<br>');
+                debugElement.scrollTop = debugElement.scrollHeight;
+                debugQueue = [];
+            }
+            debugTimeout = null;
+        }, 100); // Batch every 100ms
     }
 }
 
@@ -172,7 +183,6 @@ function updateDifficultyButtons(difficultySelected) {
         }
         startBtn.disabled = !difficultySelected;
         
-        // Force button styles
         startBtn.style.cssText = startBtn.disabled ? 
             'opacity: 0.5; cursor: not-allowed; pointer-events: none;' :
             'opacity: 1; cursor: pointer; pointer-events: auto;';
@@ -228,40 +238,42 @@ function placePieces() {
         debug('Chessboard element not found');
         return;
     }
-    
-    try {
-        chessboard.innerHTML = '';
-        for (let row = 0; row < BOARD_SIZE; row++) {
-            for (let col = 0; col < BOARD_SIZE; col++) {
-                const piece = window.board[row][col];
-                debug(`Placing piece at [${row},${col}]: ${piece || 'null'}`);
-                if (piece) {
-                    const pieceElement = createPieceElement(piece, row, col);
-                    pieceElement.style.opacity = '1 !important'; // Force visibility
-                    pieceElement.style.display = 'block !important'; // Force display
-                    pieceElement.style.zIndex = '10 !important'; // Ensure above board
-                    chessboard.appendChild(pieceElement);
-                }
+
+    // Cache existing pieces
+    const existingPieces = new Map();
+    chessboard.querySelectorAll('.piece').forEach(piece => {
+        const row = parseInt(piece.getAttribute('data-row'));
+        const col = parseInt(piece.getAttribute('data-col'));
+        existingPieces.set(`${row},${col}`, piece);
+    });
+
+    // Update only changed positions
+    for (let row = 0; row < BOARD_SIZE; row++) {
+        for (let col = 0; col < BOARD_SIZE; col++) {
+            const piece = window.board[row][col];
+            const key = `${row},${col}`;
+            const existing = existingPieces.get(key);
+
+            if (piece && !existing) {
+                const pieceElement = createPieceElement(piece, row, col);
+                chessboard.appendChild(pieceElement);
+            } else if (!piece && existing) {
+                existing.remove();
+            } else if (piece && existing && existing.style.backgroundImage !== `url("${pieceImages[piece]}")`) {
+                existing.style.backgroundImage = `url("${pieceImages[piece]}")`;
             }
         }
-        debug('Pieces placed successfully');
-    } catch (error) {
-        console.error('Error in placePieces:', error);
-        debug(`Error placing pieces: ${error.message}`);
     }
+    debug('Pieces updated successfully');
 }
 
-// Make placePieces globally available
 window.placePieces = placePieces;
 
 function createPieceElement(piece, row, col) {
     const pieceElement = document.createElement('div');
     pieceElement.className = 'piece';
-    const imageUrl = pieceImages[piece];
-    if (!imageUrl) {
-        debug(`Warning: No image URL for piece ${piece} - using default`);
-    }
-    pieceElement.style.backgroundImage = `url('${imageUrl || 'images/default-piece.png'}')`;
+    const imageUrl = pieceImages[piece] || 'images/default-piece.png';
+    pieceElement.style.backgroundImage = `url('${imageUrl}')`;
     pieceElement.style.left = `${col * 12.5}%`;
     pieceElement.style.top = `${row * 12.5}%`;
     pieceElement.style.opacity = '1 !important';
@@ -270,16 +282,14 @@ function createPieceElement(piece, row, col) {
     pieceElement.setAttribute('data-row', row);
     pieceElement.setAttribute('data-col', col);
     pieceElement.addEventListener('click', onPieceClick);
-    debug(`Created piece ${piece} at [${row},${col}] with image ${imageUrl || 'default'}`);
+    debug(`Created piece ${piece} at [${row},${col}] with image ${imageUrl}`);
     return pieceElement;
 }
 
 function createBoard() {
     try {
         const chessboard = document.getElementById('chessboard');
-        if (!chessboard) {
-            throw new Error("Chessboard element not found");
-        }
+        if (!chessboard) throw new Error("Chessboard element not found");
         const randomBoard = selectRandomChessboard();
         chessboard.style.backgroundImage = `url('${randomBoard}')`;
         debug(`Selected board: ${randomBoard}`);
@@ -296,7 +306,6 @@ function selectRandomChessboard() {
     return `images/chessboard${boardNumber}.png`;
 }
 
-// Make core board functions globally available
 window.createBoard = createBoard;
 window.createPieceElement = createPieceElement;
 window.selectRandomChessboard = selectRandomChessboard;
@@ -308,9 +317,7 @@ function highlightSquare(row, col, isCapture = false) {
     square.style.top = `${row * 12.5}%`;
     square.setAttribute('data-row', row);
     square.setAttribute('data-col', col);
-    
     square.addEventListener('click', () => onSquareClick(row, col));
-    
     document.getElementById('chessboard').appendChild(square);
 }
 
@@ -352,8 +359,6 @@ function promptPawnPromotion(startRow, startCol, endRow, endCol) {
     const dialog = document.createElement('div');
     dialog.className = 'promotion-dialog';
     dialog.style.position = 'absolute';
-    
-    // Position dialog based on promotion square
     dialog.style.top = `${endRow * 12.5}%`;
     dialog.style.left = `${endCol * 12.5}%`;
     
@@ -365,12 +370,10 @@ function promptPawnPromotion(startRow, startCol, endRow, endCol) {
         pieceButton.className = 'promotion-piece';
         const promotedPiece = currentColor === 'blue' ? piece : piece.toUpperCase();
         pieceButton.style.backgroundImage = `url('${pieceImages[promotedPiece]}')`;
-        
         pieceButton.onclick = () => {
             executeMove(startRow, startCol, endRow, endCol, promotedPiece);
             dialog.remove();
         };
-        
         dialog.appendChild(pieceButton);
     });
     
@@ -383,14 +386,10 @@ function canMakeMove(startRow, startCol, endRow, endCol) {
     if (!piece) return false;
     
     const color = getPieceColor(piece);
-    
-    // First check if it's this player's turn
     if (color !== window.currentPlayer) return false;
     
-    // Then check if it's their piece in multiplayer
     if (window.isMultiplayerMode) {
-        if (color !== window.playerColor) return false;
-        if (window.currentPlayer !== window.playerColor) return false;
+        if (color !== window.playerColor || window.currentPlayer !== window.playerColor) return false;
     }
     
     return canPieceMove(piece, startRow, startCol, endRow, endCol);
@@ -402,40 +401,23 @@ function canPieceMove(piece, startRow, startCol, endRow, endCol, checkForCheck =
     const pieceType = piece.toLowerCase();
     const color = getPieceColor(piece);
     
-    // Basic validation
-    if (!isWithinBoard(endRow, endCol)) return false;
-    if (startRow === endRow && startCol === endCol) return false;
+    if (!isWithinBoard(endRow, endCol) || (startRow === endRow && startCol === endCol)) return false;
     
     const targetPiece = window.board[endRow][endCol];
     if (targetPiece && getPieceColor(targetPiece) === color) return false;
 
     let isValid = false;
     switch (pieceType) {
-        case 'p':
-            isValid = isValidPawnMove(color, startRow, startCol, endRow, endCol);
-            break;
-        case 'r':
-            isValid = isValidRookMove(startRow, startCol, endRow, endCol);
-            break;
-        case 'n':
-            isValid = isValidKnightMove(startRow, startCol, endRow, endCol);
-            break;
-        case 'b':
-            isValid = isValidBishopMove(startRow, startCol, endRow, endCol);
-            break;
-        case 'q':
-            isValid = isValidQueenMove(startRow, startCol, endRow, endCol);
-            break;
-        case 'k':
-            isValid = isValidKingMove(color, startRow, startCol, endRow, endCol);
-            break;
+        case 'p': isValid = isValidPawnMove(color, startRow, startCol, endRow, endCol); break;
+        case 'r': isValid = isValidRookMove(startRow, startCol, endRow, endCol); break;
+        case 'n': isValid = isValidKnightMove(startRow, startCol, endRow, endCol); break;
+        case 'b': isValid = isValidBishopMove(startRow, startCol, endRow, endCol); break;
+        case 'q': isValid = isValidQueenMove(startRow, startCol, endRow, endCol); break;
+        case 'k': isValid = isValidKingMove(color, startRow, startCol, endRow, endCol); break;
     }
 
     if (!isValid) return false;
-    
-    if (checkForCheck && wouldMoveExposeCheck(startRow, startCol, endRow, endCol, color)) {
-        return false;
-    }
+    if (checkForCheck && wouldMoveExposeCheck(startRow, startCol, endRow, endCol, color)) return false;
 
     return true;
 }
@@ -443,48 +425,27 @@ function canPieceMove(piece, startRow, startCol, endRow, endCol, checkForCheck =
 function isValidPawnMove(color, startRow, startCol, endRow, endCol) {
     const direction = color === 'blue' ? -1 : 1;
     const startingRow = color === 'blue' ? 6 : 1;
-    
     const rowDiff = endRow - startRow;
     const colDiff = endCol - startCol;
     
-    // Captures (including en passant)
     if (Math.abs(colDiff) === 1) {
         if (rowDiff !== direction) return false;
-        
         const targetPiece = window.board[endRow][endCol];
-        
-        // Normal capture
-        if (targetPiece && getPieceColor(targetPiece) !== color) {
-            return true;
-        }
-        
-        // En passant
+        if (targetPiece && getPieceColor(targetPiece) !== color) return true;
         if (!targetPiece && lastMove && 
             lastMove.piece.toLowerCase() === 'p' &&
             lastMove.endRow === startRow &&
             lastMove.endCol === endCol &&
             Math.abs(lastMove.startRow - lastMove.endRow) === 2) {
-            window.board[startRow][endCol] = null; // Remove captured pawn
+            window.board[startRow][endCol] = null;
             return true;
         }
-        
         return false;
     }
     
-    // Forward moves
     if (colDiff !== 0 || window.board[endRow][endCol]) return false;
-    
-    // Single square forward
-    if (rowDiff === direction) {
-        return true;
-    }
-    
-    // Initial two-square move
-    if (startRow === startingRow && 
-        rowDiff === 2 * direction && 
-        !window.board[startRow + direction][startCol]) {
-        return true;
-    }
+    if (rowDiff === direction) return true;
+    if (startRow === startingRow && rowDiff === 2 * direction && !window.board[startRow + direction][startCol]) return true;
     
     return false;
 }
@@ -518,12 +479,8 @@ function isValidKingMove(color, startRow, startCol, endRow, endCol) {
     const rowDiff = Math.abs(endRow - startRow);
     const colDiff = Math.abs(endCol - startCol);
     
-    // Normal king move
-    if (rowDiff <= 1 && colDiff <= 1) {
-        return true;
-    }
+    if (rowDiff <= 1 && colDiff <= 1) return true;
     
-    // Castling
     if (rowDiff === 0 && colDiff === 2 && !isKingInCheck(color)) {
         const row = color === 'blue' ? 7 : 0;
         if (startRow !== row || startCol !== 4) return false;
@@ -531,26 +488,18 @@ function isValidKingMove(color, startRow, startCol, endRow, endCol) {
         if (color === 'blue' && pieceState.blueKingMoved) return false;
         if (color === 'red' && pieceState.redKingMoved) return false;
         
-        // Kingside castling
         if (endCol === 6) {
             if ((color === 'blue' && pieceState.blueRooksMove.right) ||
                 (color === 'red' && pieceState.redRooksMove.right)) return false;
-                
-            if (!isPathClear(row, 4, row, 7) || 
-                window.board[row][7] !== (color === 'blue' ? 'r' : 'R')) return false;
-                
+            if (!isPathClear(row, 4, row, 7) || window.board[row][7] !== (color === 'blue' ? 'r' : 'R')) return false;
             return !isSquareUnderAttack(row, 5, color === 'blue' ? 'red' : 'blue') &&
                    !isSquareUnderAttack(row, 6, color === 'blue' ? 'red' : 'blue');
         }
         
-        // Queenside castling
         if (endCol === 2) {
             if ((color === 'blue' && pieceState.blueRooksMove.left) ||
                 (color === 'red' && pieceState.redRooksMove.left)) return false;
-                
-            if (!isPathClear(row, 0, row, 4) || 
-                window.board[row][0] !== (color === 'blue' ? 'r' : 'R')) return false;
-                
+            if (!isPathClear(row, 0, row, 4) || window.board[row][0] !== (color === 'blue' ? 'r' : 'R')) return false;
             return !isSquareUnderAttack(row, 2, color === 'blue' ? 'red' : 'blue') &&
                    !isSquareUnderAttack(row, 3, color === 'blue' ? 'red' : 'blue');
         }
@@ -562,7 +511,6 @@ function isValidKingMove(color, startRow, startCol, endRow, endCol) {
 function isPathClear(startRow, startCol, endRow, endCol) {
     const rowStep = Math.sign(endRow - startRow) || 0;
     const colStep = Math.sign(endCol - startCol) || 0;
-    
     let currentRow = startRow + rowStep;
     let currentCol = startCol + colStep;
     
@@ -571,11 +519,9 @@ function isPathClear(startRow, startCol, endRow, endCol) {
         currentRow += rowStep;
         currentCol += colStep;
     }
-    
     return true;
 }
 
-// Make move validation functions globally available
 window.canMakeMove = canMakeMove;
 window.isValidPawnMove = isValidPawnMove;
 window.isValidRookMove = isValidRookMove;
@@ -598,19 +544,13 @@ function isSquareUnderAttack(row, col, attackingColor) {
             for (let c = 0; c < BOARD_SIZE; c++) {
                 const piece = window.board[r][c];
                 if (piece && getPieceColor(piece) === attackingColor) {
-                    // Special case for kings to prevent recursion
                     if (piece.toLowerCase() === 'k') {
                         const rowDiff = Math.abs(row - r);
                         const colDiff = Math.abs(col - c);
-                        if (rowDiff <= 1 && colDiff <= 1) {
-                            return true;
-                        }
+                        if (rowDiff <= 1 && colDiff <= 1) return true;
                         continue;
                     }
-                    
-                    if (canPieceMove(piece, r, c, row, col, false)) {
-                        return true;
-                    }
+                    if (canPieceMove(piece, r, c, row, col, false)) return true;
                 }
             }
         }
@@ -624,7 +564,6 @@ function isKingInCheck(color) {
     const kingPiece = color === 'blue' ? 'k' : 'K';
     let kingRow, kingCol;
     
-    // Find king position
     for (let row = 0; row < BOARD_SIZE; row++) {
         for (let col = 0; col < BOARD_SIZE; col++) {
             if (window.board[row][col] === kingPiece) {
@@ -640,18 +579,13 @@ function isKingInCheck(color) {
 }
 
 function wouldMoveExposeCheck(startRow, startCol, endRow, endCol, color) {
-    // Make temporary move
     const originalPiece = window.board[endRow][endCol];
     const movingPiece = window.board[startRow][startCol];
     window.board[endRow][endCol] = movingPiece;
     window.board[startRow][startCol] = null;
-    
     const inCheck = isKingInCheck(color);
-    
-    // Restore board
     window.board[startRow][startCol] = movingPiece;
     window.board[endRow][endCol] = originalPiece;
-    
     return inCheck;
 }
 
@@ -672,9 +606,7 @@ function hasLegalMoves(color) {
             if (piece && getPieceColor(piece) === color) {
                 for (let endRow = 0; endRow < BOARD_SIZE; endRow++) {
                     for (let endCol = 0; endCol < BOARD_SIZE; endCol++) {
-                        if (canPieceMove(piece, startRow, startCol, endRow, endCol)) {
-                            return true;
-                        }
+                        if (canPieceMove(piece, startRow, startCol, endRow, endCol)) return true;
                     }
                 }
             }
@@ -710,7 +642,6 @@ function getAllLegalMoves(color) {
     return moves;
 }
 
-// Make check detection functions globally available
 window.isSquareUnderAttack = isSquareUnderAttack;
 window.isKingInCheck = isKingInCheck;
 window.wouldMoveExposeCheck = wouldMoveExposeCheck;
@@ -726,29 +657,41 @@ function makeAIMove() {
         debug('Conditions not met for AI move');
         return;
     }
-    
+
     const inCheck = isKingInCheck('red');
     debug(`AI thinking... (in check: ${inCheck}, difficulty: ${gameDifficulty})`);
-    
-    const move = selectBestMove();
-    if (move) {
-        debug('AI selected move: ' + JSON.stringify(move));
-        setTimeout(() => {
-            executeMove(move.startRow, move.startCol, move.endRow, move.endCol, move.promotionPiece);
-        }, 500);
-    } else {
-        debug('No legal moves available for AI');
-        if (isCheckmate('red')) {
-            endGame('blue');
-        } else if (isStalemate('red')) {
-            endGame('draw');
+
+    const worker = new Worker('aiWorker.js');
+    worker.postMessage({
+        board: JSON.parse(JSON.stringify(window.board)),
+        difficulty: gameDifficulty,
+        currentPlayer: 'red'
+    });
+
+    worker.onmessage = (e) => {
+        const move = e.data;
+        if (move) {
+            debug('AI selected move: ' + JSON.stringify(move));
+            setTimeout(() => {
+                executeMove(move.startRow, move.startCol, move.endRow, move.endCol, move.promotionPiece);
+            }, 500);
+        } else {
+            debug('No legal moves available for AI');
+            if (isCheckmate('red')) endGame('blue');
+            else if (isStalemate('red')) endGame('draw');
         }
-    }
+        worker.terminate();
+    };
+
+    worker.onerror = (error) => {
+        debug('AI Worker error: ' + error.message);
+        console.error('Worker error:', error);
+    };
 }
 
 window.makeAIMove = makeAIMove;
 
-function selectBestMove() {
+function selectBestMove() { // Kept for reference, but not used with Web Worker
     const legalMoves = getAllLegalMoves('red');
     if (legalMoves.length === 0) return null;
 
@@ -773,7 +716,7 @@ function selectBestMove() {
         const alpha = -Infinity, beta = Infinity;
 
         for (const move of legalMoves) {
-            const score = minimax(move, 3, false, alpha, beta); // Depth 3 (4-ply)
+            const score = minimax(move, 3, false, alpha, beta);
             debug(`Evaluated move ${move.piece}${coordsToAlgebraic(move.startRow, move.startCol)}-${coordsToAlgebraic(move.endRow, move.endCol)}: score=${score}`);
             if (score > bestScore) {
                 bestScore = score;
@@ -792,7 +735,7 @@ function selectBestMove() {
     }
 }
 
-function minimax(move, depth, isMaximizing, alpha, beta) {
+function minimax(move, depth, isMaximizing, alpha, beta) { // Kept for reference
     const originalPiece = window.board[move.endRow][move.endCol];
     window.board[move.endRow][move.endCol] = move.piece;
     window.board[move.startRow][move.startCol] = null;
@@ -827,7 +770,7 @@ function minimax(move, depth, isMaximizing, alpha, beta) {
     return score;
 }
 
-function evaluateBoard(color) {
+function evaluateBoard(color) { // Kept for reference
     let score = 0;
     const opponentColor = color === 'red' ? 'blue' : 'red';
 
@@ -842,25 +785,21 @@ function evaluateBoard(color) {
         }
     }
 
-    // Stronger penalty for opponent pawn promotion threats
     for (let c = 0; c < BOARD_SIZE; c++) {
-        if (window.board[0][c] === 'p') score -= 500; // Blue pawn on 8th rank
-        else if (window.board[1][c] === 'p') score -= 300; // 7th rank
-        else if (window.board[2][c] === 'p') score -= 150; // 6th rank
-        if (window.board[7][c] === 'P') score += 500; // Red pawn on 1st rank
-        else if (window.board[6][c] === 'P') score += 300; // 2nd rank
-        else if (window.board[5][c] === 'P') score += 150; // 3rd rank
+        if (window.board[0][c] === 'p') score -= 500;
+        else if (window.board[1][c] === 'p') score -= 300;
+        else if (window.board[2][c] === 'p') score -= 150;
+        if (window.board[7][c] === 'P') score += 500;
+        else if (window.board[6][c] === 'P') score += 300;
+        else if (window.board[5][c] === 'P') score += 150;
     }
 
-    // Adjust for check/checkmate
     if (isKingInCheck(color)) score -= 50;
     if (isKingInCheck(opponentColor)) score += 50;
 
-    // Endgame: king activity and pawn attack bonus
     if (isInEndgame()) {
         const kingPos = findKing(color);
         score += (4 - Math.abs(kingPos.row - 3.5)) * 20 + (4 - Math.abs(kingPos.col - 3.5)) * 20;
-        // Bonus for attacking opponent pawns
         for (let r = 0; r < BOARD_SIZE; r++) {
             for (let c = 0; c < BOARD_SIZE; c++) {
                 const piece = window.board[r][c];
@@ -876,7 +815,6 @@ function evaluateBoard(color) {
     return score;
 }
 
-// Helper to find king position
 function findKing(color) {
     const kingPiece = color === 'blue' ? 'k' : 'K';
     for (let r = 0; r < BOARD_SIZE; r++) {
@@ -884,10 +822,10 @@ function findKing(color) {
             if (window.board[r][c] === kingPiece) return { row: r, col: c };
         }
     }
-    return { row: 0, col: 0 }; // Fallback (shouldn’t happen)
+    return { row: 0, col: 0 };
 }
 
-function doesMoveEscapeCheck(move) {
+function doesMoveEscapeCheck(move) { // Kept for reference
     const originalPiece = window.board[move.endRow][move.endCol];
     const movingPiece = window.board[move.startRow][move.startCol];
     window.board[move.endRow][move.endCol] = movingPiece;
@@ -898,36 +836,23 @@ function doesMoveEscapeCheck(move) {
     return !stillInCheck;
 }
 
-function evaluateEasyMove(move) {
+function evaluateEasyMove(move) { // Kept for reference
     let score = 0;
-    
-    if (move.isCapture) {
-        const capturedPiece = window.board[move.endRow][move.endCol];
-        score += PIECE_VALUES[capturedPiece.toLowerCase()] * 2;
-    }
-    
+    if (move.isCapture) score += PIECE_VALUES[window.board[move.endRow][move.endCol].toLowerCase()] * 2;
     if (move.piece.toLowerCase() === 'p') {
         score += (7 - move.endRow) * 10;
-        if (move.endCol >= 3 && move.endCol <= 4) {
-            score += 20;
-        }
+        if (move.endCol >= 3 && move.endCol <= 4) score += 20;
     }
-    
-    if (move.startRow <= 1 && move.endRow > 1) {
-        score += 15;
-    }
-    
+    if (move.startRow <= 1 && move.endRow > 1) score += 15;
     score += Math.random() * 50;
-    
     return score;
 }
 
-function evaluateHardMove(move) {
+function evaluateHardMove(move) { // Kept for reference
     let score = 0;
     const piece = move.piece.toLowerCase();
     const color = getPieceColor(move.piece);
     
-    // Material evaluation
     if (move.isCapture) {
         const capturedPiece = window.board[move.endRow][move.endCol].toLowerCase();
         score += PIECE_VALUES[capturedPiece] * 1.5;
@@ -936,7 +861,6 @@ function evaluateHardMove(move) {
         }
     }
 
-    // Position evaluation
     const pieceType = piece === 'k' ? 'king' : piece === 'q' ? 'queen' : 
                      piece === 'b' ? 'bishop' : piece === 'n' ? 'knight' : 
                      piece === 'p' ? 'pawn' : null;
@@ -944,20 +868,17 @@ function evaluateHardMove(move) {
         score += POSITION_WEIGHTS[pieceType][move.endRow][move.endCol];
     }
 
-    // Enhanced strategy evaluations
     score += evaluatePieceStrategy(move);
     score += evaluatePositionalStrategy(move);
     score += evaluateKingSafety(move);
-    score += evaluateThreats(move); // New: Reward threats to opponent pieces
+    score += evaluateThreats(move);
 
-    if (isInEndgame()) {
-        score += evaluateEndgameStrategy(move);
-    }
+    if (isInEndgame()) score += evaluateEndgameStrategy(move);
 
     return score;
 }
 
-function evaluatePieceStrategy(move) {
+function evaluatePieceStrategy(move) { // Kept for reference
     let score = 0;
     const piece = move.piece.toLowerCase();
 
@@ -992,7 +913,7 @@ function evaluatePieceStrategy(move) {
     return score;
 }
 
-function evaluatePositionalStrategy(move) {
+function evaluatePositionalStrategy(move) { // Kept for reference
     let score = 0;
     if (move.endRow >= 2 && move.endRow <= 5 && move.endCol >= 2 && move.endCol <= 5) score += 30;
     if (move.startRow <= 1 && move.endRow > 1) score += 20;
@@ -1000,59 +921,49 @@ function evaluatePositionalStrategy(move) {
     return score;
 }
 
-function evaluateEndgameStrategy(move) {
+function evaluateEndgameStrategy(move) { // Kept for reference
     let score = 0;
     const piece = move.piece.toLowerCase();
     if (piece === 'k') {
         score += (4 - Math.abs(move.endRow - 3.5)) * 10;
         score += (4 - Math.abs(move.endCol - 3.5)) * 10;
     }
-    if (piece === 'p' && isPawnPassed(move.endRow, move.endCol)) {
-        score += (7 - move.endRow) * 20;
-    }
+    if (piece === 'p' && isPawnPassed(move.endRow, move.endCol)) score += (7 - move.endRow) * 20;
     return score;
 }
 
-function evaluateKingSafety(move) {
+function evaluateKingSafety(move) { // Kept for reference
     let score = 0;
     const piece = move.piece.toLowerCase();
     const color = getPieceColor(move.piece);
     
     if (piece === 'k') {
-        if (!isInEndgame()) {
-            const distance = distanceFromEdge(move.endRow, move.endCol);
-            score -= distance * 10;
-        }
-        if (isSquareUnderAttack(move.endRow, move.endCol, color === 'blue' ? 'red' : 'blue')) {
-            score -= 20;
-        }
+        if (!isInEndgame()) score -= distanceFromEdge(move.endRow, move.endCol) * 10;
+        if (isSquareUnderAttack(move.endRow, move.endCol, color === 'blue' ? 'red' : 'blue')) score -= 20;
     }
     return score;
 }
 
-function evaluateThreats(move) {
+function evaluateThreats(move) { // Kept for reference
     let score = 0;
     const color = getPieceColor(move.piece);
     const opponentColor = color === 'blue' ? 'red' : 'blue';
     const endRow = move.endRow, endCol = move.endCol;
 
-    // Simulate move temporarily
     const originalPiece = window.board[endRow][endCol];
     window.board[endRow][endCol] = move.piece;
     window.board[move.startRow][move.startCol] = null;
 
-    // Check threats to opponent pieces
     for (let r = 0; r < BOARD_SIZE; r++) {
         for (let c = 0; c < BOARD_SIZE; c++) {
             const target = window.board[r][c];
             if (target && getPieceColor(target) === opponentColor && 
                 canPieceMove(move.piece, endRow, endCol, r, c, false)) {
-                score += PIECE_VALUES[target.toLowerCase()] * 0.5; // Half value for threat
+                score += PIECE_VALUES[target.toLowerCase()] * 0.5;
             }
         }
     }
 
-    // Restore board
     window.board[move.startRow][move.startCol] = move.piece;
     window.board[endRow][endCol] = originalPiece;
 
@@ -1064,9 +975,7 @@ function isPawnPassed(row, col) {
     const color = getPieceColor(window.board[row][col]);
     const direction = color === 'blue' ? -1 : 1;
     for (let r = row + direction; r >= 0 && r < BOARD_SIZE; r += direction) {
-        if (window.board[r][col] && getPieceColor(window.board[r][col]) !== color) {
-            return false;
-        }
+        if (window.board[r][col] && getPieceColor(window.board[r][col]) !== color) return false;
     }
     return true;
 }
@@ -1075,9 +984,7 @@ function hasConnectedPawn(row, col) {
     const color = getPieceColor(window.board[row][col]);
     const adjacentCols = [col - 1, col + 1];
     for (let c of adjacentCols) {
-        if (isWithinBoard(row, c) && window.board[row][c] === (color === 'blue' ? 'p' : 'P')) {
-            return true;
-        }
+        if (isWithinBoard(row, c) && window.board[row][c] === (color === 'blue' ? 'p' : 'P')) return true;
     }
     return false;
 }
@@ -1122,9 +1029,7 @@ function hasBishopPair() {
 
 function isFileOpen(col) {
     for (let r = 0; r < BOARD_SIZE; r++) {
-        if (window.board[r][col] === 'p' || window.board[r][col] === 'P') {
-            return false;
-        }
+        if (window.board[r][col] === 'p' || window.board[r][col] === 'P') return false;
     }
     return true;
 }
@@ -1132,8 +1037,8 @@ function isFileOpen(col) {
 function countQueenMobility(row, col) {
     let moves = 0;
     const directions = [
-        [-1, 0], [1, 0], [0, -1], [0, 1], // Rook-like
-        [-1, -1], [-1, 1], [1, -1], [1, 1] // Bishop-like
+        [-1, 0], [1, 0], [0, -1], [0, 1],
+        [-1, -1], [-1, 1], [1, -1], [1, 1]
     ];
     
     for (let [dr, dc] of directions) {
@@ -1153,9 +1058,7 @@ function getMoveCount() {
 }
 
 function isKeySquare(row, col) {
-    const keySquares = [
-        [3, 3], [3, 4], [4, 3], [4, 4] // d4, d5, e4, e5
-    ];
+    const keySquares = [[3, 3], [3, 4], [4, 3], [4, 4]];
     return keySquares.some(([r, c]) => r === row && c === col);
 }
 
@@ -1170,15 +1073,13 @@ function isInEndgame() {
     for (let r = 0; r < BOARD_SIZE; r++) {
         for (let c = 0; c < BOARD_SIZE; c++) {
             const piece = window.board[r][c];
-            if (piece && piece.toLowerCase() !== 'k' && piece.toLowerCase() !== 'p') {
-                pieceCount++;
-            }
+            if (piece && piece.toLowerCase() !== 'k' && piece.toLowerCase() !== 'p') pieceCount++;
         }
     }
     return pieceCount <= 6;
 }
 
-function wouldMovePutInCheck(move, opponentColor) {
+function wouldMovePutInCheck(move, opponentColor) { // Kept for reference
     const originalPiece = window.board[move.endRow][move.endCol];
     window.board[move.endRow][move.endCol] = move.piece;
     window.board[move.startRow][move.startCol] = null;
@@ -1192,13 +1093,8 @@ function wouldMovePutInCheck(move, opponentColor) {
 function onPieceClick(event) {
     try {
         if (!checkGameAccess()) return;
-        
-        if (window.isMultiplayerMode && window.multiplayerManager) {
-            return; // Let multiplayer manager handle the click
-        } else if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') {
-            return;
-        }
-        
+        if (window.isMultiplayerMode && window.multiplayerManager) return;
+        if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') return;
         if (gameState !== 'active' && gameState !== 'check') return;
         
         const clickedPiece = event.target;
@@ -1241,12 +1137,8 @@ function onPieceClick(event) {
 
 function onSquareClick(row, col) {
     try {
-        if (window.isMultiplayerMode && window.multiplayerManager) {
-            return; // Let multiplayer manager handle clicks
-        } else if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') {
-            return;
-        }
-        
+        if (window.isMultiplayerMode && window.multiplayerManager) return;
+        if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') return;
         if (gameState !== 'active' && gameState !== 'check') return;
         
         if (selectedPiece) {
@@ -1303,10 +1195,10 @@ function executeMove(startRow, startCol, endRow, endCol, promotionPiece = null) 
 
     if (piece.toLowerCase() === 'k' && Math.abs(endCol - startCol) === 2) {
         const row = color === 'blue' ? 7 : 0;
-        if (endCol === 6) { // Kingside
+        if (endCol === 6) {
             window.board[row][5] = window.board[row][7];
             window.board[row][7] = null;
-        } else if (endCol === 2) { // Queenside
+        } else if (endCol === 2) {
             window.board[row][3] = window.board[row][0];
             window.board[row][0] = null;
         }
@@ -1327,24 +1219,27 @@ function executeMove(startRow, startCol, endRow, endCol, promotionPiece = null) 
     }
 
     addMoveToHistory(piece, startRow, startCol, endRow, endCol, capturedPiece);
-    window.placePieces();
-    window.currentPlayer = window.currentPlayer === 'blue' ? 'red' : 'blue';
     
-    if (isCheckmate(window.currentPlayer)) {
-        endGame(color);
-    } else if (isStalemate(window.currentPlayer)) {
-        endGame('draw');
-    } else if (isKingInCheck(window.currentPlayer)) {
-        gameState = 'check';
-        updateStatusDisplay(`${window.currentPlayer.charAt(0).toUpperCase() + window.currentPlayer.slice(1)} is in check!`);
-    } else {
-        gameState = 'active';
-        updateStatusDisplay(`${window.currentPlayer.charAt(0).toUpperCase() + window.currentPlayer.slice(1)}'s turn`);
-    }
+    requestAnimationFrame(() => {
+        window.placePieces();
+        window.currentPlayer = window.currentPlayer === 'blue' ? 'red' : 'blue';
+        
+        if (isCheckmate(window.currentPlayer)) {
+            endGame(color);
+        } else if (isStalemate(window.currentPlayer)) {
+            endGame('draw');
+        } else if (isKingInCheck(window.currentPlayer)) {
+            gameState = 'check';
+            updateStatusDisplay(`${window.currentPlayer.charAt(0).toUpperCase() + window.currentPlayer.slice(1)} is in check!`);
+        } else {
+            gameState = 'active';
+            updateStatusDisplay(`${window.currentPlayer.charAt(0).toUpperCase() + window.currentPlayer.slice(1)}'s turn`);
+        }
 
-    if (currentGameMode === GameMode.AI && window.currentPlayer === 'red' && !window.isMultiplayerMode) {
-        setTimeout(makeAIMove, 500);
-    }
+        if (currentGameMode === GameMode.AI && window.currentPlayer === 'red' && !window.isMultiplayerMode) {
+            setTimeout(makeAIMove, 500);
+        }
+    });
 
     return true;
 }
@@ -1355,9 +1250,7 @@ function endGame(winner) {
     updateStatusDisplay(message);
     debug(`Game ended: ${message}`);
     const chessboard = document.getElementById('chessboard');
-    if (chessboard) {
-        chessboard.style.pointerEvents = 'none';
-    }
+    if (chessboard) chessboard.style.pointerEvents = 'none';
     
     debug(`Notifying leaderboard: winner=${winner}, mode=${currentGameMode}, difficulty=${gameDifficulty}`);
     if (typeof window.updateGameResult === 'function') {
@@ -1492,9 +1385,7 @@ function setupModeButtons() {
 function startGame() {
     try {
         debug("\n----- Starting new game -----");
-        if (!checkGameAccess()) {
-            return;
-        }
+        if (!checkGameAccess()) return;
         
         if (!isGameInitialized) {
             resetGame();
@@ -1502,9 +1393,7 @@ function startGame() {
             isGameInitialized = true;
         }
         
-        if (window.isMultiplayerMode) {
-            return;
-        }
+        if (window.isMultiplayerMode) return;
         
         window.board = JSON.parse(JSON.stringify(initialBoard));
         window.currentPlayer = 'blue';
@@ -1527,20 +1416,15 @@ function startGame() {
         debug(`New game started - ${gameDifficulty} mode`);
         
         const moveHistoryElement = document.getElementById('move-history');
-        if (moveHistoryElement) {
-            moveHistoryElement.innerHTML = '';
-        }
-
+        if (moveHistoryElement) moveHistoryElement.innerHTML = '';
+        
         const chessboard = document.getElementById('chessboard');
-        if (chessboard) {
-            chessboard.style.pointerEvents = 'auto';
-        }
+        if (chessboard) chessboard.style.pointerEvents = 'auto';
         
         const elements = initializeElements();
         if (elements.buttons.startBtn) {
             elements.buttons.startBtn.style.cssText = 'opacity: 1; cursor: pointer; pointer-events: auto;';
         }
-        
     } catch (error) {
         console.error("Error starting game:", error);
         debug(`Error starting game: ${error.message}`);
@@ -1578,7 +1462,6 @@ function resetGame() {
         
         debug('Game reset completed');
         setupDifficultyButtons();
-        
     } catch (error) {
         console.error("Error resetting game:", error);
         debug(`Error resetting game: ${error.message}`);
@@ -1605,9 +1488,7 @@ function initGame() {
         const elements = initializeElements();
         if (elements.buttons.restartBtn) {
             elements.buttons.restartBtn.onclick = () => {
-                if (currentGameMode === GameMode.AI) {
-                    startGame();
-                }
+                if (currentGameMode === GameMode.AI) startGame();
             };
         }
         
@@ -1644,12 +1525,10 @@ function initGame() {
     }
 }
 
-// Make initialization functions globally available
 window.startGame = startGame;
 window.initGame = initGame;
 window.resetGame = resetGame;
 
-// Initialize game when window loads
 window.addEventListener('DOMContentLoaded', () => {
     debug('DOM Content Loaded - Initializing game...');
     initGame();
