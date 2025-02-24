@@ -763,11 +763,12 @@ function selectBestMove() {
         const alpha = -Infinity, beta = Infinity;
 
         for (const move of legalMoves) {
-            const score = minimax(move, 1, false, alpha, beta); // Depth 1 (2-ply)
+            const score = minimax(move, 2, false, alpha, beta); // Depth 2 (3-ply)
             debug(`Evaluated move ${move.piece}${coordsToAlgebraic(move.startRow, move.startCol)}-${coordsToAlgebraic(move.endRow, move.endCol)}: score=${score}`);
             if (score > bestScore) {
                 bestScore = score;
                 bestMove = move;
+                bestMove.score = score; // Store the score in the move object
             }
         }
         return bestMove;
@@ -788,12 +789,12 @@ function minimax(move, depth, isMaximizing, alpha, beta) {
 
     let score;
     if (depth === 0 || isCheckmate(isMaximizing ? 'blue' : 'red')) {
-        score = evaluateBoard('red'); // Always from Red's perspective
+        score = evaluateBoard('red');
     } else {
         const moves = getAllLegalMoves(isMaximizing ? 'blue' : 'red');
         if (moves.length === 0) {
             score = isKingInCheck(isMaximizing ? 'blue' : 'red') ? 
-                    (isMaximizing ? -10000 : 10000) : 0; // Checkmate or stalemate
+                    (isMaximizing ? -10000 : 10000) : 0;
         } else if (isMaximizing) {
             score = -Infinity;
             for (const nextMove of moves) {
@@ -831,11 +832,34 @@ function evaluateBoard(color) {
         }
     }
 
+    // Penalize opponent pawn promotion threats
+    for (let c = 0; c < BOARD_SIZE; c++) {
+        if (window.board[1][c] === 'p') score -= 100; // Blue pawn on 7th rank
+        if (window.board[6][c] === 'P') score += 100; // Red pawn on 2nd rank
+    }
+
     // Adjust for check/checkmate
     if (isKingInCheck(color)) score -= 50;
     if (isKingInCheck(opponentColor)) score += 50;
 
+    // Endgame king activity
+    if (isInEndgame()) {
+        const kingPos = findKing(color);
+        score += (4 - Math.abs(kingPos.row - 3.5)) * 20 + (4 - Math.abs(kingPos.col - 3.5)) * 20;
+    }
+
     return score;
+}
+
+// Helper to find king position
+function findKing(color) {
+    const kingPiece = color === 'blue' ? 'k' : 'K';
+    for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+            if (window.board[r][c] === kingPiece) return { row: r, col: c };
+        }
+    }
+    return { row: 0, col: 0 }; // Fallback (shouldn’t happen)
 }
 
 function doesMoveEscapeCheck(move) {
