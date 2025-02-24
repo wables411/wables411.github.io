@@ -2,9 +2,31 @@
 self.onmessage = (e) => {
     const { board, difficulty, currentPlayer } = e.data;
 
-    // Constants from chess.js
     const PIECE_VALUES = {
         'p': 100, 'n': 320, 'b': 330, 'r': 500, 'q': 900, 'k': 20000
+    };
+
+    const POSITION_WEIGHTS = {
+        pawn: [
+            [0,  0,  0,  0,  0,  0,  0,  0],
+            [50, 50, 50, 50, 50, 50, 50, 50],
+            [10, 10, 20, 30, 30, 20, 10, 10],
+            [5,  5, 10, 25, 25, 10,  5,  5],
+            [0,  0,  0, 20, 20,  0,  0,  0],
+            [5, -5,-10,  0,  0,-10, -5,  5],
+            [5, 10, 10,-20,-20, 10, 10,  5],
+            [0,  0,  0,  0,  0,  0,  0,  0]
+        ],
+        king: [
+            [-30,-40,-40,-50,-50,-40,-40,-30],
+            [-30,-40,-40,-50,-50,-40,-40,-30],
+            [-30,-40,-40,-50,-50,-40,-40,-30],
+            [-30,-40,-40,-50,-50,-40,-40,-30],
+            [-20,-30,-30,-40,-40,-30,-30,-20],
+            [-10,-20,-20,-20,-20,-20,-20,-10],
+            [20, 20,  0,  0,  0,  0, 20, 20],
+            [20, 30, 10,  0,  0, 10, 30, 20]
+        ]
     };
 
     function getPieceColor(piece) {
@@ -172,7 +194,12 @@ self.onmessage = (e) => {
                 const piece = board[r][c];
                 if (piece) {
                     const value = PIECE_VALUES[piece.toLowerCase()] || 0;
-                    score += (getPieceColor(piece) === color) ? value : -value;
+                    let positionBonus = 0;
+                    const pieceType = piece.toLowerCase() === 'p' ? 'pawn' : piece.toLowerCase() === 'k' ? 'king' : null;
+                    if (pieceType && POSITION_WEIGHTS[pieceType]) {
+                        positionBonus = POSITION_WEIGHTS[pieceType][color === 'blue' ? r : 7 - r][c];
+                    }
+                    score += (getPieceColor(piece) === color) ? (value + positionBonus) : -(value + positionBonus);
                 }
             }
         }
@@ -231,15 +258,15 @@ self.onmessage = (e) => {
         const beta = Infinity;
 
         for (const move of moves) {
-            const tempBoard = board.map(row => [...row]); // Deep copy
-            const score = minimax(tempBoard, move, 2, false, alpha, beta); // Depth 2
+            const tempBoard = board.map(row => [...row]);
+            const score = minimax(tempBoard, move, 3, false, alpha, beta);
             if (score > bestScore) {
                 bestScore = score;
                 bestMove = move;
             }
         }
     } else {
-        bestMove = moves[Math.floor(Math.random() * moves.length)]; // Easy mode: random
+        bestMove = moves[Math.floor(Math.random() * moves.length)];
     }
 
     self.postMessage(bestMove || moves[0]);
