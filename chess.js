@@ -231,12 +231,14 @@ function placePieces() {
     
     try {
         chessboard.innerHTML = '';
-        
         for (let row = 0; row < BOARD_SIZE; row++) {
             for (let col = 0; col < BOARD_SIZE; col++) {
                 const piece = window.board[row][col];
+                debug(`Placing piece at [${row},${col}]: ${piece || 'null'}`);
                 if (piece) {
                     const pieceElement = createPieceElement(piece, row, col);
+                    pieceElement.style.opacity = '1'; // Force visibility
+                    pieceElement.style.display = 'block'; // Force display
                     chessboard.appendChild(pieceElement);
                 }
             }
