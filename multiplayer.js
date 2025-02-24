@@ -19,10 +19,14 @@ class MultiplayerManager {
     }
 
     initializeEventListeners() {
-        // Mode switching buttons
         const multiplayerBtn = document.getElementById('multiplayer-mode');
         const singlePlayerBtn = document.getElementById('ai-mode');
-        
+        const createGameBtn = document.getElementById('create-game');
+        const joinGameBtn = document.getElementById('join-game');
+        const cancelBtn = document.getElementById('cancel-matchmaking');
+    
+        let isCreatingGame = false; // Flag to prevent multiple creations
+    
         if (multiplayerBtn) {
             multiplayerBtn.addEventListener('click', () => {
                 this.isMultiplayerMode = true;
@@ -30,7 +34,7 @@ class MultiplayerManager {
                 console.log('Switched to multiplayer mode');
             });
         }
-
+    
         if (singlePlayerBtn) {
             singlePlayerBtn.addEventListener('click', () => {
                 this.isMultiplayerMode = false;
@@ -39,14 +43,22 @@ class MultiplayerManager {
                 this.leaveGame();
             });
         }
-
-        // Game creation/joining buttons
-        const createGameBtn = document.getElementById('create-game');
+    
         if (createGameBtn) {
-            createGameBtn.onclick = () => this.createGame();
+            createGameBtn.onclick = async () => {
+                if (isCreatingGame || this.gameId) {
+                    console.log('Game creation already in progress or active');
+                    return;
+                }
+                isCreatingGame = true;
+                try {
+                    await this.createGame();
+                } finally {
+                    isCreatingGame = false;
+                }
+            };
         }
-
-        const joinGameBtn = document.getElementById('join-game');
+    
         if (joinGameBtn) {
             joinGameBtn.onclick = () => {
                 const code = document.getElementById('game-code-input')?.value?.trim();
@@ -57,8 +69,7 @@ class MultiplayerManager {
                 }
             };
         }
-
-        const cancelBtn = document.getElementById('cancel-matchmaking');
+    
         if (cancelBtn) {
             cancelBtn.onclick = () => {
                 this.leaveGame();
@@ -66,8 +77,7 @@ class MultiplayerManager {
                 if (status) status.style.display = 'none';
             };
         }
-
-        // Chessboard click handling
+    
         const chessboard = document.getElementById('chessboard');
         if (chessboard) {
             chessboard.addEventListener('click', (e) => this.handleBoardClick(e));
@@ -311,16 +321,17 @@ class MultiplayerManager {
             window.isMultiplayerMode = true;
             this.isMultiplayerMode = true;
             window.playerColor = color;
+            this.playerColor = color; // Sync instance variable
             window.currentPlayer = this.currentGameState?.current_player || 'blue';
-
+    
             if (this.currentGameState?.board?.positions) {
                 window.board = JSON.parse(JSON.stringify(this.currentGameState.board.positions));
             }
-
+    
             window.placePieces();
             this.updateBoardInteractivity();
             window.updateStatusDisplay(this.isMyTurn() ? "Your turn" : "Opponent's turn");
-
+    
         } catch (error) {
             console.error('Error in showGame:', error);
             window.updateStatusDisplay('Error initializing game board');
@@ -350,7 +361,7 @@ class MultiplayerManager {
         if (this.subscription) {
             this.subscription.unsubscribe();
         }
-
+    
         this.subscription = this.supabase
             .channel(`game_${this.gameId}`)
             .on('postgres_changes', {
@@ -362,35 +373,41 @@ class MultiplayerManager {
             (payload) => {
                 this.handleUpdate(payload.new);
             })
-            .subscribe();
+            .subscribe((status) => {
+                if (status === 'CHANNEL_ERROR') {
+                    console.log('Subscription error, retrying...');
+                    setTimeout(() => this.subscribeToGame(), 1000);
+                }
+            });
     }
 
     async handleUpdate(game) {
         if (!game) return;
-
+    
         try {
             this.currentGameState = game;
-
+    
             if (game.board?.positions) {
                 window.board = JSON.parse(JSON.stringify(game.board.positions));
                 window.placePieces();
             }
-
+    
             if (game.current_player) {
-                window.currentPlayer = game.current_player;
+                window.currentPlayer = game.current_player; // Sync global state
                 this.updateBoardInteractivity();
-                
                 if (game.game_state !== 'ended') {
-                    window.updateStatusDisplay(this.isMyTurn() ? "Your turn" : "Opponent's turn");
+                    const status = this.isMyTurn() ? "Your turn" : "Opponent's turn";
+                    window.updateStatusDisplay(status);
                 }
             }
-
+    
             if (game.game_state === 'ended') {
                 await this.handleGameEnd(game);
             }
-
+    
         } catch (error) {
             console.error('Update error:', error);
+            window.updateStatusDisplay('Error syncing game state');
         }
     }
 
@@ -428,62 +445,46 @@ class MultiplayerManager {
 
     async makeMove(startRow, startCol, endRow, endCol, promotion = null) {
         if (!this.gameId || this.isProcessingMove || !this.isMyTurn()) return false;
-
+    
         try {
             this.isProcessingMove = true;
-
+    
             const newBoard = JSON.parse(JSON.stringify(window.board));
             newBoard[endRow][endCol] = promotion || newBoard[startRow][startCol];
             newBoard[startRow][startCol] = null;
-
+    
             const nextPlayer = this.playerColor === 'blue' ? 'red' : 'blue';
             let gameEndState = null;
-
+    
             window.board = newBoard;
-            
+    
             if (window.isCheckmate && window.isCheckmate(nextPlayer)) {
-                gameEndState = {
-                    game_state: 'ended',
-                    winner: this.playerColor
-                };
+                gameEndState = { game_state: 'ended', winner: this.playerColor };
             } else if (window.isStalemate && window.isStalemate(nextPlayer)) {
-                gameEndState = {
-                    game_state: 'ended',
-                    winner: 'draw'
-                };
+                gameEndState = { game_state: 'ended', winner: 'draw' };
             }
-
+    
             const updateData = {
-                board: {
-                    positions: newBoard,
-                    pieceState: window.pieceState || {}
-                },
+                board: { positions: newBoard, pieceState: window.pieceState || {} },
                 current_player: nextPlayer,
-                last_move: {
-                    startRow,
-                    startCol,
-                    endRow,
-                    endCol,
-                    piece: newBoard[endRow][endCol],
-                    promotion
-                },
+                last_move: { startRow, startCol, endRow, endCol, piece: newBoard[endRow][endCol], promotion },
                 updated_at: new Date().toISOString(),
                 ...gameEndState
             };
-
+    
             const { error } = await this.supabase
                 .from('chess_games')
                 .update(updateData)
                 .eq('game_id', this.gameId);
-
+    
             if (error) throw error;
-
+    
             window.board = newBoard;
             window.placePieces();
-            window.updateStatusDisplay("Opponent's turn");
-
+            // Remove: window.updateStatusDisplay("Opponent's turn"); — Let handleUpdate set this
+    
             return true;
-
+    
         } catch (error) {
             console.error('Move error:', error);
             return false;
