@@ -17,6 +17,26 @@ self.onmessage = (e) => {
             [5, 10, 10,-20,-20, 10, 10,  5],
             [0,  0,  0,  0,  0,  0,  0,  0]
         ],
+        knight: [
+            [-50,-40,-30,-30,-30,-30,-40,-50],
+            [-40,-20,  0,  0,  0,  0,-20,-40],
+            [-30,  0, 10, 15, 15, 10,  0,-30],
+            [-30,  5, 15, 20, 20, 15,  5,-30],
+            [-30,  0, 15, 20, 20, 15,  0,-30],
+            [-30,  5, 10, 15, 15, 10,  5,-30],
+            [-40,-20,  0,  5,  5,  0,-20,-40],
+            [-50,-40,-30,-30,-30,-30,-40,-50]
+        ],
+        bishop: [
+            [-20,-10,-10,-10,-10,-10,-10,-20],
+            [-10,  0,  0,  0,  0,  0,  0,-10],
+            [-10,  0,  5, 10, 10,  5,  0,-10],
+            [-10,  5,  5, 10, 10,  5,  5,-10],
+            [-10,  0, 10, 10, 10, 10,  0,-10],
+            [-10, 10, 10, 10, 10, 10, 10,-10],
+            [-10,  5,  0,  0,  0,  0,  5,-10],
+            [-20,-10,-10,-10,-10,-10,-10,-20]
+        ],
         king: [
             [-30,-40,-40,-50,-50,-40,-40,-30],
             [-30,-40,-40,-50,-50,-40,-40,-30],
@@ -195,11 +215,40 @@ self.onmessage = (e) => {
                 if (piece) {
                     const value = PIECE_VALUES[piece.toLowerCase()] || 0;
                     let positionBonus = 0;
-                    const pieceType = piece.toLowerCase() === 'p' ? 'pawn' : piece.toLowerCase() === 'k' ? 'king' : null;
+                    const pieceType = piece.toLowerCase() === 'p' ? 'pawn' : 
+                                     piece.toLowerCase() === 'n' ? 'knight' : 
+                                     piece.toLowerCase() === 'b' ? 'bishop' : 
+                                     piece.toLowerCase() === 'k' ? 'king' : null;
                     if (pieceType && POSITION_WEIGHTS[pieceType]) {
                         positionBonus = POSITION_WEIGHTS[pieceType][color === 'blue' ? r : 7 - r][c];
                     }
                     score += (getPieceColor(piece) === color) ? (value + positionBonus) : -(value + positionBonus);
+
+                    // Bonus for central control (d4, d5, e4, e5)
+                    if ((r === 3 || r === 4) && (c === 3 || c === 4)) {
+                        if (piece.toLowerCase() === 'n' || piece.toLowerCase() === 'b' || piece.toLowerCase() === 'q') {
+                            score += (getPieceColor(piece) === color) ? 20 : -20;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Rook on open file bonus
+        for (let c = 0; c < 8; c++) {
+            let pawnCount = 0;
+            for (let r = 0; r < 8; r++) {
+                if (board[r][c] === (color === 'blue' ? 'p' : 'P') || board[r][c] === (color === 'blue' ? 'P' : 'p')) {
+                    pawnCount++;
+                }
+            }
+            if (pawnCount === 0) {
+                for (let r = 0; r < 8; r++) {
+                    if (board[r][c] === (color === 'blue' ? 'r' : 'R')) {
+                        score += 40;
+                    } else if (board[r][c] === (color === 'blue' ? 'R' : 'r')) {
+                        score -= 40;
+                    }
                 }
             }
         }
@@ -259,7 +308,7 @@ self.onmessage = (e) => {
 
         for (const move of moves) {
             const tempBoard = board.map(row => [...row]);
-            const score = minimax(tempBoard, move, 3, false, alpha, beta);
+            const score = minimax(tempBoard, move, 4, false, alpha, beta); // Depth 4
             if (score > bestScore) {
                 bestScore = score;
                 bestMove = move;
