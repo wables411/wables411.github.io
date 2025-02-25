@@ -12,7 +12,8 @@ class MultiplayerManager {
         this.isMultiplayerMode = false;
         this.isProcessingMove = false;
         this.selectedPiece = null;
-        this.handleCreateGame = null; // Add this
+        this.handleCreateGame = null;
+        this.lastCreateClick = 0; // Debounce timestamp
         this.initializeEventListeners();
         console.log('MultiplayerManager initialized');
     }
@@ -24,7 +25,7 @@ class MultiplayerManager {
         const joinGameBtn = document.getElementById('join-game');
         const cancelBtn = document.getElementById('cancel-matchmaking');
     
-        let isCreatingGame = false; // Flag to prevent multiple creations
+        let isCreatingGame = false;
     
         if (multiplayerBtn) {
             multiplayerBtn.addEventListener('click', () => {
@@ -44,17 +45,21 @@ class MultiplayerManager {
         }
     
         if (createGameBtn) {
-            createGameBtn.removeEventListener('click', this.handleCreateGame); // Remove old listener
+            createGameBtn.removeEventListener('click', this.handleCreateGame);
             this.handleCreateGame = async () => {
-                if (isCreatingGame || this.gameId) {
-                    console.log('Game creation already in progress or active');
+                const now = Date.now();
+                if (isCreatingGame || this.gameId || (now - this.lastCreateClick < 1000)) {
+                    console.log('Game creation already in progress, active, or too soon');
                     return;
                 }
+                this.lastCreateClick = now;
                 isCreatingGame = true;
+                createGameBtn.disabled = true; // Disable button
                 try {
                     await this.createGame();
                 } finally {
                     isCreatingGame = false;
+                    createGameBtn.disabled = false; // Re-enable button
                 }
             };
             createGameBtn.addEventListener('click', this.handleCreateGame);
@@ -86,10 +91,7 @@ class MultiplayerManager {
     }
 
     handleBoardClick(e) {
-        // Only handle clicks in multiplayer mode
         if (!this.isMultiplayerMode) return;
-        
-        // Don't process clicks if it's not player's turn
         if (!this.isMyTurn() || this.isProcessingMove) {
             console.log('Not player turn or processing move');
             return;
@@ -101,12 +103,9 @@ class MultiplayerManager {
         if (piece) {
             const row = parseInt(piece.getAttribute('data-row'));
             const col = parseInt(piece.getAttribute('data-col'));
-            
-            // If we already have a piece selected and click on opponent's piece, try to capture
             if (this.selectedPiece) {
                 const targetPiece = window.board[row][col];
                 if (targetPiece && window.getPieceColor(targetPiece) !== this.playerColor) {
-                    // Attempt capture
                     const startRow = this.selectedPiece.row;
                     const startCol = this.selectedPiece.col;
                     if (window.canMakeMove(startRow, startCol, row, col)) {
@@ -117,7 +116,6 @@ class MultiplayerManager {
                     }
                 }
             }
-            
             this.handlePieceClick(row, col);
         } else if (square && this.selectedPiece) {
             const row = parseInt(square.getAttribute('data-row'));
@@ -143,8 +141,6 @@ class MultiplayerManager {
         }
 
         this.selectedPiece = { row, col };
-
-        // Show valid moves
         const validMoves = window.getValidMoves(row, col);
         validMoves.forEach(move => {
             const isCapture = window.board[move.row][move.col] !== null;
@@ -322,7 +318,7 @@ class MultiplayerManager {
             window.isMultiplayerMode = true;
             this.isMultiplayerMode = true;
             window.playerColor = color;
-            this.playerColor = color; // Sync instance variable
+            this.playerColor = color;
             window.currentPlayer = this.currentGameState?.current_player || 'blue';
     
             if (this.currentGameState?.board?.positions) {
@@ -394,7 +390,7 @@ class MultiplayerManager {
             }
     
             if (game.current_player) {
-                window.currentPlayer = game.current_player; // Sync global state
+                window.currentPlayer = game.current_player;
                 this.updateBoardInteractivity();
                 if (game.game_state !== 'ended') {
                     const status = this.isMyTurn() ? "Your turn" : "Opponent's turn";
@@ -468,7 +464,7 @@ class MultiplayerManager {
             const updateData = {
                 board: { 
                     positions: newBoard, 
-                    piece_state: window.pieceState || {} // Changed from pieceState to piece_state
+                    piece_state: window.pieceState || {}
                 },
                 current_player: nextPlayer,
                 last_move: { 
@@ -570,5 +566,9 @@ class MultiplayerManager {
     }
 }
 
-// Initialize the multiplayer manager
-window.multiplayerManager = new MultiplayerManager()
+// Singleton enforcement
+if (!window.multiplayerManager) {
+    window.multiplayerManager = new MultiplayerManager();
+} else {
+    console.log('MultiplayerManager already initialized, reusing instance');
+}
