@@ -1,3 +1,7 @@
+// Global flags for strict control
+let isMultiplayerInitialized = false;
+let lastGlobalCreateClick = 0;
+
 class MultiplayerManager {
     constructor() {
         if (!window.gameDatabase) {
@@ -13,12 +17,18 @@ class MultiplayerManager {
         this.isProcessingMove = false;
         this.selectedPiece = null;
         this.handleCreateGame = null;
-        this.lastCreateClick = 0; // Debounce timestamp
+        this.lastCreateClick = 0;
         this.initializeEventListeners();
         console.log('MultiplayerManager initialized');
     }
 
     initializeEventListeners() {
+        if (isMultiplayerInitialized) {
+            console.log('Event listeners already initialized, skipping');
+            return;
+        }
+        isMultiplayerInitialized = true;
+
         const multiplayerBtn = document.getElementById('multiplayer-mode');
         const singlePlayerBtn = document.getElementById('ai-mode');
         const createGameBtn = document.getElementById('create-game');
@@ -48,18 +58,20 @@ class MultiplayerManager {
             createGameBtn.removeEventListener('click', this.handleCreateGame);
             this.handleCreateGame = async () => {
                 const now = Date.now();
-                if (isCreatingGame || this.gameId || (now - this.lastCreateClick < 1000)) {
-                    console.log('Game creation already in progress, active, or too soon');
+                if (isCreatingGame || this.gameId || (now - lastGlobalCreateClick < 1000)) {
+                    console.log('Game creation blocked: in progress, active, or too soon');
                     return;
                 }
                 this.lastCreateClick = now;
+                lastGlobalCreateClick = now;
                 isCreatingGame = true;
-                createGameBtn.disabled = true; // Disable button
+                createGameBtn.disabled = true;
                 try {
+                    console.log('Triggering createGame from handleCreateGame');
                     await this.createGame();
                 } finally {
                     isCreatingGame = false;
-                    createGameBtn.disabled = false; // Re-enable button
+                    createGameBtn.disabled = false;
                 }
             };
             createGameBtn.addEventListener('click', this.handleCreateGame);
@@ -524,7 +536,7 @@ class MultiplayerManager {
                 }
 
                 if (window.leaderboardManager) {
-                    window.leaderboardManager.loadLeaderboard();
+                    await window.leaderboardManager.loadLeaderboard();
                 }
 
             } catch (error) {
