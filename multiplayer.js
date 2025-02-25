@@ -4,16 +4,15 @@ class MultiplayerManager {
             console.error('Game database not initialized');
             return;
         }
-
         this.supabase = window.gameDatabase;
         this.gameId = null;
         this.playerColor = null;
         this.subscription = null;
         this.currentGameState = null;
-        this.isMultiplayerMode = false; // Start in single player mode
+        this.isMultiplayerMode = false;
         this.isProcessingMove = false;
         this.selectedPiece = null;
-
+        this.handleCreateGame = null; // Add this
         this.initializeEventListeners();
         console.log('MultiplayerManager initialized');
     }
@@ -45,7 +44,8 @@ class MultiplayerManager {
         }
     
         if (createGameBtn) {
-            createGameBtn.onclick = async () => {
+            createGameBtn.removeEventListener('click', this.handleCreateGame); // Remove old listener
+            this.handleCreateGame = async () => {
                 if (isCreatingGame || this.gameId) {
                     console.log('Game creation already in progress or active');
                     return;
@@ -57,6 +57,7 @@ class MultiplayerManager {
                     isCreatingGame = false;
                 }
             };
+            createGameBtn.addEventListener('click', this.handleCreateGame);
         }
     
         if (joinGameBtn) {
