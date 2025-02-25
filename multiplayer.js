@@ -196,35 +196,35 @@ class MultiplayerManager {
                 alert('Connect wallet first');
                 return;
             }
-
+    
             const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
             console.log('Creating new game:', gameId);
-
-            const boardState = {
-                positions: JSON.parse(JSON.stringify(window.initialBoard)),
-                pieceState: window.pieceState || {}
-            };
-
+    
+            const boardState = JSON.parse(JSON.stringify(window.initialBoard));
+    
             const { data, error } = await this.supabase
                 .from('chess_games')
                 .insert({
                     game_id: gameId,
                     blue_player: player,
-                    board: boardState,
-                    piece_state: window.pieceState || {},
+                    board: { 
+                        positions: boardState, 
+                        piece_state: window.pieceState || {} 
+                    },
+                    current_player: 'blue',
                     game_state: 'waiting',
-                    current_player: 'blue'
+                    updated_at: new Date().toISOString()
                 })
                 .select();
-
-            if (error) throw error;
-
+    
+            if (error) throw new Error(`Supabase insert failed: ${error.message}`);
+    
             this.gameId = gameId;
             this.playerColor = 'blue';
             this.currentGameState = data[0];
             await this.subscribeToGame();
             await this.showGame('blue');
-
+    
             const gameCodeDisplay = document.getElementById('gameCodeDisplay');
             const gameCode = document.getElementById('gameCode');
             if (gameCodeDisplay && gameCode) {
@@ -232,9 +232,9 @@ class MultiplayerManager {
                 gameCodeDisplay.style.display = 'block';
             }
             alert(`Game code: ${gameId}`);
-
+    
         } catch (error) {
-            console.error('Error creating game:', error);
+            console.error('Error creating game:', error.message);
             alert('Game creation failed');
         }
     }
@@ -465,28 +465,41 @@ class MultiplayerManager {
             }
     
             const updateData = {
-                board: { positions: newBoard, pieceState: window.pieceState || {} },
+                board: { 
+                    positions: newBoard, 
+                    piece_state: window.pieceState || {} // Changed from pieceState to piece_state
+                },
                 current_player: nextPlayer,
-                last_move: { startRow, startCol, endRow, endCol, piece: newBoard[endRow][endCol], promotion },
+                last_move: { 
+                    start_row: startRow, 
+                    start_col: startCol, 
+                    end_row: endRow, 
+                    end_col: endCol, 
+                    piece: newBoard[endRow][endCol], 
+                    promotion 
+                },
                 updated_at: new Date().toISOString(),
-                ...gameEndState
+                ...(gameEndState || {})
             };
+    
+            console.log('Updating game with payload:', JSON.stringify(updateData, null, 2));
     
             const { error } = await this.supabase
                 .from('chess_games')
                 .update(updateData)
                 .eq('game_id', this.gameId);
     
-            if (error) throw error;
+            if (error) {
+                throw new Error(`Supabase update failed: ${error.message} - Details: ${JSON.stringify(error.details || {})}`);
+            }
     
             window.board = newBoard;
             window.placePieces();
-            // Remove: window.updateStatusDisplay("Opponent's turn"); — Let handleUpdate set this
     
             return true;
     
         } catch (error) {
-            console.error('Move error:', error);
+            console.error('Move error:', error.message, error.details);
             return false;
         } finally {
             this.isProcessingMove = false;
