@@ -1,8 +1,9 @@
-// Global flags for strict control
 let isMultiplayerInitialized = false;
 let lastGlobalCreateClick = 0;
 
 class MultiplayerManager {
+    static hasGameBeenCreated = false; // Static guard
+
     constructor() {
         if (!window.gameDatabase) {
             console.error('Game database not initialized');
@@ -18,6 +19,7 @@ class MultiplayerManager {
         this.selectedPiece = null;
         this.handleCreateGame = null;
         this.lastCreateClick = 0;
+        this.hasCreatedGame = false; // Instance-level for safety
         this.initializeEventListeners();
         console.log('MultiplayerManager initialized');
     }
@@ -57,15 +59,16 @@ class MultiplayerManager {
         if (createGameBtn) {
             createGameBtn.removeEventListener('click', this.handleCreateGame);
             this.handleCreateGame = async () => {
+                createGameBtn.disabled = true;
                 const now = Date.now();
                 if (isCreatingGame || this.gameId || (now - lastGlobalCreateClick < 1000)) {
                     console.log('Game creation blocked: in progress, active, or too soon');
+                    createGameBtn.disabled = false;
                     return;
                 }
                 this.lastCreateClick = now;
                 lastGlobalCreateClick = now;
                 isCreatingGame = true;
-                createGameBtn.disabled = true;
                 try {
                     console.log('Triggering createGame from handleCreateGame');
                     await this.createGame();
@@ -199,6 +202,14 @@ class MultiplayerManager {
     }
 
     async createGame() {
+        console.log('Entering createGame');
+        if (MultiplayerManager.hasGameBeenCreated || this.hasCreatedGame) {
+            console.log('Game already created this session, ignoring additional call');
+            return;
+        }
+        MultiplayerManager.hasGameBeenCreated = true;
+        this.hasCreatedGame = true;
+
         try {
             const player = localStorage.getItem('currentPlayer');
             if (!player) {
@@ -245,6 +256,8 @@ class MultiplayerManager {
         } catch (error) {
             console.error('Error creating game:', error.message);
             alert('Game creation failed');
+            MultiplayerManager.hasGameBeenCreated = false;
+            this.hasCreatedGame = false;
         }
     }
 
@@ -548,6 +561,8 @@ class MultiplayerManager {
         this.playerColor = null;
         this.currentGameState = null;
         this.selectedPiece = null;
+        this.hasCreatedGame = false;
+        MultiplayerManager.hasGameBeenCreated = false;
         
         const menuEl = document.querySelector('.multiplayer-menu');
         const gameEl = document.getElementById('chess-game');
@@ -578,7 +593,6 @@ class MultiplayerManager {
     }
 }
 
-// Singleton enforcement
 if (!window.multiplayerManager) {
     window.multiplayerManager = new MultiplayerManager();
 } else {
