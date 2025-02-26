@@ -405,28 +405,26 @@ class MultiplayerManager {
 
     async handleUpdate(game) {
         if (!game) return;
-    
         try {
             this.currentGameState = game;
-    
             if (game.board?.positions) {
                 window.board = JSON.parse(JSON.stringify(game.board.positions));
                 window.placePieces();
             }
-    
             if (game.current_player) {
                 window.currentPlayer = game.current_player;
                 this.updateBoardInteractivity();
-                if (game.game_state !== 'ended') {
-                    const status = this.isMyTurn() ? "Your turn" : "Opponent's turn";
-                    window.updateStatusDisplay(status);
+                const baseStatus = this.isMyTurn() ? "Your turn" : "Opponent's turn";
+                console.log(`Checking ${game.current_player}'s king: inCheck=${window.isKingInCheck(game.current_player)}, checkmate=${window.isCheckmate(game.current_player)}`);
+                if (window.isKingInCheck && window.isKingInCheck(game.current_player)) {
+                    window.updateStatusDisplay(`Check! ${baseStatus}`);
+                } else if (game.game_state !== 'completed') {
+                    window.updateStatusDisplay(baseStatus);
                 }
             }
-    
-            if (game.game_state === 'ended') {
+            if (game.game_state === 'completed') {
                 await this.handleGameEnd(game);
             }
-    
         } catch (error) {
             console.error('Update error:', error);
             window.updateStatusDisplay('Error syncing game state');
@@ -476,11 +474,6 @@ class MultiplayerManager {
             let gameEndState = null;
     
             window.board = newBoard;
-    
-            // Check detection
-            if (window.isInCheck && window.isInCheck(nextPlayer)) {
-                window.updateStatusDisplay(`Check! ${this.isMyTurn() ? "Your" : "Opponent's"} turn`);
-            }
     
             if (window.isCheckmate && window.isCheckmate(nextPlayer)) {
                 gameEndState = { game_state: 'completed', winner: this.playerColor };
