@@ -467,18 +467,20 @@ class MultiplayerManager {
 
     async makeMove(startRow, startCol, endRow, endCol, promotion = null) {
         if (!this.gameId || this.isProcessingMove || !this.isMyTurn()) return false;
-    
         try {
             this.isProcessingMove = true;
-    
             const newBoard = JSON.parse(JSON.stringify(window.board));
             newBoard[endRow][endCol] = promotion || newBoard[startRow][startCol];
             newBoard[startRow][startCol] = null;
-    
             const nextPlayer = this.playerColor === 'blue' ? 'red' : 'blue';
             let gameEndState = null;
     
             window.board = newBoard;
+    
+            // Check detection
+            if (window.isInCheck && window.isInCheck(nextPlayer)) {
+                window.updateStatusDisplay(`Check! ${this.isMyTurn() ? "Your" : "Opponent's"} turn`);
+            }
     
             if (window.isCheckmate && window.isCheckmate(nextPlayer)) {
                 gameEndState = { game_state: 'completed', winner: this.playerColor };
@@ -487,19 +489,9 @@ class MultiplayerManager {
             }
     
             const updateData = {
-                board: { 
-                    positions: newBoard, 
-                    piece_state: window.pieceState || {}
-                },
+                board: { positions: newBoard, piece_state: window.pieceState || {} },
                 current_player: nextPlayer,
-                last_move: { 
-                    start_row: startRow, 
-                    start_col: startCol, 
-                    end_row: endRow, 
-                    end_col: endCol, 
-                    piece: newBoard[endRow][endCol], 
-                    promotion 
-                },
+                last_move: { start_row: startRow, start_col: startCol, end_row: endRow, end_col: endCol, piece: newBoard[endRow][endCol], promotion },
                 updated_at: new Date().toISOString(),
                 ...(gameEndState || {})
             };
@@ -511,15 +503,12 @@ class MultiplayerManager {
                 .update(updateData)
                 .eq('game_id', this.gameId);
     
-            if (error) {
-                throw new Error(`Supabase update failed: ${error.message} - Details: ${JSON.stringify(error.details || {})}`);
-            }
+            if (error) throw new Error(`Supabase update failed: ${error.message} - Details: ${JSON.stringify(error.details || {})}`);
     
             window.board = newBoard;
             window.placePieces();
     
             return true;
-    
         } catch (error) {
             console.error('Move error:', error.message, error.details);
             return false;
