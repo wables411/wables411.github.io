@@ -481,9 +481,9 @@ class MultiplayerManager {
             window.board = newBoard;
     
             if (window.isCheckmate && window.isCheckmate(nextPlayer)) {
-                gameEndState = { game_state: 'ended', winner: this.playerColor };
+                gameEndState = { game_state: 'completed', winner: this.playerColor };
             } else if (window.isStalemate && window.isStalemate(nextPlayer)) {
-                gameEndState = { game_state: 'ended', winner: 'draw' };
+                gameEndState = { game_state: 'completed', winner: 'draw' };
             }
     
             const updateData = {
