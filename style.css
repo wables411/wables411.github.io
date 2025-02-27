@@ -5,7 +5,7 @@ body, html, .lawbstation-body {
     text-align: center;
     background: url('/images/oceanfloor.gif') fixed center/cover no-repeat;
     margin: 0;
-    padding: 0 0 clamp(20px, 5vh, 24px) 0; /* Responsive bottom padding */
+    padding: 0 0 clamp(20px, 5vh, 24px) 0;
     overflow-x: hidden;
     cursor: url('/images/lawbpointer.png'), default;
     min-height: 100vh;
@@ -29,8 +29,10 @@ nav ul {
     padding: 10px 0;
     margin: 0;
     display: flex;
-    flex-wrap: wrap; /* Allow wrapping on small screens */
+    flex-wrap: wrap;
     justify-content: center;
+    max-height: 50vh; /* Limit height on mobile */
+    overflow-y: auto; /* Scroll if too tall */
 }
 nav li {
     margin: 5px 10px;
@@ -70,9 +72,9 @@ nav a, a:link, a:visited, a:hover, a:active {
     border-radius: 10px;
 }
 .main-content {
-    padding-top: clamp(80px, 15vh, 100px); /* Adjust for fixed nav */
+    padding-top: clamp(80px, 20vh, 120px); /* Increased to account for taller nav */
     width: 100%;
-    max-width: 100%; /* Remove fixed width */
+    max-width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -129,7 +131,7 @@ nav a, a:link, a:visited, a:hover, a:active {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     margin: 20px auto;
     width: 90%;
-    max-width: 1000px; /* Increased slightly for consistency */
+    max-width: 1000px;
 }
 .game-section h2 {
     color: #FF0000;
@@ -257,9 +259,10 @@ nav a, a:link, a:visited, a:hover, a:active {
     nav ul {
         flex-direction: column;
         align-items: center;
+        max-height: 25vh; /* Further reduce height */
     }
     nav li {
-        margin: 5px 0;
+        margin: 3px 0; /* Tighten spacing */
     }
     .container, .game-section, #meme-generator, .unicorn-gods-section {
         width: 95%;
@@ -276,8 +279,11 @@ nav a, a:link, a:visited, a:hover, a:active {
     nav a {
         padding: 6px 8px;
     }
+    nav ul {
+        max-height: 20vh; /* Even smaller for tiny screens */
+    }
     .main-content {
-        padding-top: clamp(60px, 12vh, 80px);
+        padding-top: clamp(60px, 15vh, 100px); /* Adjusted for smaller nav */
     }
     .game-section, #meme-generator {
         padding: 10px;
