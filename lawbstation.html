@@ -3,49 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>lawbstation</title>
+    <title>LAWBSTATION</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
-
-    <!-- Load Supabase before other dependencies -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    
-    <!-- Additional dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
-
-    <!-- Stylesheets -->
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="chess.css">
-
     <style>
         .top-gif-container {
-            width: 50%;
-            display: flex;
-            justify-content: center;
-            margin: 30px auto;
+            width: 80%;
+            max-width: 400px;
+            margin: 20px auto;
             position: relative;
         }
-
         .top-gif-container .tenor-gif-embed {
             width: 100%;
         }
-
         .top-gif-container img {
             max-width: 100%;
             height: auto;
-            border-radius: 20px;
+            border-radius: 15px;
             box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
         }
-
         .join-game-container {
             margin: 20px 0;
             display: flex;
-            flex-direction: column;
+            flex-wrap: wrap;
             gap: 10px;
-            align-items: center;
+            justify-content: center;
         }
-
         .join-game-container input {
-            width: 200px;
+            width: 100%;
+            max-width: 180px;
             padding: 8px;
             background: rgba(0, 0, 0, 0.5);
             border: 1px solid rgba(50, 205, 50, 0.3);
@@ -55,15 +44,13 @@
             text-align: center;
             text-transform: uppercase;
         }
-
         .wallet-connection {
             margin: 20px 0;
-            padding: 20px;
+            padding: 15px;
             background: rgba(0, 0, 0, 0.3);
             border-radius: 10px;
             border: 1px solid rgba(50, 205, 50, 0.3);
         }
-
         .wallet-buttons {
             display: flex;
             flex-wrap: wrap;
@@ -71,29 +58,6 @@
             justify-content: center;
             margin-bottom: 15px;
         }
-
-        .wallet-btn {
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-family: Impact, sans-serif;
-            border: none;
-            color: white;
-            transition: all 0.3s ease;
-            min-width: 180px;
-        }
-
-        .wallet-address {
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            text-align: center;
-            color: white;
-            margin-top: 10px;
-            word-break: break-all;
-        }
-
         .multiplayer-btn {
             background: rgba(50, 205, 50, 0.2);
             border: 2px solid rgba(50, 205, 50, 0.3);
@@ -105,65 +69,55 @@
             font-family: Impact, sans-serif;
             text-transform: uppercase;
             letter-spacing: 1px;
-            min-width: 200px;
+            min-width: 160px;
         }
-
         .multiplayer-btn:hover:not(:disabled) {
             background: rgba(50, 205, 50, 0.3);
             transform: translateY(-2px);
             box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
         }
-
         .cancel-btn {
             background: rgba(255, 0, 0, 0.2);
             border-color: rgba(255, 0, 0, 0.3);
         }
-
         .cancel-btn:hover {
             background: rgba(255, 0, 0, 0.3);
             box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
         }
-
         #matchmaking-status {
-            margin: 15px 0;
-            padding: 15px;
+            margin: 10px 0;
+            padding: 10px;
             border: 1px solid rgba(50, 205, 50, 0.3);
             border-radius: 5px;
             background: rgba(0, 0, 0, 0.5);
         }
-
         .status-text {
             margin-bottom: 10px;
             color: #32CD32;
             font-family: monospace;
         }
-
         .game-code-display {
-            margin: 15px 0;
-            padding: 15px;
+            margin: 10px 0;
+            padding: 10px;
             background: rgba(0, 0, 0, 0.5);
             border: 2px solid rgba(50, 205, 50, 0.3);
             border-radius: 5px;
             display: none;
         }
-
         .game-code-display h4 {
             color: #32CD32;
             margin: 0 0 10px 0;
         }
-
         .game-code {
             font-family: monospace;
-            font-size: 24px;
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
             color: white;
             letter-spacing: 2px;
             cursor: pointer;
         }
-
         .game-code:hover {
             color: #32CD32;
         }
-
         .copy-notification {
             position: fixed;
             top: 20px;
@@ -177,28 +131,26 @@
             z-index: 1000;
             font-family: Impact, sans-serif;
         }
-
         .video-container {
-            width: 50%;
-            margin: 30px auto;
+            width: 90%;
+            max-width: 600px;
+            margin: 20px auto;
             position: relative;
             cursor: pointer;
         }
-
         .video-container video {
             width: 100%;
             height: auto;
-            border-radius: 20px;
+            border-radius: 15px;
             box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
         }
-
         .play-overlay {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             background: rgba(50, 205, 50, 0.7);
             border-radius: 50%;
             display: flex;
@@ -206,20 +158,49 @@
             align-items: center;
             pointer-events: none;
         }
-
         .play-overlay::after {
             content: '';
             width: 0;
             height: 0;
             border-style: solid;
-            border-width: 10px 0 10px 20px;
+            border-width: 8px 0 8px 16px;
             border-color: transparent transparent transparent #ffffff;
-            margin-left: 5px;
+            margin-left: 4px;
+        }
+        .search-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .search-container input {
+            width: 100%;
+            max-width: 200px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(50, 205, 50, 0.3);
+            color: white;
+            border-radius: 4px;
+            font-family: monospace;
+            text-align: center;
+        }
+        .search-button {
+            padding: 10px 20px;
+            background: rgba(153, 69, 255, 0.2);
+            border: 2px solid rgba(153, 69, 255, 0.5);
+            color: white;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .search-button:hover {
+            background: rgba(153, 69, 255, 0.3);
+            transform: translateY(-2px);
         }
     </style>
 </head>
 <body class="lawbstation-body">
-    <!-- Navigation Menu -->
     <nav>
         <ul>
             <li><a href="index.html">home</a></li>
@@ -236,7 +217,7 @@
     </nav>
 
     <div class="video-container">
-        <video id="topVideo">
+        <video id="topVideo" muted>
             <source src="images/lawbstation_promo 3.mp4" type="video/mp4">
             Your browser does not support the video tag.
         </video>
@@ -244,132 +225,101 @@
     </div>
 
     <div class="top-gif-container">
-        <div class="tenor-gif-embed" data-postid="14418647991790600316" data-share-method="host" data-aspect-ratio="1" data-width="50%">
+        <div class="tenor-gif-embed" data-postid="14418647991790600316" data-share-method="host" data-aspect-ratio="1">
             <a href="https://tenor.com/view/lawb-i-lawb-u-i-lawb-you-lawbstation-portionclub-gif-14418647991790600316">Lawb I Lawb U GIF</a>
         </div>
     </div>
 
-    <!-- Full Height Container -->
-    <div class="full-height-container">
-        <!-- Main Content Container -->
-        <div class="main-content">
-            <h1><a href="https://launchmynft.io/collections/8chpN2hsfM4p6vrP1CGtb3Xx6mmhEqUTTaPEMEjCh3CL/8OqgRHHpbfE2B2Ex9nT5" target="_blank">LAWBSTATION</a></h1>
-            <p>LawbStations seem nice but a Lawbster built on <a href="https://www.miladystation2.net/" target="_blank">$MS2</a> technology living on the solana blockchain will never achieve anything without a roadmap.</p>
-            <p>choose your fighter. search isolated lawbstation by number. right click save. create a meme. start a fight. this is memetic warfare.</p>
-            
-            <div class="search-container">
-                <input type="number" id="imageSearch" placeholder="Enter image number" min="0" max="419">
-                <button id="enterButton" class="search-button">Enter</button>
-                <button id="clearButton" class="search-button">Clear</button>
+    <div class="main-content">
+        <h1><a href="https://launchmynft.io/collections/8chpN2hsfM4p6vrP1CGtb3Xx6mmhEqUTTaPEMEjCh3CL/8OqgRHHpbfE2B2Ex9nT5" target="_blank">LAWBSTATION</a></h1>
+        <p>LawbStations seem nice but a Lawbster built on <a href="https://www.miladystation2.net/" target="_blank">$MS2</a> technology living on the Solana blockchain will never achieve anything without a roadmap.</p>
+        <p>Choose your fighter. Search isolated LawbStation by number. Right-click save. Create a meme. Start a fight. This is memetic warfare.</p>
+
+        <div class="search-container">
+            <input type="number" id="imageSearch" placeholder="Enter image number" min="0" max="419">
+            <button id="enterButton" class="search-button">Enter</button>
+            <button id="clearButton" class="search-button">Clear</button>
+        </div>
+        <div id="imageDisplay"></div>
+        <div id="imageGallery" class="image-container"></div>
+
+        <div class="game-section">
+            <h2>LAWB CHESS</h2>
+            <div class="leaderboard-section">
+                <h2 class="leaderboard-title">🦞🦞🦞🦞</h2>
+                <div class="wallet-connection">
+                    <div class="wallet-buttons"></div>
+                    <div id="wallet-address" class="wallet-address" style="display: none;"></div>
+                </div>
+                <div class="leaderboard-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Player</th>
+                                <th>Points</th>
+                                <th>W/L/D</th>
+                                <th>Games</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body"></tbody>
+                    </table>
+                </div>
             </div>
-            <div id="imageDisplay"></div>
-            <div id="imageGallery" class="image-container"></div>
-            
-            <!-- Chess Game Section -->
-            <div class="section-container game-section">
-                <h2 class="section-title">LAWB CHESS</h2>
-                <!-- Leaderboard Section -->
-                <div class="leaderboard-section">
-                    <h2 class="leaderboard-title">🦞🦞🦞🦞</h2>
-                    
-                    <!-- Wallet Connection Section -->
-                    <div class="wallet-connection">
-                        <!-- Wallet buttons will be dynamically added here -->
-                        <div class="wallet-buttons"></div>
-                        <div id="wallet-address" class="wallet-address" style="display: none;"></div>
-                    </div>
 
-                    <!-- Leaderboard Table -->
-                    <div class="leaderboard-table">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Rank</th>
-                                    <th>Player</th>
-                                    <th>Points</th>
-                                    <th>W/L/D</th>
-                                    <th>Games</th>
-                                </tr>
-                            </thead>
-                            <tbody id="leaderboard-body">
-                                <!-- Leaderboard data will be dynamically inserted here -->
-                            </tbody>
-                        </table>
+            <div class="game-mode-selection">
+                <button id="ai-mode" class="mode-btn selected">Single Player</button>
+                <button id="multiplayer-mode" class="mode-btn">Multiplayer</button>
+            </div>
+
+            <div class="chess-container">
+                <div id="difficulty-screen" style="display: none;">
+                    <h2>Select Difficulty</h2>
+                    <div class="difficulty-buttons">
+                        <button id="easy-mode" class="difficulty-btn">Easy Mode</button>
+                        <button id="hard-mode" class="difficulty-btn">Harder Mode</button>
+                    </div>
+                    <button id="start-game" class="start-btn" disabled>Start Game</button>
+                </div>
+
+                <div class="multiplayer-menu" style="display: none;">
+                    <h2>PvP</h2>
+                    <div class="join-game-container">
+                        <button class="multiplayer-btn" id="create-game">Create Game</button>
+                        <input type="text" id="game-code-input" placeholder="Enter game code" maxlength="6" autocomplete="off">
+                        <button class="multiplayer-btn" id="join-game">Join Game</button>
+                    </div>
+                    <div id="gameCodeDisplay" class="game-code-display">
+                        <h4>Share this code with opponent:</h4>
+                        <div class="game-code" id="gameCode"></div>
+                    </div>
+                    <div id="matchmaking-status" style="display: none;">
+                        <p class="status-text">Finding opponent...</p>
+                        <button class="multiplayer-btn cancel-btn" id="cancel-matchmaking">Cancel</button>
                     </div>
                 </div>
 
-                <!-- Game Mode Selection -->
-                <div class="game-mode-selection">
-                    <button id="ai-mode" class="mode-btn selected">single player</button>
-                    <button id="multiplayer-mode" class="mode-btn">multiplayer</button>
+                <div id="chess-game" style="display: none;">
+                    <div id="chessboard"></div>
                 </div>
-                
-                <div class="chess-container">
-                    <!-- Difficulty Selection Screen -->
-                    <div id="difficulty-screen" style="display: none;">
-                        <h2>Select Difficulty</h2>
-                        <div class="difficulty-buttons">
-                            <button id="easy-mode" class="difficulty-btn">Easy Mode</button>
-                            <button id="hard-mode" class="difficulty-btn">Harder Mode</button>
-                        </div>
-                        <button id="start-game" class="start-btn" disabled>Start Game</button>
-                    </div>
+            </div>
 
-                    <!-- Multiplayer Menu -->
-                    <div class="multiplayer-menu" style="display: none;">
-                        <h2 class="section-title">PvP</h2>
-                        
-                        <!-- Join Game Container -->
-                        <div class="join-game-container">
-                            <button class="multiplayer-btn" id="create-game">Create Game</button>
-                            <input 
-                                type="text" 
-                                id="game-code-input" 
-                                placeholder="Enter game code"
-                                maxlength="6"
-                                autocomplete="off"
-                            >
-                            <button class="multiplayer-btn" id="join-game">Join Game</button>
-                        </div>
-
-                        <!-- Game Code Display -->
-                        <div id="gameCodeDisplay" class="game-code-display">
-                            <h4>Share this code with opponent:</h4>
-                            <div class="game-code" id="gameCode"></div>
-                        </div>
-
-                        <div id="matchmaking-status" style="display: none;">
-                            <p class="status-text">Finding opponent...</p>
-                            <button class="multiplayer-btn cancel-btn" id="cancel-matchmaking">Cancel</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Chess Game -->
-                    <div id="chess-game" style="display: none;">
-                        <div id="chessboard"></div>
-                    </div>
+            <div class="game-info-container">
+                <div id="game-info">
+                    <div id="status">Connect to play</div>
+                    <div id="move-history"></div>
+                    <button id="restart-game" class="difficulty-btn">Restart Game</button>
                 </div>
-
-                <div class="game-info-container">
-                    <div id="game-info">
-                        <div id="status">Connect to play</div>
-                        <div id="move-history"></div>
-                        <button id="restart-game" class="difficulty-btn">Restart Game</button>
-                    </div>
-                    <div id="debug"></div>
-                </div>
+                <div id="debug"></div>
             </div>
         </div>
     </div>
-    
-    <!-- Copy Notification -->
-    <div id="copyNotification" class="copy-notification">
-        Code copied to clipboard!
-    </div>
 
-    <!-- Initialize Core Systems -->
+    <div id="copyNotification" class="copy-notification">Code copied to clipboard!</div>
+
+    <!-- Scripts -->
     <script>
-        // Wait for Supabase to be ready and initialize
+        // Supabase Initialization
         let databaseInitAttempts = 0;
         const initializeSupabase = async () => {
             try {
@@ -382,28 +332,19 @@
                     }
                     throw new Error('Supabase library not loaded');
                 }
-
-                // Initialize client
                 window.gameDatabase = window.supabase.createClient(
                     'https://roxwocgknkiqnsgiojgz.supabase.co',
                     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
                 );
-
-                // Verify database connection
                 const { data, error } = await window.gameDatabase
                     .from('leaderboard')
                     .select('count')
                     .single();
-
                 if (error) throw error;
                 console.log('Supabase connection verified');
-                
-                // Start loading game scripts after database is ready
                 loadGameScripts();
-
             } catch (error) {
                 console.error('Supabase initialization failed:', error);
-                // Retry initialization if failed
                 if (databaseInitAttempts < 5) {
                     databaseInitAttempts++;
                     setTimeout(initializeSupabase, 1000);
@@ -411,61 +352,39 @@
             }
         };
 
-        // Script loading with verification and retry
+        // Script Loading
         function loadScript(src, retryCount = 0) {
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
                 script.src = src;
-                
                 script.onload = () => {
                     console.log(`Successfully loaded: ${src}`);
                     resolve();
                 };
-                
                 script.onerror = () => {
                     if (retryCount < 3) {
                         console.log(`Retrying ${src} load, attempt ${retryCount + 1}`);
-                        setTimeout(() => {
-                            loadScript(src, retryCount + 1)
-                                .then(resolve)
-                                .catch(reject);
-                        }, 1000);
+                        setTimeout(() => loadScript(src, retryCount + 1).then(resolve).catch(reject), 1000);
                     } else {
                         reject(new Error(`Failed to load script: ${src}`));
                     }
                 };
-                
                 document.body.appendChild(script);
             });
         }
 
         async function loadGameScripts() {
-    try {
-        const scripts = [
-            'loadImages.js',
-            'leaderboard.js',
-            'multiplayer.js',
-            'chess.js'
-        ];
-
-        for (const script of scripts) {
-            await loadScript(script);
-            
-            // Special handling for leaderboard.js
-            if (script === 'leaderboard.js') {
-                // Wait for DOM elements to be ready
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // Force LeaderboardManager initialization
-                console.log('Forcing LeaderboardManager initialization');
-                window.leaderboardManager = new LeaderboardManager();
-                console.log('LeaderboardManager created:', window.leaderboardManager);
-            }
-        }
-
+            try {
+                const scripts = ['loadImages.js', 'leaderboard.js', 'multiplayer.js', 'chess.js'];
+                for (const script of scripts) {
+                    await loadScript(script);
+                    if (script === 'leaderboard.js') {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        console.log('Forcing LeaderboardManager initialization');
+                        window.leaderboardManager = new LeaderboardManager();
+                    }
+                }
                 console.log('All game scripts loaded successfully');
-
-                // Verify components are initialized
                 setTimeout(() => {
                     const components = {
                         leaderboardManager: !!window.leaderboardManager,
@@ -473,28 +392,21 @@
                         multiplayerManager: !!window.multiplayerManager,
                         gameDatabase: !!window.gameDatabase
                     };
-                    
                     console.log('Component verification:', components);
-                    
-                    // Re-initialize components if needed
                     if (!window.leaderboardManager && window.LeaderboardManager) {
                         console.log('Re-initializing LeaderboardManager');
                         window.leaderboardManager = new LeaderboardManager();
                     }
                 }, 1000);
-
             } catch (error) {
                 console.error('Error loading game scripts:', error);
             }
         }
 
-        // Start the initialization process
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeSupabase();
-        });
+        document.addEventListener('DOMContentLoaded', () => initializeSupabase());
     </script>
 
-    <!-- Initialize Game UI -->
+    <!-- Game UI Initialization -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const elements = {
@@ -509,7 +421,6 @@
                 statusElement: document.getElementById('status')
             };
 
-            // Initialize mode switching
             if (elements.multiplayerModeBtn) {
                 elements.multiplayerModeBtn.addEventListener('click', () => {
                     elements.aiModeBtn?.classList.remove('selected');
@@ -528,32 +439,26 @@
                 });
             }
 
-            // Initialize game code functionality
             if (elements.gameCodeDisplay) {
                 elements.gameCodeDisplay.addEventListener('click', function() {
-                    navigator.clipboard.writeText(this.textContent)
-                        .then(() => {
-                            const notification = document.getElementById('copyNotification');
-                            notification.style.display = 'block';
-                            setTimeout(() => notification.style.display = 'none', 2000);
-                        });
+                    navigator.clipboard.writeText(this.textContent).then(() => {
+                        const notification = document.getElementById('copyNotification');
+                        notification.style.display = 'block';
+                        setTimeout(() => notification.style.display = 'none', 2000);
+                    });
                 });
             }
 
             if (elements.gameCodeInput) {
                 elements.gameCodeInput.addEventListener('input', function() {
                     this.value = this.value.toUpperCase();
-                    if (this.value.length > 6) {
-                        this.value = this.value.slice(0, 6);
-                    }
+                    if (this.value.length > 6) this.value = this.value.slice(0, 6);
                 });
             }
 
             if (elements.createGameBtn) {
                 elements.createGameBtn.addEventListener('click', () => {
-                    if (window.multiplayerManager) {
-                        window.multiplayerManager.createGame();
-                    }
+                    if (window.multiplayerManager) window.multiplayerManager.createGame();
                 });
             }
 
@@ -564,18 +469,13 @@
                         alert('Please enter a game code');
                         return;
                     }
-                    if (window.multiplayerManager) {
-                        window.multiplayerManager.joinGameByCode(gameCode);
-                    }
+                    if (window.multiplayerManager) window.multiplayerManager.joinGameByCode(gameCode);
                 });
             }
         });
     </script>
 
-    <!-- Third-party scripts -->
-    <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
-    
-    <!-- Video player initialization -->
+    <!-- Video Player Initialization -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const videoContainer = document.querySelector('.video-container');
@@ -597,5 +497,7 @@
             });
         });
     </script>
+
+    <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
 </body>
 </html>

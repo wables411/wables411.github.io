@@ -1,14 +1,14 @@
-/* Game Section Layout */
+/* Game Section Layout - Overridden by style.css where applicable */
 .game-section {
-    padding: 20px;
-    background-color: transparent;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 15px;
     margin: 20px auto;
-    max-width: 1200px;
+    max-width: 1000px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    border: 1px solid rgba(50, 205, 50, 0.3);
 }
 
-/* Wallet Connection Styles - Consolidated */
+/* Wallet Connection Styles */
 .wallet-connection {
     display: flex;
     flex-direction: column;
@@ -20,17 +20,16 @@
 .wallet-btn {
     background: transparent;
     border: none;
-    padding: 8px 16px;
+    padding: 10px 20px;
     border-radius: 50px;
     color: white;
     font-family: Impact, sans-serif;
-    font-size: 1rem;
+    font-size: clamp(0.9rem, 2.5vw, 1rem);
     cursor: pointer;
     transition: all 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 1px;
-    margin: 5px 0;
-    width: 180px;
+    min-width: 160px;
     height: 36px;
     display: flex;
     align-items: center;
@@ -44,44 +43,41 @@
 }
 
 .wallet-btn[onclick*="phantom" i] {
-    background: rgb(147, 112, 219);
-    opacity: 0.8;
+    background: rgba(147, 112, 219, 0.8);
 }
 
 .wallet-btn[onclick*="solflare" i] {
-    background: rgb(247, 147, 26);
-    opacity: 0.8;
+    background: rgba(247, 147, 26, 0.8);
 }
 
 .wallet-btn[onclick*="magic" i] {
-    background: rgb(237, 75, 158);
-    opacity: 0.8;
+    background: rgba(237, 75, 158, 0.8);
 }
 
 .wallet-address {
     font-family: monospace;
     background: rgba(0, 0, 0, 0.7);
-    padding: 6px 12px;
+    padding: 8px 12px;
     border-radius: 4px;
     margin: 8px 0;
     word-break: break-all;
     border: 1px solid #FF0000;
     color: #FF0000;
     text-shadow: none;
-    font-size: 0.9rem;
+    font-size: clamp(0.8rem, 2vw, 0.9rem);
 }
 
 /* Leaderboard Section */
 .leaderboard-section {
     margin-bottom: 30px;
-    padding: 20px;
+    padding: 15px;
     border-radius: 8px;
     border: 1px solid rgba(153, 69, 255, 0.3);
     background: rgba(0, 0, 0, 0.2);
 }
 
 .leaderboard-title {
-    font-size: 2rem;
+    font-size: clamp(1.5rem, 4vw, 2rem);
     font-family: Impact, sans-serif;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -89,11 +85,11 @@
     text-shadow: 0 0 5px #32CD32,
                  0 0 10px #32CD32,
                  0 0 15px #32CD32;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .username-input {
-    margin: 20px 0;
+    margin: 15px 0;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -101,19 +97,20 @@
 }
 
 .username-input input {
-    padding: 12px;
+    padding: 10px;
     border: 1px solid rgba(50, 205, 50, 0.3);
     background: transparent;
     color: white;
     border-radius: 4px;
     font-family: monospace;
-    width: 200px;
+    width: 100%;
+    max-width: 200px;
 }
 
 .leaderboard-table {
     width: 100%;
     overflow-x: auto;
-    margin-top: 20px;
+    margin-top: 15px;
 }
 
 .leaderboard-table table {
@@ -124,9 +121,10 @@
 
 .leaderboard-table th,
 .leaderboard-table td {
-    padding: 12px;
+    padding: 8px;
     text-align: center;
     border: 1px solid rgba(50, 205, 50, 0.2);
+    font-size: clamp(0.8rem, 2vw, 1rem);
 }
 
 .leaderboard-table th {
@@ -142,8 +140,9 @@
 
 /* Chess Container */
 .chess-container {
-    width: min(90vh, 800px);
-    margin: 30px auto;
+    width: 100%;
+    max-width: min(90vw, 600px);
+    margin: 20px auto;
     position: relative;
 }
 
@@ -152,11 +151,11 @@
     aspect-ratio: 1;
     position: relative;
     border-radius: 8px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    background-size: 100% 100%;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    touch-action: none;
+    touch-action: manipulation;
     border: 2px solid rgba(50, 205, 50, 0.3);
 }
 
@@ -170,9 +169,10 @@
     cursor: pointer;
     transition: all 0.2s ease;
     z-index: 2;
+    touch-action: none;
 }
 
-.piece:hover {
+.piece:hover, .piece:active {
     transform: scale(1.1);
     filter: brightness(1.2) drop-shadow(0 0 8px rgba(50, 205, 50, 0.7));
     z-index: 3;
@@ -192,24 +192,24 @@
 }
 
 .highlight.capture {
-    background-color: rgba(255, 0, 0, 0.3) !important;
+    background-color: rgba(255, 0, 0, 0.3);
     border: 2px solid rgba(255, 0, 0, 0.5);
 }
 
 /* Difficulty Selection */
 #difficulty-screen {
     width: 100%;
-    padding: 40px 20px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
+    gap: 15px;
     border-radius: 10px;
     border: 1px solid rgba(50, 205, 50, 0.3);
 }
 
 #difficulty-screen h2 {
-    font-size: 2rem;
+    font-size: clamp(1.5rem, 4vw, 2rem);
     font-family: Impact, sans-serif;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -221,8 +221,9 @@
 
 .difficulty-buttons {
     display: flex;
-    gap: 20px;
-    margin: 15px 0;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
 }
 
 /* Button Styles */
@@ -232,8 +233,8 @@
     border: 2px solid rgba(153, 69, 255, 0.5);
     color: white;
     text-shadow: 0 0 5px rgba(153, 69, 255, 0.5);
-    padding: 12px 24px;
-    font-size: 1.1rem;
+    padding: 10px 20px;
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
     transition: all 0.3s ease;
     font-family: Impact, sans-serif;
     text-transform: uppercase;
@@ -264,21 +265,21 @@
 /* Game Info */
 .game-info-container {
     width: 100%;
-    max-width: min(80vh, 600px);
+    max-width: min(90vw, 500px);
     margin: 20px auto;
 }
 
 #game-info {
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    padding: 20px;
+    gap: 10px;
+    padding: 15px;
     border-radius: 8px;
     border: 1px solid rgba(50, 205, 50, 0.3);
 }
 
 #status {
-    font-size: 1.8rem;
+    font-size: clamp(1.2rem, 3vw, 1.8rem);
     font-family: Impact, sans-serif;
     text-align: center;
     text-transform: uppercase;
@@ -289,13 +290,14 @@
 }
 
 #move-history {
-    height: 150px;
+    height: 100px;
     overflow-y: auto;
-    padding: 15px;
+    padding: 10px;
     border-radius: 8px;
     font-family: monospace;
     white-space: pre-wrap;
     border: 1px solid rgba(50, 205, 50, 0.3);
+    font-size: clamp(0.8rem, 2vw, 1rem);
 }
 
 #debug {
@@ -314,62 +316,43 @@
 
 /* Animations */
 @keyframes pulse {
-    0% { 
-        opacity: 0.3;
-        transform: scale(0.95);
-    }
-    50% { 
-        opacity: 0.6;
-        transform: scale(1);
-    }
-    100% { 
-        opacity: 0.3;
-        transform: scale(0.95);
-    }
+    0% { opacity: 0.3; transform: scale(0.95); }
+    50% { opacity: 0.6; transform: scale(1); }
+    100% { opacity: 0.3; transform: scale(0.95); }
 }
 
-/* Mobile Optimizations */
-@media (max-width: 768px) {
-    .game-section {
-        padding: 15px;
-    }
-
-    .username-input {
-        flex-direction: column;
-    }
-
-    .username-input input {
-        width: 100%;
-        max-width: 300px;
-    }
-
-    .difficulty-buttons {
-        flex-direction: column;
-    }
-
-    #status {
-        font-size: 1.4rem;
-    }
-
-    #move-history {
-        height: 120px;
-    }
-
-    .difficulty-btn,
-    .start-btn {
-        padding: 10px 20px;
-        font-size: 1rem;
-    }
-
-    .leaderboard-table {
-        font-size: 0.9rem;
-    }
-
-    #difficulty-screen h2 {
-        font-size: 1.6rem;
-    }
+/* Game Mode Selection Styles */
+.game-mode-selection {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    margin: 15px 0;
 }
 
+.mode-btn {
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid rgba(50, 205, 50, 0.3);
+    padding: 10px 20px;
+    border-radius: 8px;
+    color: white;
+    font-family: Impact, sans-serif;
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.mode-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
+}
+
+.mode-btn.selected {
+    background: rgba(50, 205, 50, 0.3);
+    border-color: rgba(50, 205, 50, 0.6);
+}
+
+/* Promotion Dialog */
 .promotion-dialog {
     background-color: rgba(0, 0, 0, 0.5);
     padding: 10px;
@@ -393,43 +376,12 @@
     transform: scale(1.1);
 }
 
-/* Game Mode Selection Styles */
-.game-mode-selection {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin: 20px 0;
-}
-
-.mode-btn {
-    background: rgba(0, 0, 0, 0.7);
-    border: 2px solid rgba(50, 205, 50, 0.3);
-    padding: 12px 24px;
-    border-radius: 8px;
-    color: white;
-    font-family: Impact, sans-serif;
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.mode-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
-}
-
-.mode-btn.selected {
-    background: rgba(50, 205, 50, 0.3);
-    border-color: rgba(50, 205, 50, 0.6);
-}
-
-/* Add at the bottom of chess.css */
-
+/* Admin Controls */
 .admin-controls {
     position: fixed;
     bottom: 5px;
     right: 5px;
-    opacity: 0.15;  /* Even more transparent initially */
+    opacity: 0.15;
     transition: opacity 0.3s ease;
     z-index: 1000;
 }
@@ -439,11 +391,11 @@
 }
 
 .admin-btn {
-    background: rgba(50, 50, 50, 0.4);  /* Darker, more subtle background */
+    background: rgba(50, 50, 50, 0.4);
     border: 1px solid rgba(255, 0, 0, 0.2);
     color: rgba(255, 100, 100, 0.8);
     padding: 3px 6px;
-    font-size: 0.6rem;  /* Even smaller text */
+    font-size: 0.6rem;
     border-radius: 3px;
     cursor: pointer;
     font-family: monospace;
@@ -455,4 +407,50 @@
     background: rgba(50, 50, 50, 0.6);
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+    .game-section {
+        padding: 10px;
+    }
+    .username-input {
+        flex-direction: column;
+    }
+    .username-input input {
+        max-width: 300px;
+    }
+    .difficulty-buttons {
+        flex-direction: column;
+    }
+    #status {
+        font-size: 1.4rem;
+    }
+    #move-history {
+        height: 80px;
+    }
+    .difficulty-btn, .start-btn {
+        padding: 8px 16px;
+        font-size: 1rem;
+    }
+    .leaderboard-table th, .leaderboard-table td {
+        padding: 6px;
+        font-size: 0.8rem;
+    }
+    #difficulty-screen h2 {
+        font-size: 1.6rem;
+    }
+    .chess-container {
+        max-width: min(85vw, 400px);
+    }
+}
+
+@media (max-width: 480px) {
+    .chess-container {
+        max-width: min(90vw, 320px);
+    }
+    .piece, .highlight {
+        width: 12.5%;
+        height: 12.5%;
+    }
 }

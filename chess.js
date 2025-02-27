@@ -80,8 +80,8 @@ const POSITION_WEIGHTS = {
         [0,  0,  0,  0,  0,  0,  0,  0],
         [50, 50, 50, 50, 50, 50, 50, 50],
         [10, 10, 20, 30, 30, 20, 10, 10],
-        [5,  5,  10, 25, 25, 10,  5,  5],
-        [0,  0,  0,  20, 20,  0,  0,  0],
+        [5,  5, 10, 25, 25, 10,  5,  5],
+        [0,  0,  0, 20, 20,  0,  0,  0],
         [5, -5, -10,  0,  0, -10, -5,  5],
         [5, 10, 10, -20, -20, 10, 10,  5],
         [0,  0,  0,  0,  0,  0,  0,  0]
@@ -164,7 +164,6 @@ function updateStatusDisplay(message) {
 window.debug = debug;
 window.updateStatusDisplay = updateStatusDisplay;
 
-// Add new function for difficulty button management
 function updateDifficultyButtons(difficultySelected) {
     const easyBtn = document.getElementById('easy-mode');
     const hardBtn = document.getElementById('hard-mode');
@@ -239,7 +238,6 @@ function placePieces() {
         return;
     }
 
-    // Cache existing pieces
     const existingPieces = new Map();
     chessboard.querySelectorAll('.piece').forEach(piece => {
         const row = parseInt(piece.getAttribute('data-row'));
@@ -247,7 +245,6 @@ function placePieces() {
         existingPieces.set(`${row},${col}`, piece);
     });
 
-    // Update only changed positions
     for (let row = 0; row < BOARD_SIZE; row++) {
         for (let col = 0; col < BOARD_SIZE; col++) {
             const piece = window.board[row][col];
@@ -276,9 +273,9 @@ function createPieceElement(piece, row, col) {
     pieceElement.style.backgroundImage = `url('${imageUrl}')`;
     pieceElement.style.left = `${col * 12.5}%`;
     pieceElement.style.top = `${row * 12.5}%`;
-    pieceElement.style.opacity = '1 !important';
-    pieceElement.style.display = 'block !important';
-    pieceElement.style.zIndex = '10 !important';
+    pieceElement.style.opacity = '1';
+    pieceElement.style.display = 'block';
+    pieceElement.style.zIndex = '10';
     pieceElement.setAttribute('data-row', row);
     pieceElement.setAttribute('data-col', col);
     pieceElement.addEventListener('click', onPieceClick);
@@ -374,6 +371,11 @@ function promptPawnPromotion(startRow, startCol, endRow, endCol) {
             executeMove(startRow, startCol, endRow, endCol, promotedPiece);
             dialog.remove();
         };
+        pieceButton.addEventListener('touchend', (e) => { // Mobile support for promotion
+            e.preventDefault();
+            executeMove(startRow, startCol, endRow, endCol, promotedPiece);
+            dialog.remove();
+        });
         dialog.appendChild(pieceButton);
     });
     
@@ -691,7 +693,7 @@ function makeAIMove() {
 
 window.makeAIMove = makeAIMove;
 
-function selectBestMove() { // Kept for reference, but not used with Web Worker
+function selectBestMove() { // Kept for reference, not used with Web Worker
     const legalMoves = getAllLegalMoves('red');
     if (legalMoves.length === 0) return null;
 
@@ -1164,6 +1166,73 @@ function onSquareClick(row, col) {
     }
 }
 
+// Touch Event Handlers for Mobile
+function setupTouchEvents() {
+    const chessboard = document.getElementById('chessboard');
+    if (!chessboard) return;
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchTarget = null;
+
+    chessboard.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        touchTarget = e.target.classList.contains('piece') ? e.target : null;
+        if (touchTarget) {
+            const row = parseInt(touchTarget.getAttribute('data-row'));
+            const col = parseInt(touchTarget.getAttribute('data-col'));
+            const piece = window.board[row][col];
+            const pieceColor = getPieceColor(piece);
+            if (pieceColor === window.currentPlayer) {
+                selectedPiece = touchTarget;
+                touchTarget.style.opacity = '0.7';
+                showLegalMoves(row, col);
+            }
+        }
+    }, { passive: false });
+
+    chessboard.addEventListener('touchmove', (e) => {
+        if (!touchTarget) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+        touchTarget.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.1)`;
+    }, { passive: false });
+
+    chessboard.addEventListener('touchend', (e) => {
+        if (!touchTarget) return;
+        e.preventDefault();
+        const touch = e.changedTouches[0];
+        const boardRect = chessboard.getBoundingClientRect();
+        const squareSize = boardRect.width / 8;
+        const endCol = Math.floor((touch.clientX - boardRect.left) / squareSize);
+        const endRow = Math.floor((touch.clientY - boardRect.top) / squareSize);
+
+        if (isWithinBoard(endRow, endCol)) {
+            const startRow = parseInt(touchTarget.getAttribute('data-row'));
+            const startCol = parseInt(touchTarget.getAttribute('data-col'));
+            const piece = window.board[startRow][startCol];
+            if (canMakeMove(startRow, startCol, endRow, endCol)) {
+                if (piece.toLowerCase() === 'p' && (endRow === 0 || endRow === 7)) {
+                    promptPawnPromotion(startRow, startCol, endRow, endCol);
+                } else {
+                    executeMove(startRow, startCol, endRow, endCol);
+                }
+            }
+        }
+
+        touchTarget.style.transform = '';
+        touchTarget.style.opacity = '1';
+        selectedPiece = null;
+        removeHighlights();
+        touchTarget = null;
+    }, { passive: false });
+}
+
 function addMoveToHistory(piece, startRow, startCol, endRow, endCol, capturedPiece) {
     const move = {
         piece,
@@ -1486,6 +1555,7 @@ function initGame() {
 
         setupModeButtons();
         setupDifficultyButtons();
+        setupTouchEvents(); // Add touch support
         
         const elements = initializeElements();
         if (elements.buttons.restartBtn) {
