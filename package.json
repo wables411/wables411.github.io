@@ -1,0 +1,22 @@
+{
+  "name": "wables411.github.io",
+  "version": "1.0.0",
+  "description": "LAWB Chess Game on Sanko Chain",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wables411/wables411.github.io.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/wables411/wables411.github.io/issues"
+  },
+  "homepage": "https://github.com/wables411/wables411.github.io#readme",
+  "devDependencies": {
+    "hardhat": "^2.19.4"
+  }
+}
