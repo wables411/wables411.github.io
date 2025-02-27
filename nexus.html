@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS</title>
+    <title>NEXUS - Lawb Headquarters</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
     <script>
@@ -17,12 +17,16 @@
             margin: 0;
             padding: 0;
             height: 100%;
+            font-family: 'Impact', sans-serif; /* Consistent with Lawb theme */
+            color: white;
+            background: #000; /* Fallback for video */
         }
         .video-container {
             position: relative;
             width: 100%;
             height: 100vh;
             overflow: hidden;
+            background: #000;
         }
         #myVideo {
             position: absolute;
@@ -32,7 +36,8 @@
             min-height: 100%;
             width: auto;
             height: auto;
-            transform: translateX(-50%) translateY(-50%);
+            transform: translate(-50%, -50%);
+            object-fit: cover; /* Ensures video fills container */
         }
         #toggleButton {
             position: absolute;
@@ -40,27 +45,111 @@
             left: 50%;
             transform: translateX(-50%);
             z-index: 1000;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
         }
-        .image-button-row img {
-            width: 75%;
-            height: auto;
-        }
-        .content {
-            padding-top: 20px;
+        #toggleButton:hover {
+            background: rgba(255, 255, 255, 0.2);
         }
         nav {
             position: fixed;
             top: 0;
             width: 100%;
             z-index: 2000;
+            background: rgba(0, 0, 0, 0.8); /* Slight transparency */
+            padding: 10px 0;
+        }
+        nav ul {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+        nav ul li {
+            display: inline;
+            margin: 0 15px;
+        }
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            text-transform: uppercase;
+            font-size: 1.2em;
+        }
+        nav ul li a:hover {
+            color: #00f; /* Blue hover to match Lawb theme */
+        }
+        .content {
+            padding: 40px 20px;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 1));
+            text-align: center;
+        }
+        .mint-section {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .mint-section p, .mint-section ul {
+            font-size: 1.2em;
+            line-height: 1.5;
+        }
+        .community-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px; /* Space between items */
+        }
+        .community-list li {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 5px;
+            flex: 1 1 200px; /* Flexible sizing */
+            max-width: 250px;
+        }
+        .image-button-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .image-button-row a {
+            flex: 1 1 150px; /* Flexible image sizing */
+            max-width: 200px;
+            transition: transform 0.3s ease;
+        }
+        .image-button-row img {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
+        .image-button-row a:hover {
+            transform: scale(1.05);
         }
         .bottom-button {
             display: inline-block;
-            cursor: pointer;
+            margin: 20px;
             transition: transform 0.3s ease;
         }
         .bottom-button:hover {
             transform: scale(1.05);
+        }
+        .resize-image {
+            max-width: 300px;
+            height: auto;
+            border-radius: 10px;
+        }
+        a {
+            color: #00f; /* Blue to match Lawb theme */
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -81,7 +170,7 @@
     </nav>
 
     <div class="video-container">
-        <video id="myVideo" loop>
+        <video id="myVideo" autoplay muted loop>
             <source src="images/nexusminting.mp4" type="video/mp4">
             Your browser does not support the video tag.
         </video>
@@ -90,6 +179,7 @@
 
     <div class="content">
         <div class="mint-section">
+            <h1>Lawb Nexus Minting</h1>
             <p>The following communities are welcome to mint 10x per wallet before public:</p>
             <ul class="community-list">
                 <li>LAWBSTATION HOLDERS</li>
@@ -101,8 +191,8 @@
                 <li>$NIGGABUTT</li>
                 <li>RELAXIO HOLDERS</li>
             </ul>
-            <p>Each collection will have 24hrs to mint via <a href="https://www.launchmynft.io/collections/BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo/iVhHZ1Oy0LrIoVTG9C2v" target="_blank">launchmynft.io</a></p>
-            <p>*UPDATE: Due to reasons outside of Lawb control, LawbNexus sold out during BadMen tier*</p>
+            <p>Each collection has 24 hours to mint via <a href="https://www.launchmynft.io/collections/BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo/iVhHZ1Oy0LrIoVTG9C2v" target="_blank">LaunchMyNFT</a>.</p>
+            <p><strong>*UPDATE: Due to reasons outside of Lawb control, LawbNexus sold out during the BadMen tier*</strong></p>
 
             <div class="image-button-row">
                 <a href="https://dexscreener.com/solana/7jx9p6iobf3uy3kukt3s4jqswqat1bvumncd6awlaaeb" target="_blank"><img src="images/lawbstation.GIF" alt="LAWBSTATION"></a>
@@ -114,21 +204,24 @@
                 <a href="https://dexscreener.com/solana/bcdfb7vnroy57exbxaybnyl9thsvimu1umow1acxccfv" target="_blank"><img src="images/nbuttt.png" alt="$NIGGABUTT"></a>
                 <a href="https://www.tensor.trade/trade/relaxio" target="_blank"><img src="images/relaxio.png" alt="RELAXIO"></a>
             </div>
-            <p>Follow <a href="https://twitter.com/LawbNexus" target="_blank">Lawb Nexus</a> to stay updated.</p>
-            <a href="https://zora.co/collect/base:0xeffa1125545cb24b8526fa7d0752c385128fbcc7/1" target="_blank">
-                <img src="images/final lawb gif.gif" alt="lawbnexus" class="resize-image">
+            <p>Follow <a href="https://twitter.com/LawbNexus" target="_blank">@LawbNexus</a> on Twitter to stay updated.</p>
+            <a href="https://zora.co/collect/base:0xeffa1125545cb24b8526fa7d0752c385128fbcc7/1" target="_blank" class="bottom-button">
+                <img src="images/final lawb gif.gif" alt="LawbNexus" class="resize-image">
             </a>
         </div>
 
-        <p>Download isolated LawbNexus. create a meme. start a fight. Post an original meme and tag @LawbNexus.</p>
-        <p>Click <a href="https://dropbox.com/scl/fo/8y3guocdhd0r6znrv8zoe/AKSy0plIj4Ejx_z0Zsu3l6s?rlkey=qdb2mb24lbxv9uccg89j9jobb&st=3oznr6bp&dl=0" target="_blank">Here</a> to download isolated LawbNexus. </p>
-        <a href="https://zora.co/collect/base:0xeffa1125545cb24b8526fa7d0752c385128fbcc7/1" target="_blank" class="bottom-button">
-            <img src="images/0059_1.gif" alt="lawbnexus" class="resize-image">
-        </a>
+        <div class="meme-section">
+            <h2>Create Your LawbNexus Meme</h2>
+            <p>Download an isolated LawbNexus, create a meme, start a fight! Post your original meme and tag <a href="https://twitter.com/LawbNexus" target="_blank">@LawbNexus</a>.</p>
+            <p><a href="https://dropbox.com/scl/fo/8y3guocdhd0r6znrv8zoe/AKSy0plIj4Ejx_z0Zsu3l6s?rlkey=qdb2mb24lbxv9uccg89j9jobb&st=3oznr6bp&dl=0" target="_blank" class="download-btn">Download Isolated LawbNexus</a></p>
+            <a href="https://zora.co/collect/base:0xeffa1125545cb24b8526fa7d0752c385128fbcc7/1" target="_blank" class="bottom-button">
+                <img src="images/0059_1.gif" alt="LawbNexus Meme" class="resize-image">
+            </a>
+        </div>
     </div>
 
     <script>
-        var video = document.getElementById('myVideo');
+        const video = document.getElementById('myVideo');
         function togglePlay() {
             if (video.paused) {
                 video.play();

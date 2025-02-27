@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lawb Headquarters</title>
-<link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
     <style>
         body {
@@ -42,7 +42,7 @@
         .miladychan-link {
             display: block;
             margin: 20px auto;
-            padding-bottom: 50px; /* Add some padding at the bottom */
+            padding-bottom: 50px;
         }
     </style>
 </head>
@@ -65,7 +65,34 @@
     <div class="main-content">
         <h1>Lawb Headquarters</h1>
         <p>Home of Lawbsters, LawbStarz, LawbStations and Nexus</p>
-        <h2>Welcome traveler! You've made it to Lawb Headquarters, updating you with any and all reported Lawb sightings. Stay tuned for further details on the degenerate lobster hijinks.</h2>
+        <h2>MEME MACHINE</h2>
+        <div id="meme-generator">
+            <label for="collection-selector">Select Collection:</label>
+            <select id="collection-selector"></select>
+            <br><br>
+            <label for="top-text">Top Text:</label>
+            <input type="text" id="top-text">
+            <br><br>
+            <label for="bottom-text">Bottom Text:</label>
+            <input type="text" id="bottom-text">
+            <br><br>
+            <button id="fetch-image">FETCH LAWB</button>
+            <button id="generate-meme">ADD TEXT</button>
+            <button id="deep-fry">DEEP FRY</button>
+        </div>
+        <br>
+        <img id="generated-meme" style="display:none;">
+        <canvas id="meme-canvas" style="display:none;"></canvas>
+        <div class="video-section" style="margin: 20px auto; max-width: 400px;">
+            <video autoplay loop controls style="display: block; margin: 0 auto; max-width: 100%;">
+                <source src="images/bluelawbnifty.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <p style="margin-top: 10px;">
+                Join the <a href="https://www.niftyisland.com/communities/9e8a5749-8381-406c-93d3-bdb123a1f25c" target="_blank">Lawbster community</a> on Nifty Island
+            </p>
+        </div>
+        <h2 style="padding-left: 20px; padding-right: 20px;">Welcome traveler! You've made it to Lawb Headquarters, updating you with any and all reported Lawb sightings. Stay tuned for further details on the degenerate lobster hijinks.</h2>
         <a href="images/Lawbsters.vrm" download="Lawbsters.vrm">
             <button>Streamers: click to download 3D VRM Lawbster</button>
         </a>
@@ -76,24 +103,6 @@
                 <img src="images/lawblore.gif" alt="Lawb Lore" style="max-width: 80%;">
             </a>
         </div>
-        <h2>MEME MACHINE</h2>
-<div id="meme-generator">
-    <label for="collection-selector">Select Collection:</label>
-    <select id="collection-selector"></select>
-    <br><br>
-    <label for="top-text">Top Text:</label>
-    <input type="text" id="top-text">
-    <br><br>
-    <label for="bottom-text">Bottom Text:</label>
-    <input type="text" id="bottom-text">
-    <br><br>
-    <button id="fetch-image">FETCH LAWB</button>
-    <button id="generate-meme">ADD TEXT</button>
-    <button id="deep-fry">DEEP FRY</button>
-</div>
-        <br>
-        <img id="generated-meme" style="display:none;">
-        <canvas id="meme-canvas" style="display:none;"></canvas>
     </div>
     
     <a href="https://boards.miladychan.org/milady/33793" target="_blank" class="miladychan-link">
