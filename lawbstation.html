@@ -288,6 +288,7 @@
                         <button class="multiplayer-btn" id="create-game">Create Game</button>
                         <input type="text" id="game-code-input" placeholder="Enter game code" maxlength="6" autocomplete="off">
                         <button class="multiplayer-btn" id="join-game">Join Game</button>
+                        <input type="number" id="wagerAmount" placeholder="Wager amount in $LAWB (100–10,000,000)" min="100" max="10000000">
                     </div>
                     <div id="gameCodeDisplay" class="game-code-display">
                         <h4>Share this code with opponent:</h4>
@@ -418,7 +419,10 @@
                 gameCodeDisplay: document.getElementById('gameCode'),
                 joinGameBtn: document.getElementById('join-game'),
                 createGameBtn: document.getElementById('create-game'),
-                statusElement: document.getElementById('status')
+                statusElement: document.getElementById('status'),
+                endGameBtn: document.getElementById('endGameBtn'),
+                endInviteCode: document.getElementById('endInviteCode'),
+                winnerAddress: document.getElementById('winnerAddress')
             };
 
             if (elements.multiplayerModeBtn) {
@@ -472,6 +476,18 @@
                     if (window.multiplayerManager) window.multiplayerManager.joinGameByCode(gameCode);
                 });
             }
+
+            if (elements.endGameBtn) {
+                elements.endGameBtn.addEventListener('click', () => {
+                    const inviteCode = elements.endInviteCode?.value?.trim();
+                    const winner = elements.winnerAddress?.value?.trim();
+                    if (!inviteCode || !winner) {
+                        alert('Please enter both invite code and winner address');
+                        return;
+                    }
+                    if (window.multiplayerManager) window.multiplayerManager.endGame(inviteCode, winner);
+                });
+            }
         });
     </script>
 
@@ -499,5 +515,9 @@
     </script>
 
     <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
+
+    <!-- Include Ethers.js for Sanko blockchain interaction -->
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js" charset="utf-8"></script>
+    <script src="multiplayer.js"></script>
 </body>
 </html>
