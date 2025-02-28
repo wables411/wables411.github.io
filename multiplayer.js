@@ -1,6 +1,9 @@
 // multiplayer.js
 
 // No 'const ethers' declaration - rely on window.ethers from CDN loaded in lawbstation.html
+if (typeof window.ethers === "undefined") {
+  throw new Error("Ethers.js not loaded. Please include the CDN in your HTML.");
+}
 
 // Contract ABI (Full ABI from ChessGame.json)
 const chessGameABI = [
@@ -285,9 +288,7 @@ class MultiplayerManager {
 
   constructor() {
     if (!window.gameDatabase) {
-      console.warn("Game database not initialized yet, retrying...");
-      setTimeout(() => this.initializeAfterSupabase(), 1000);
-      return;
+      throw new Error("Supabase not initialized. Please wait for gameDatabase.");
     }
     this.supabase = window.gameDatabase;
     this.gameId = null;
@@ -305,30 +306,23 @@ class MultiplayerManager {
     console.log("MultiplayerManager initialized");
   }
 
-  initializeAfterSupabase() {
-    if (window.gameDatabase) {
-      this.supabase = window.gameDatabase;
-      this.initializeEventListeners();
-      console.log("MultiplayerManager initialized after Supabase");
-    } else {
-      console.warn("Still waiting for gameDatabase, retrying...");
-      setTimeout(() => this.initializeAfterSupabase(), 1000);
-    }
-  }
-
   async initWeb3() {
-    if (typeof window.ethereum === "undefined") {
-      alert("Please install MetaMask to use this feature!");
+    if (!window.walletConnector) {
+      alert("Wallet system not initialized. Please connect via UI first.");
       return null;
     }
     try {
-      await window.ethereum.request({ method: "eth_requestAccounts" });
+      const address = await window.walletConnector.connectEVMWallet();
+      if (!address) {
+        throw new Error("No address returned from wallet connection.");
+      }
       const provider = new window.ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
+      console.log("Web3 initialized with address:", address);
       return { provider, signer };
     } catch (error) {
-      console.error("User denied account access or error:", error);
-      alert("Please connect your MetaMask wallet to Sanko and refresh the page.");
+      console.error("Wallet connection failed:", error.message);
+      alert("Failed to connect wallet: " + error.message);
       return null;
     }
   }
@@ -530,11 +524,23 @@ class MultiplayerManager {
     try {
       const player = localStorage.getItem("currentPlayer");
       if (!player) {
-        alert("Connect wallet first");
-        MultiplayerManager.hasGameBeenCreated = false;
-        this.hasCreatedGame = false;
-        return;
+        alert("Please connect your wallet first.");
+        throw new Error("No wallet connected");
       }
+
+      if (window.ethereum) {
+        const chainId = await window.ethereum.request({ method: "eth_chainId" });
+        if (chainId !== "0x7CC") { // Sanko chain ID
+          alert("Please switch to the Sanko network in MetaMask.");
+          throw new Error("Wrong network");
+        }
+      }
+
+      const web3 = await this.initWeb3();
+      if (!web3 || !web3.signer) {
+        throw new Error("Failed to initialize Web3");
+      }
+      const { signer } = web3;
 
       const wagerInput = document.getElementById("wagerAmount");
       const wagerAmount = parseFloat(wagerInput?.value) || 1000;
@@ -543,25 +549,19 @@ class MultiplayerManager {
 
       if (wagerAmount < minWager || wagerAmount > maxWager) {
         alert(`Wager must be between ${minWager} and ${maxWager} $LAWB`);
-        MultiplayerManager.hasGameBeenCreated = false;
-        this.hasCreatedGame = false;
-        return;
+        throw new Error("Invalid wager amount");
       }
 
       const contract = await this.connectToContract();
       if (!contract) {
-        MultiplayerManager.hasGameBeenCreated = false;
-        this.hasCreatedGame = false;
-        return;
+        throw new Error("Failed to connect to contract");
       }
 
       const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       const wagerInWei = window.ethers.utils.parseUnits(wagerAmount.toString(), 6);
 
       const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F";
-      const { signer } = await this.initWeb3();
-      if (!signer) throw new Error("Failed to get signer");
-
+      const userAddress = await signer.getAddress();
       const lawbContract = new window.ethers.Contract(lawbAddress, [
         {
           "inputs": [
@@ -575,7 +575,6 @@ class MultiplayerManager {
         }
       ], signer);
 
-      const userAddress = await signer.getAddress();
       const allowance = await lawbContract.allowance(userAddress, contractAddress);
       if (allowance.lt(wagerInWei)) {
         const approveTx = await lawbContract.approve(contractAddress, wagerInWei);
@@ -669,15 +668,19 @@ class MultiplayerManager {
         return;
       }
 
+      const web3 = await this.initWeb3();
+      if (!web3 || !web3.signer) {
+        throw new Error("Failed to initialize Web3");
+      }
+      const { signer } = web3;
+
       const contract = await this.connectToContract();
-      if (!contract) return;
+      if (!contract) throw new Error("Failed to connect to contract");
 
       const wagerInWei = window.ethers.utils.parseUnits(game.wager_amount.toString(), 6);
 
       const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F";
-      const { signer } = await this.initWeb3();
-      if (!signer) throw new Error("Failed to get signer");
-
+      const userAddress = await signer.getAddress();
       const lawbContract = new window.ethers.Contract(lawbAddress, [
         {
           "inputs": [
@@ -691,7 +694,6 @@ class MultiplayerManager {
         }
       ], signer);
 
-      const userAddress = await signer.getAddress();
       const allowance = await lawbContract.allowance(userAddress, contractAddress);
       if (allowance.lt(wagerInWei)) {
         const approveTx = await lawbContract.approve(contractAddress, wagerInWei);
@@ -731,7 +733,7 @@ class MultiplayerManager {
   async endGame(inviteCode, winnerAddress) {
     try {
       const contract = await this.connectToContract();
-      if (!contract) return;
+      if (!contract) throw new Error("Failed to connect to contract");
 
       const tx = await contract.endGame(inviteCode, winnerAddress);
       await tx.wait();
@@ -1025,8 +1027,23 @@ class MultiplayerManager {
   }
 }
 
-if (!window.multiplayerManager) {
-  window.multiplayerManager = new MultiplayerManager();
-} else {
-  console.log("MultiplayerManager already initialized, reusing instance");
+// Deferred instantiation of MultiplayerManager
+function initializeMultiplayerManager() {
+  if (!window.gameDatabase) {
+    console.log("Waiting for gameDatabase to initialize...");
+    setTimeout(initializeMultiplayerManager, 500); // Retry every 500ms
+    return;
+  }
+  if (!window.multiplayerManager) {
+    window.multiplayerManager = new MultiplayerManager();
+    console.log("MultiplayerManager initialized successfully");
+  } else {
+    console.log("MultiplayerManager already initialized, reusing instance");
+  }
 }
+
+// Start the initialization process
+initializeMultiplayerManager();
+
+// Export for external triggering if needed
+window.initializeMultiplayerManager = initializeMultiplayerManager;
