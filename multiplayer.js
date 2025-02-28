@@ -1,9 +1,9 @@
 // multiplayer.js
 
-// Import Ethers.js (ensure it's installed in wables411.github.io: npm install ethers)
-const { ethers } = require("ethers");
+// Use the global ethers object loaded via CDN
+const { ethers } = window.ethers;
 
-// Contract ABI (Application Binary Interface) - Replace this with the full ABI from ChessGame.json
+// Contract ABI (Application Binary Interface) - Full ABI from ChessGame.json
 const chessGameABI = [
   {
     "inputs": [],
@@ -392,6 +392,16 @@ class MultiplayerManager {
     }
 
     if (joinGameBtn) {
+      joinKeypress = (e) => {
+        if (e.key === 'Enter') {
+          const code = document.getElementById("game-code-input")?.value?.trim();
+          if (code) {
+            this.joinGameByCode(code);
+          } else {
+            alert("Please enter a game code");
+          }
+        }
+      }
       joinGameBtn.onclick = () => {
         const code = document.getElementById("game-code-input")?.value?.trim();
         if (code) {
@@ -400,6 +410,7 @@ class MultiplayerManager {
           alert("Please enter a game code");
         }
       };
+      document.getElementById("game-code-input").addEventListener('keypress', joinKeypress);
     }
 
     if (cancelBtn) {
@@ -551,7 +562,30 @@ class MultiplayerManager {
         .toUpperCase();
       const wagerInWei = ethers.parseUnits(wagerAmount.toString(), 6); // Convert to 6 decimals for $LAWB
 
-      // Approve and transfer tokens for wager
+      // Approve and transfer tokens for wager (optional, add if needed)
+      const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F"; // $LAWB address
+      const lawbContract = new ethers.Contract(lawbAddress, [
+        {
+          "inputs": [
+            { "internalType": "address", "name": "spender", "type": "address" },
+            { "internalType": "uint256", "name": "amount", "type": "uint256" }
+          ],
+          "name": "approve",
+          "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ], await this.connectToContract().signer);
+
+      // Check allowance and approve if needed
+      const allowance = await lawbContract.allowance(await this.connectToContract().signer.getAddress(), contractAddress);
+      if (allowance.lt(wagerInWei)) {
+        const approveTx = await lawbContract.approve(contractAddress, wagerInWei);
+        await approveTx.wait();
+        console.log("Token approval successful");
+      }
+
+      // Create the game on the blockchain
       const tx = await contract.createGame(inviteCode, wagerInWei);
       await tx.wait();
       console.log(
@@ -648,7 +682,30 @@ class MultiplayerManager {
 
       const wagerInWei = ethers.parseUnits(game.wager_amount.toString(), 6); // Use stored wager amount
 
-      // Approve and transfer tokens for wager
+      // Approve and transfer tokens for wager (optional, add if needed)
+      const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F"; // $LAWB address
+      const lawbContract = new ethers.Contract(lawbAddress, [
+        {
+          "inputs": [
+            { "internalType": "address", "name": "spender", "type": "address" },
+            { "internalType": "uint256", "name": "amount", "type": "uint256" }
+          ],
+          "name": "approve",
+          "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ], await this.connectToContract().signer);
+
+      // Check allowance and approve if needed
+      const allowance = await lawbContract.allowance(await this.connectToContract().signer.getAddress(), contractAddress);
+      if (allowance.lt(wagerInWei)) {
+        const approveTx = await lawbContract.approve(contractAddress, wagerInWei);
+        await approveTx.wait();
+        console.log("Token approval successful");
+      }
+
+      // Join the game on the blockchain
       const tx = await contract.joinGame(game.game_id);
       await tx.wait();
       console.log(`Blockchain game joined with invite code ${game.game_id}`);
