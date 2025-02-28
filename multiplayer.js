@@ -1,277 +1,341 @@
 // multiplayer.js
 
-// No 'const ethers' declaration - rely on window.ethers from CDN loaded in lawbstation.html
+// Ensure Ethers.js is loaded from CDN (e.g., in lawbstation.html)
 if (typeof window.ethers === "undefined") {
   throw new Error("Ethers.js not loaded. Please include the CDN in your HTML.");
 }
 
-// Contract ABI (Full ABI from ChessGame.json)
-const chessGameABI = [
+// ChessGame Contract ABI (from your provided artifact)
+if (!window.chessGameABI) {
+  const chessGameABI = [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "ReentrancyGuardReentrantCall",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes6",
+          "name": "inviteCode",
+          "type": "bytes6"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "player1",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "wagerAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "GameCreated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes6",
+          "name": "inviteCode",
+          "type": "bytes6"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "winner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "houseFee",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "wagerPayout",
+          "type": "uint256"
+        }
+      ],
+      "name": "GameEnded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes6",
+          "name": "inviteCode",
+          "type": "bytes6"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "player2",
+          "type": "address"
+        }
+      ],
+      "name": "GameJoined",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "MAX_WAGER",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "MIN_WAGER",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes6",
+          "name": "inviteCode",
+          "type": "bytes6"
+        },
+        {
+          "internalType": "uint256",
+          "name": "wagerAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "createGame",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes6",
+          "name": "inviteCode",
+          "type": "bytes6"
+        },
+        {
+          "internalType": "address",
+          "name": "winner",
+          "type": "address"
+        }
+      ],
+      "name": "endGame",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes6",
+          "name": "",
+          "type": "bytes6"
+        }
+      ],
+      "name": "games",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "player1",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "player2",
+          "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "isActive",
+          "type": "bool"
+        },
+        {
+          "internalType": "address",
+          "name": "winner",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes6",
+          "name": "inviteCode",
+          "type": "bytes6"
+        },
+        {
+          "internalType": "uint256",
+          "name": "wagerAmount",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "house",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes6",
+          "name": "inviteCode",
+          "type": "bytes6"
+        }
+      ],
+      "name": "joinGame",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "lawbToken",
+      "outputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "playerToGame",
+      "outputs": [
+        {
+          "internalType": "bytes6",
+          "name": "",
+          "type": "bytes6"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "recipient",
+          "type": "address"
+        }
+      ],
+      "name": "withdrawTokens",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ];
+  window.chessGameABI = chessGameABI;
+} else {
+  console.log("chessGameABI already defined, reusing existing definition");
+}
+
+// LAWb Token ABI (standard ERC-20, verified via Parsec.fi)
+const lawbTokenABI = [
   {
-    "inputs": [],
+    "constant": true,
+    "inputs": [
+      { "name": "owner", "type": "address" },
+      { "name": "spender", "type": "address" }
+    ],
+    "name": "allowance",
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      { "name": "spender", "type": "address" },
+      { "name": "value", "type": "uint256" }
+    ],
+    "name": "approve",
+    "outputs": [{ "name": "", "type": "bool" }],
     "stateMutability": "nonpayable",
-    "type": "constructor"
+    "type": "function"
   },
   {
-    "inputs": [],
-    "name": "ReentrancyGuardReentrantCall",
-    "type": "error"
-  },
-  {
-    "anonymous": false,
+    "constant": true,
     "inputs": [
-      {
-        "indexed": false,
-        "internalType": "bytes6",
-        "name": "inviteCode",
-        "type": "bytes6"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "player1",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "wagerAmount",
-        "type": "uint256"
-      }
+      { "name": "account", "type": "address" }
     ],
-    "name": "GameCreated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "bytes6",
-        "name": "inviteCode",
-        "type": "bytes6"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "winner",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "houseFee",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "wagerPayout",
-        "type": "uint256"
-      }
-    ],
-    "name": "GameEnded",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "bytes6",
-        "name": "inviteCode",
-        "type": "bytes6"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "player2",
-        "type": "address"
-      }
-    ],
-    "name": "GameJoined",
-    "type": "event"
-  },
-  {
-    "inputs": [],
-    "name": "MAX_WAGER",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
+    "name": "balanceOf",
+    "outputs": [{ "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "MIN_WAGER",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
+    "constant": false,
     "inputs": [
-      {
-        "internalType": "bytes6",
-        "name": "inviteCode",
-        "type": "bytes6"
-      },
-      {
-        "internalType": "uint256",
-        "name": "wagerAmount",
-        "type": "uint256"
-      }
+      { "name": "to", "type": "address" },
+      { "name": "value", "type": "uint256" }
     ],
-    "name": "createGame",
-    "outputs": [],
+    "name": "transfer",
+    "outputs": [{ "name": "", "type": "bool" }],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
+    "constant": false,
     "inputs": [
-      {
-        "internalType": "bytes6",
-        "name": "inviteCode",
-        "type": "bytes6"
-      },
-      {
-        "internalType": "address",
-        "name": "winner",
-        "type": "address"
-      }
+      { "name": "from", "type": "address" },
+      { "name": "to", "type": "address" },
+      { "name": "value", "type": "uint256" }
     ],
-    "name": "endGame",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes6",
-        "name": "",
-        "type": "bytes6"
-      }
-    ],
-    "name": "games",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "player1",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "player2",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "isActive",
-        "type": "bool"
-      },
-      {
-        "internalType": "address",
-        "name": "winner",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes6",
-        "name": "inviteCode",
-        "type": "bytes6"
-      },
-      {
-        "internalType": "uint256",
-        "name": "wagerAmount",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "house",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes6",
-        "name": "inviteCode",
-        "type": "bytes6"
-      }
-    ],
-    "name": "joinGame",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "lawbToken",
-    "outputs": [
-      {
-        "internalType": "contract IERC20",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "playerToGame",
-    "outputs": [
-      {
-        "internalType": "bytes6",
-        "name": "",
-        "type": "bytes6"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "recipient",
-        "type": "address"
-      }
-    ],
-    "name": "withdrawTokens",
-    "outputs": [],
+    "name": "transferFrom",
+    "outputs": [{ "name": "", "type": "bool" }],
     "stateMutability": "nonpayable",
     "type": "function"
   }
 ];
 
-// Contract address from deployment
+// Contract address for ChessGame
 const contractAddress = "0x6aa574B21212C6E7436Eb26A27542F1AEFfFad87";
 
 // Sanko network configuration
@@ -331,7 +395,7 @@ class MultiplayerManager {
     const web3 = await this.initWeb3();
     if (!web3) return null;
     const { signer } = web3;
-    this.chessContract = new window.ethers.Contract(contractAddress, chessGameABI, signer);
+    this.chessContract = new window.ethers.Contract(contractAddress, window.chessGameABI, signer);
     return this.chessContract;
   }
 
@@ -562,18 +626,7 @@ class MultiplayerManager {
 
       const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F";
       const userAddress = await signer.getAddress();
-      const lawbContract = new window.ethers.Contract(lawbAddress, [
-        {
-          "inputs": [
-            { "internalType": "address", "name": "spender", "type": "address" },
-            { "internalType": "uint256", "name": "amount", "type": "uint256" }
-          ],
-          "name": "approve",
-          "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        }
-      ], signer);
+      const lawbContract = new window.ethers.Contract(lawbAddress, lawbTokenABI, signer);
 
       const allowance = await lawbContract.allowance(userAddress, contractAddress);
       if (allowance.lt(wagerInWei)) {
@@ -618,7 +671,6 @@ class MultiplayerManager {
         gameCodeDisplay.style.display = "block";
       }
       alert(`Game code: ${inviteCode} with wager ${wagerAmount} $LAWB`);
-
     } catch (error) {
       console.error("Error creating game:", error.message);
       alert("Game creation failed: " + error.message);
@@ -681,18 +733,7 @@ class MultiplayerManager {
 
       const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F";
       const userAddress = await signer.getAddress();
-      const lawbContract = new window.ethers.Contract(lawbAddress, [
-        {
-          "inputs": [
-            { "internalType": "address", "name": "spender", "type": "address" },
-            { "internalType": "uint256", "name": "amount", "type": "uint256" }
-          ],
-          "name": "approve",
-          "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        }
-      ], signer);
+      const lawbContract = new window.ethers.Contract(lawbAddress, lawbTokenABI, signer);
 
       const allowance = await lawbContract.allowance(userAddress, contractAddress);
       if (allowance.lt(wagerInWei)) {
@@ -723,7 +764,6 @@ class MultiplayerManager {
       this.currentGameState = updateData;
       await this.subscribeToGame();
       await this.showGame("red");
-
     } catch (error) {
       console.error("Join game error:", error);
       alert(`Failed to join game: ${error.message}`);
