@@ -1,9 +1,8 @@
 // multiplayer.js
 
-// Use the global ethers object loaded via CDN (no require needed)
-const ethers = window.ethers;
+// No 'const ethers' declaration - rely on window.ethers from CDN loaded in lawbstation.html
 
-// Contract ABI (Application Binary Interface) - Full ABI from ChessGame.json
+// Contract ABI (Full ABI from ChessGame.json)
 const chessGameABI = [
   {
     "inputs": [],
@@ -274,7 +273,7 @@ const contractAddress = "0x6aa574B21212C6E7436Eb26A27542F1AEFfFad87";
 
 // Sanko network configuration
 const sankoNetwork = {
-  chainId: 1996, // Sanko chain ID
+  chainId: 1996,
   name: "Sanko",
 };
 
@@ -282,10 +281,9 @@ let isMultiplayerInitialized = false;
 let lastGlobalCreateClick = 0;
 
 class MultiplayerManager {
-  static hasGameBeenCreated = false; // Static guard
+  static hasGameBeenCreated = false;
 
   constructor() {
-    // Wait for gameDatabase to be initialized before proceeding
     if (!window.gameDatabase) {
       console.warn("Game database not initialized yet, retrying...");
       setTimeout(() => this.initializeAfterSupabase(), 1000);
@@ -301,8 +299,8 @@ class MultiplayerManager {
     this.selectedPiece = null;
     this.handleCreateGame = null;
     this.lastCreateClick = 0;
-    this.hasCreatedGame = false; // Instance-level for safety
-    this.chessContract = null; // Store the contract instance
+    this.hasCreatedGame = false;
+    this.chessContract = null;
     this.initializeEventListeners();
     console.log("MultiplayerManager initialized");
   }
@@ -319,28 +317,27 @@ class MultiplayerManager {
   }
 
   async initWeb3() {
-    if (typeof window.ethereum !== "undefined") {
-      try {
-        // Request account access
-        await window.ethereum.request({ method: "eth_requestAccounts" });
-        const provider = new ethers.providers.Web3Provider(window.ethereum); // Correct for Ethers.js 5.x
-        const signer = await provider.getSigner();
-        return { provider, signer };
-      } catch (error) {
-        console.error("User denied account access or error:", error);
-        alert("Please connect your MetaMask wallet to Sanko and refresh the page.");
-        return null;
-      }
-    } else {
+    if (typeof window.ethereum === "undefined") {
       alert("Please install MetaMask to use this feature!");
+      return null;
+    }
+    try {
+      await window.ethereum.request({ method: "eth_requestAccounts" });
+      const provider = new window.ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      return { provider, signer };
+    } catch (error) {
+      console.error("User denied account access or error:", error);
+      alert("Please connect your MetaMask wallet to Sanko and refresh the page.");
       return null;
     }
   }
 
   async connectToContract() {
-    const { signer } = await this.initWeb3();
-    if (!signer) return null;
-    this.chessContract = new ethers.Contract(contractAddress, chessGameABI, signer);
+    const web3 = await this.initWeb3();
+    if (!web3) return null;
+    const { signer } = web3;
+    this.chessContract = new window.ethers.Contract(contractAddress, chessGameABI, signer);
     return this.chessContract;
   }
 
@@ -382,9 +379,7 @@ class MultiplayerManager {
         createGameBtn.disabled = true;
         const now = Date.now();
         if (isCreatingGame || this.gameId || now - lastGlobalCreateClick < 1000) {
-          console.log(
-            "Game creation blocked: in progress, active, or too soon"
-          );
+          console.log("Game creation blocked: in progress, active, or too soon");
           createGameBtn.disabled = false;
           return;
         }
@@ -526,9 +521,7 @@ class MultiplayerManager {
   async createGame() {
     console.log("Entering createGame");
     if (MultiplayerManager.hasGameBeenCreated || this.hasCreatedGame) {
-      console.log(
-        "Game already created this session, ignoring additional call"
-      );
+      console.log("Game already created this session, ignoring additional call");
       return;
     }
     MultiplayerManager.hasGameBeenCreated = true;
@@ -538,33 +531,38 @@ class MultiplayerManager {
       const player = localStorage.getItem("currentPlayer");
       if (!player) {
         alert("Connect wallet first");
+        MultiplayerManager.hasGameBeenCreated = false;
+        this.hasCreatedGame = false;
         return;
       }
 
-      // Get wager amount from UI
       const wagerInput = document.getElementById("wagerAmount");
-      const wagerAmount = parseFloat(wagerInput?.value) || 1000; // Default to 1000 $LAWB if not specified
-      const minWager = 100; // $LAWB
-      const maxWager = 10000000; // $LAWB
+      const wagerAmount = parseFloat(wagerInput?.value) || 1000;
+      const minWager = 100;
+      const maxWager = 10000000;
 
       if (wagerAmount < minWager || wagerAmount > maxWager) {
         alert(`Wager must be between ${minWager} and ${maxWager} $LAWB`);
+        MultiplayerManager.hasGameBeenCreated = false;
+        this.hasCreatedGame = false;
         return;
       }
 
-      // Connect to blockchain and create game
       const contract = await this.connectToContract();
-      if (!contract) return;
+      if (!contract) {
+        MultiplayerManager.hasGameBeenCreated = false;
+        this.hasCreatedGame = false;
+        return;
+      }
 
-      const inviteCode = Math.random()
-        .toString(36)
-        .substring(2, 8)
-        .toUpperCase();
-      const wagerInWei = ethers.utils.parseUnits(wagerAmount.toString(), 6); // Correct for Ethers.js 5.x
+      const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const wagerInWei = window.ethers.utils.parseUnits(wagerAmount.toString(), 6);
 
-      // Approve and transfer tokens for wager (optional, add if needed)
-      const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F"; // $LAWB address
-      const lawbContract = new ethers.Contract(lawbAddress, [
+      const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F";
+      const { signer } = await this.initWeb3();
+      if (!signer) throw new Error("Failed to get signer");
+
+      const lawbContract = new window.ethers.Contract(lawbAddress, [
         {
           "inputs": [
             { "internalType": "address", "name": "spender", "type": "address" },
@@ -575,26 +573,21 @@ class MultiplayerManager {
           "stateMutability": "nonpayable",
           "type": "function"
         }
-      ], await this.connectToContract().signer);
+      ], signer);
 
-      // Check allowance and approve if needed
-      const allowance = await lawbContract.allowance(await this.connectToContract().signer.getAddress(), contractAddress);
+      const userAddress = await signer.getAddress();
+      const allowance = await lawbContract.allowance(userAddress, contractAddress);
       if (allowance.lt(wagerInWei)) {
         const approveTx = await lawbContract.approve(contractAddress, wagerInWei);
         await approveTx.wait();
         console.log("Token approval successful");
       }
 
-      // Create the game on the blockchain
       const tx = await contract.createGame(inviteCode, wagerInWei);
       await tx.wait();
-      console.log(
-        `Blockchain game created with invite code ${inviteCode} and wager ${wagerAmount} $LAWB`
-      );
+      console.log(`Blockchain game created with invite code ${inviteCode} and wager ${wagerAmount} $LAWB`);
 
-      // Store game in Supabase
       const boardState = JSON.parse(JSON.stringify(window.initialBoard));
-
       const { data, error } = await this.supabase
         .from("chess_games")
         .insert({
@@ -606,7 +599,7 @@ class MultiplayerManager {
           },
           current_player: "blue",
           game_state: "waiting",
-          wager_amount: wagerAmount, // Store wager in $LAWB for UI
+          wager_amount: wagerAmount,
           updated_at: new Date().toISOString(),
         })
         .select();
@@ -629,7 +622,7 @@ class MultiplayerManager {
 
     } catch (error) {
       console.error("Error creating game:", error.message);
-      alert("Game creation failed");
+      alert("Game creation failed: " + error.message);
       MultiplayerManager.hasGameBeenCreated = false;
       this.hasCreatedGame = false;
     }
@@ -676,15 +669,16 @@ class MultiplayerManager {
         return;
       }
 
-      // Connect to blockchain and join game
       const contract = await this.connectToContract();
       if (!contract) return;
 
-      const wagerInWei = ethers.utils.parseUnits(game.wager_amount.toString(), 6); // Correct for Ethers.js 5.x
+      const wagerInWei = window.ethers.utils.parseUnits(game.wager_amount.toString(), 6);
 
-      // Approve and transfer tokens for wager (optional, add if needed)
-      const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F"; // $LAWB address
-      const lawbContract = new ethers.Contract(lawbAddress, [
+      const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F";
+      const { signer } = await this.initWeb3();
+      if (!signer) throw new Error("Failed to get signer");
+
+      const lawbContract = new window.ethers.Contract(lawbAddress, [
         {
           "inputs": [
             { "internalType": "address", "name": "spender", "type": "address" },
@@ -695,17 +689,16 @@ class MultiplayerManager {
           "stateMutability": "nonpayable",
           "type": "function"
         }
-      ], await this.connectToContract().signer);
+      ], signer);
 
-      // Check allowance and approve if needed
-      const allowance = await lawbContract.allowance(await this.connectToContract().signer.getAddress(), contractAddress);
+      const userAddress = await signer.getAddress();
+      const allowance = await lawbContract.allowance(userAddress, contractAddress);
       if (allowance.lt(wagerInWei)) {
         const approveTx = await lawbContract.approve(contractAddress, wagerInWei);
         await approveTx.wait();
         console.log("Token approval successful");
       }
 
-      // Join the game on the blockchain
       const tx = await contract.joinGame(game.game_id);
       await tx.wait();
       console.log(`Blockchain game joined with invite code ${game.game_id}`);
@@ -742,31 +735,25 @@ class MultiplayerManager {
 
       const tx = await contract.endGame(inviteCode, winnerAddress);
       await tx.wait();
-      console.log(
-        `Blockchain game ended with invite code ${inviteCode}, winner ${winnerAddress}`
-      );
+      console.log(`Blockchain game ended with invite code ${inviteCode}, winner ${winnerAddress}`);
 
-      // Update Supabase to mark game as completed
       await this.supabase
         .from("chess_games")
         .update({
           game_state: "completed",
-          winner: this.playerColor === "blue" ? "blue" : "red", // Assuming winner matches player color
+          winner: this.playerColor === "blue" ? "blue" : "red",
           updated_at: new Date().toISOString(),
         })
         .eq("game_id", inviteCode);
 
-      // Show payout after 5% house fee
       const game = this.currentGameState;
-      const wagerAmount = ethers.utils.parseUnits(game.wager_amount.toString(), 6); // Correct for Ethers.js 5.x
-      const totalPot = ethers.BigNumber.from(wagerAmount).mul(2); // Total pot in wei
-      const houseFee = totalPot.mul(5).div(100); // 5% house fee
-      const payout = totalPot.sub(houseFee); // Payout in wei
-      const payoutInLAWB = ethers.utils.formatUnits(payout, 6); // Convert to $LAWB (6 decimals)
+      const wagerAmount = window.ethers.utils.parseUnits(game.wager_amount.toString(), 6);
+      const totalPot = window.ethers.BigNumber.from(wagerAmount).mul(2);
+      const houseFee = totalPot.mul(5).div(100);
+      const payout = totalPot.sub(houseFee);
+      const payoutInLAWB = window.ethers.utils.formatUnits(payout, 6);
 
-      alert(
-        `Game ended! Winner payout: ${payoutInLAWB} $LAWB (after 5% house fee of ${ethers.utils.formatUnits(houseFee, 6)} $LAWB)`
-      );
+      alert(`Game ended! Winner payout: ${payoutInLAWB} $LAWB (after 5% house fee of ${window.ethers.utils.formatUnits(houseFee, 6)} $LAWB)`);
 
       this.handleGameEnd({ game_id: inviteCode, winner: winnerAddress });
     } catch (error) {
@@ -893,14 +880,13 @@ class MultiplayerManager {
         displayMessage = `Game Over - ${game.winner.charAt(0).toUpperCase() + game.winner.slice(1)} wins!`;
       }
 
-      // Show payout after 5% house fee if applicable
       if (game.wager_amount) {
-        const wagerInWei = ethers.utils.parseUnits(game.wager_amount.toString(), 6);
-        const totalPot = ethers.BigNumber.from(wagerInWei).mul(2); // Total pot in wei
-        const houseFee = totalPot.mul(5).div(100); // 5% house fee
-        const payout = totalPot.sub(houseFee); // Payout in wei
-        const payoutInLAWB = ethers.utils.formatUnits(payout, 6); // Convert to $LAWB (6 decimals)
-        displayMessage += `\nWinner payout: ${payoutInLAWB} $LAWB (after 5% house fee of ${ethers.utils.formatUnits(houseFee, 6)} $LAWB)`;
+        const wagerInWei = window.ethers.utils.parseUnits(game.wager_amount.toString(), 6);
+        const totalPot = window.ethers.BigNumber.from(wagerInWei).mul(2);
+        const houseFee = totalPot.mul(5).div(100);
+        const payout = totalPot.sub(houseFee);
+        const payoutInLAWB = window.ethers.utils.formatUnits(payout, 6);
+        displayMessage += `\nWinner payout: ${payoutInLAWB} $LAWB (after 5% house fee of ${window.ethers.utils.formatUnits(houseFee, 6)} $LAWB)`;
       }
 
       window.updateStatusDisplay(displayMessage);
@@ -962,17 +948,14 @@ class MultiplayerManager {
         .update(updateData)
         .eq("game_id", this.gameId);
 
-      if (error)
-        throw new Error(
-          `Supabase update failed: ${error.message} - Details: ${JSON.stringify(error.details || {})}`
-        );
+      if (error) throw new Error(`Supabase update failed: ${error.message}`);
 
       window.board = newBoard;
       window.placePieces();
 
       return true;
     } catch (error) {
-      console.error("Move error:", error.message, error.details);
+      console.error("Move error:", error.message);
       return false;
     } finally {
       this.isProcessingMove = false;
