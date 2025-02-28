@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LAWBSTATION</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <!-- Load dependencies first -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" charset="utf-8"></script>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="chess.css">
     <style>
+        /* [Your existing styles remain unchanged] */
         .top-gif-container {
             width: 80%;
             max-width: 400px;
@@ -328,6 +330,7 @@
                 if (!window.supabase) {
                     if (databaseInitAttempts < 5) {
                         databaseInitAttempts++;
+                        console.log(`Supabase not loaded, retrying (${databaseInitAttempts}/5)...`);
                         setTimeout(initializeSupabase, 1000);
                         return;
                     }
@@ -344,6 +347,10 @@
                 if (error) throw error;
                 console.log('Supabase connection verified');
                 loadGameScripts();
+                // Trigger MultiplayerManager initialization
+                if (typeof window.initializeMultiplayerManager === 'function') {
+                    window.initializeMultiplayerManager();
+                }
             } catch (error) {
                 console.error('Supabase initialization failed:', error);
                 if (databaseInitAttempts < 5) {
@@ -358,6 +365,7 @@
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
                 script.src = src;
+                script.type = 'text/javascript';
                 script.onload = () => {
                     console.log(`Successfully loaded: ${src}`);
                     resolve();
@@ -380,9 +388,12 @@
                 for (const script of scripts) {
                     await loadScript(script);
                     if (script === 'leaderboard.js') {
+                        // Ensure LeaderboardManager initializes after leaderboard.js loads
                         await new Promise(resolve => setTimeout(resolve, 1000));
                         console.log('Forcing LeaderboardManager initialization');
-                        window.leaderboardManager = new LeaderboardManager();
+                        if (window.LeaderboardManager && !window.leaderboardManager) {
+                            window.leaderboardManager = new window.LeaderboardManager();
+                        }
                     }
                 }
                 console.log('All game scripts loaded successfully');
@@ -394,17 +405,19 @@
                         gameDatabase: !!window.gameDatabase
                     };
                     console.log('Component verification:', components);
-                    if (!window.leaderboardManager && window.LeaderboardManager) {
-                        console.log('Re-initializing LeaderboardManager');
-                        window.leaderboardManager = new LeaderboardManager();
-                    }
                 }, 1000);
             } catch (error) {
                 console.error('Error loading game scripts:', error);
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => initializeSupabase());
+        // Start initialization on DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', initializeSupabase);
+
+        // Backup initialization if DOM is already loaded
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            initializeSupabase();
+        }
     </script>
 
     <!-- Game UI Initialization -->
@@ -416,13 +429,10 @@
                 difficultyScreen: document.getElementById('difficulty-screen'),
                 multiplayerMenu: document.querySelector('.multiplayer-menu'),
                 gameCodeInput: document.getElementById('game-code-input'),
-                gameCodeDisplay: document.getElementById('gameCode'),
+                gameCode: document.getElementById('gameCode'), // Corrected to target gameCode
                 joinGameBtn: document.getElementById('join-game'),
                 createGameBtn: document.getElementById('create-game'),
-                statusElement: document.getElementById('status'),
-                endGameBtn: document.getElementById('endGameBtn'),
-                endInviteCode: document.getElementById('endInviteCode'),
-                winnerAddress: document.getElementById('winnerAddress')
+                statusElement: document.getElementById('status')
             };
 
             if (elements.multiplayerModeBtn) {
@@ -443,8 +453,8 @@
                 });
             }
 
-            if (elements.gameCodeDisplay) {
-                elements.gameCodeDisplay.addEventListener('click', function() {
+            if (elements.gameCode) { // Changed from gameCodeDisplay to gameCode
+                elements.gameCode.addEventListener('click', function() {
                     navigator.clipboard.writeText(this.textContent).then(() => {
                         const notification = document.getElementById('copyNotification');
                         notification.style.display = 'block';
@@ -476,18 +486,6 @@
                     if (window.multiplayerManager) window.multiplayerManager.joinGameByCode(gameCode);
                 });
             }
-
-            if (elements.endGameBtn) {
-                elements.endGameBtn.addEventListener('click', () => {
-                    const inviteCode = elements.endInviteCode?.value?.trim();
-                    const winner = elements.winnerAddress?.value?.trim();
-                    if (!inviteCode || !winner) {
-                        alert('Please enter both invite code and winner address');
-                        return;
-                    }
-                    if (window.multiplayerManager) window.multiplayerManager.endGame(inviteCode, winner);
-                });
-            }
         });
     </script>
 
@@ -515,9 +513,5 @@
     </script>
 
     <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
-
-    <!-- Include Ethers.js for Sanko blockchain interaction -->
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" charset="utf-8"></script>
-    <script src="multiplayer.js"></script>
 </body>
 </html>
