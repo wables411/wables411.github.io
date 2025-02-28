@@ -5,7 +5,7 @@ if (typeof window.ethers === "undefined") {
   throw new Error("Ethers.js not loaded. Please include the CDN in your HTML.");
 }
 
-// ChessGame Contract ABI (from your provided artifact)
+// ChessGame Contract ABI
 if (!window.chessGameABI) {
   const chessGameABI = [
     {
@@ -594,10 +594,14 @@ class MultiplayerManager {
 
       if (window.ethereum) {
         const chainId = await window.ethereum.request({ method: "eth_chainId" });
-        if (chainId !== "0x7CC") { // Sanko chain ID
-          alert("Please switch to the Sanko network in MetaMask.");
+        console.log("Current chainId:", chainId); // Debug log
+        if (chainId.toLowerCase() !== "0x7cc") { // Sanko chain ID
+          alert("Please switch to the Sanko network in MetaMask (chain ID 1996).");
           throw new Error("Wrong network");
         }
+      } else {
+        alert("Ethereum provider not detected. Please ensure MetaMask is installed.");
+        throw new Error("No Ethereum provider");
       }
 
       const web3 = await this.initWeb3();
