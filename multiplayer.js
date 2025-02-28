@@ -1,7 +1,7 @@
 // multiplayer.js
 
-// Use the global ethers object loaded via CDN
-const { ethers } = window.ethers;
+// Use the global ethers object loaded via CDN (no require needed)
+const ethers = window.ethers;
 
 // Contract ABI (Application Binary Interface) - Full ABI from ChessGame.json
 const chessGameABI = [
@@ -285,8 +285,10 @@ class MultiplayerManager {
   static hasGameBeenCreated = false; // Static guard
 
   constructor() {
+    // Wait for gameDatabase to be initialized before proceeding
     if (!window.gameDatabase) {
-      console.error("Game database not initialized");
+      console.warn("Game database not initialized yet, retrying...");
+      setTimeout(() => this.initializeAfterSupabase(), 1000);
       return;
     }
     this.supabase = window.gameDatabase;
@@ -305,19 +307,28 @@ class MultiplayerManager {
     console.log("MultiplayerManager initialized");
   }
 
+  initializeAfterSupabase() {
+    if (window.gameDatabase) {
+      this.supabase = window.gameDatabase;
+      this.initializeEventListeners();
+      console.log("MultiplayerManager initialized after Supabase");
+    } else {
+      console.warn("Still waiting for gameDatabase, retrying...");
+      setTimeout(() => this.initializeAfterSupabase(), 1000);
+    }
+  }
+
   async initWeb3() {
     if (typeof window.ethereum !== "undefined") {
       try {
         // Request account access
         await window.ethereum.request({ method: "eth_requestAccounts" });
-        const provider = new ethers.BrowserProvider(window.ethereum);
+        const provider = new ethers.providers.Web3Provider(window.ethereum); // Correct for Ethers.js 5.x
         const signer = await provider.getSigner();
         return { provider, signer };
       } catch (error) {
         console.error("User denied account access or error:", error);
-        alert(
-          "Please connect your MetaMask wallet to Sanko and refresh the page."
-        );
+        alert("Please connect your MetaMask wallet to Sanko and refresh the page.");
         return null;
       }
     } else {
@@ -392,16 +403,6 @@ class MultiplayerManager {
     }
 
     if (joinGameBtn) {
-      joinKeypress = (e) => {
-        if (e.key === 'Enter') {
-          const code = document.getElementById("game-code-input")?.value?.trim();
-          if (code) {
-            this.joinGameByCode(code);
-          } else {
-            alert("Please enter a game code");
-          }
-        }
-      }
       joinGameBtn.onclick = () => {
         const code = document.getElementById("game-code-input")?.value?.trim();
         if (code) {
@@ -410,7 +411,6 @@ class MultiplayerManager {
           alert("Please enter a game code");
         }
       };
-      document.getElementById("game-code-input").addEventListener('keypress', joinKeypress);
     }
 
     if (cancelBtn) {
@@ -560,7 +560,7 @@ class MultiplayerManager {
         .toString(36)
         .substring(2, 8)
         .toUpperCase();
-      const wagerInWei = ethers.parseUnits(wagerAmount.toString(), 6); // Convert to 6 decimals for $LAWB
+      const wagerInWei = ethers.utils.parseUnits(wagerAmount.toString(), 6); // Correct for Ethers.js 5.x
 
       // Approve and transfer tokens for wager (optional, add if needed)
       const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F"; // $LAWB address
@@ -680,7 +680,7 @@ class MultiplayerManager {
       const contract = await this.connectToContract();
       if (!contract) return;
 
-      const wagerInWei = ethers.parseUnits(game.wager_amount.toString(), 6); // Use stored wager amount
+      const wagerInWei = ethers.utils.parseUnits(game.wager_amount.toString(), 6); // Correct for Ethers.js 5.x
 
       // Approve and transfer tokens for wager (optional, add if needed)
       const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F"; // $LAWB address
@@ -758,14 +758,14 @@ class MultiplayerManager {
 
       // Show payout after 5% house fee
       const game = this.currentGameState;
-      const wagerAmount = ethers.parseUnits(game.wager_amount.toString(), 6);
-      const totalPot = wagerAmount * BigInt(2); // Total pot in wei
-      const houseFee = (totalPot * BigInt(5)) / BigInt(100); // 5% house fee
-      const payout = totalPot - houseFee; // Payout in wei
-      const payoutInLAWB = ethers.formatUnits(payout, 6); // Convert to $LAWB (6 decimals)
+      const wagerAmount = ethers.utils.parseUnits(game.wager_amount.toString(), 6); // Correct for Ethers.js 5.x
+      const totalPot = ethers.BigNumber.from(wagerAmount).mul(2); // Total pot in wei
+      const houseFee = totalPot.mul(5).div(100); // 5% house fee
+      const payout = totalPot.sub(houseFee); // Payout in wei
+      const payoutInLAWB = ethers.utils.formatUnits(payout, 6); // Convert to $LAWB (6 decimals)
 
       alert(
-        `Game ended! Winner payout: ${payoutInLAWB} $LAWB (after 5% house fee of ${ethers.formatUnits(houseFee, 6)} $LAWB)`
+        `Game ended! Winner payout: ${payoutInLAWB} $LAWB (after 5% house fee of ${ethers.utils.formatUnits(houseFee, 6)} $LAWB)`
       );
 
       this.handleGameEnd({ game_id: inviteCode, winner: winnerAddress });
@@ -895,12 +895,12 @@ class MultiplayerManager {
 
       // Show payout after 5% house fee if applicable
       if (game.wager_amount) {
-        const wagerInWei = ethers.parseUnits(game.wager_amount.toString(), 6);
-        const totalPot = wagerInWei * BigInt(2); // Total pot in wei
-        const houseFee = (totalPot * BigInt(5)) / BigInt(100); // 5% house fee
-        const payout = totalPot - houseFee; // Payout in wei
-        const payoutInLAWB = ethers.formatUnits(payout, 6); // Convert to $LAWB (6 decimals)
-        displayMessage += `\nWinner payout: ${payoutInLAWB} $LAWB (after 5% house fee of ${ethers.formatUnits(houseFee, 6)} $LAWB)`;
+        const wagerInWei = ethers.utils.parseUnits(game.wager_amount.toString(), 6);
+        const totalPot = ethers.BigNumber.from(wagerInWei).mul(2); // Total pot in wei
+        const houseFee = totalPot.mul(5).div(100); // 5% house fee
+        const payout = totalPot.sub(houseFee); // Payout in wei
+        const payoutInLAWB = ethers.utils.formatUnits(payout, 6); // Convert to $LAWB (6 decimals)
+        displayMessage += `\nWinner payout: ${payoutInLAWB} $LAWB (after 5% house fee of ${ethers.utils.formatUnits(houseFee, 6)} $LAWB)`;
       }
 
       window.updateStatusDisplay(displayMessage);
