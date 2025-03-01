@@ -371,16 +371,19 @@ class MultiplayerManager {
   }
 
   async initWeb3() {
+    console.log("Entering initWeb3");
     if (!window.walletConnector) {
       console.error("WalletConnector not initialized");
       alert("Wallet system not initialized. Please connect via UI first.");
       return null;
     }
     try {
+      console.log("Attempting to connect EVM wallet");
       const address = await window.walletConnector.connectEVMWallet();
       if (!address) {
         throw new Error("No address returned from wallet connection.");
       }
+      console.log("Wallet connected, address:", address);
       const provider = new window.ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
       console.log("Web3 initialized with address:", address);
@@ -393,8 +396,12 @@ class MultiplayerManager {
   }
 
   async connectToContract() {
+    console.log("Entering connectToContract");
     const web3 = await this.initWeb3();
-    if (!web3) return null;
+    if (!web3) {
+      console.error("Web3 not initialized, cannot connect to contract");
+      return null;
+    }
     const { signer } = web3;
     this.chessContract = new window.ethers.Contract(contractAddress, window.chessGameABI, signer);
     console.log("Connected to ChessGame contract at:", contractAddress);
@@ -797,6 +804,7 @@ class MultiplayerManager {
   }
 
   async endGame(inviteCode, winnerAddress) {
+    console.log("Entering endGame");
     try {
       const contract = await this.connectToContract();
       if (!contract) throw new Error("Failed to connect to contract");
@@ -827,7 +835,7 @@ class MultiplayerManager {
 
       this.handleGameEnd({ game_id: inviteCode, winner: winnerAddress });
     } catch (error) {
-      console.error(`Error ending game ${inviteCode}:`, error);
+      console.error(`Error ending game ${inviteCode}:`, error.message);
       alert(`Failed to end game ${inviteCode}: ${error.message}`);
       throw error;
     }
@@ -836,6 +844,7 @@ class MultiplayerManager {
   async endActiveGames() {
     console.log("Entering endActiveGames");
     try {
+      console.log("Initializing Web3");
       const web3 = await this.initWeb3();
       if (!web3) {
         console.error("Web3 initialization failed in endActiveGames");
@@ -844,12 +853,14 @@ class MultiplayerManager {
       const userAddress = await web3.signer.getAddress();
       console.log("User address:", userAddress);
 
+      console.log("Connecting to contract");
       const contract = await this.connectToContract();
       if (!contract) {
         console.error("Contract connection failed in endActiveGames");
         throw new Error("Failed to connect to contract");
       }
 
+      console.log("Checking playerToGame for address:", userAddress);
       const inviteCodeBytes = await contract.playerToGame(userAddress);
       console.log("playerToGame result:", inviteCodeBytes);
       if (inviteCodeBytes === "0x000000000000") {
@@ -860,6 +871,7 @@ class MultiplayerManager {
       const inviteCode = window.ethers.utils.parseBytes32String(inviteCodeBytes).slice(0, 6);
       console.log(`Found active game on-chain: ${inviteCode}`);
 
+      console.log("Fetching game data from Supabase for game:", inviteCode);
       const { data: gameData, error: fetchError } = await this.supabase
         .from("chess_games")
         .select("*")
@@ -867,7 +879,7 @@ class MultiplayerManager {
         .single();
 
       if (fetchError || !gameData) {
-        console.error(`Supabase fetch error for game ${inviteCode}:`, fetchError);
+        console.error(`Supabase fetch error for game ${inviteCode}:`, fetchError?.message || "No game data");
         throw new Error("Game not found in Supabase");
       }
 
@@ -876,6 +888,7 @@ class MultiplayerManager {
       const winnerAddress = opponent || "0x0000000000000000000000000000000000000000";
       console.log(`Determined winner address: ${winnerAddress}`);
 
+      console.log("Calling endGame for:", inviteCode);
       await this.endGame(inviteCode, winnerAddress);
       console.log(`Successfully ended game ${inviteCode}`);
     } catch (error) {
@@ -1092,8 +1105,9 @@ class MultiplayerManager {
     }
 
     if (this.gameId) {
+      console.log(`Processing gameId: ${this.gameId}`);
       try {
-        console.log(`Attempting to end active games for gameId: ${this.gameId}`);
+        console.log("Calling endActiveGames");
         await this.endActiveGames();
 
         console.log(`Updating Supabase for gameId: ${this.gameId}`);
@@ -1107,8 +1121,8 @@ class MultiplayerManager {
           .eq("game_id", this.gameId);
 
         if (updateError) {
-          console.error("Supabase update error:", updateError);
-          throw new Error("Failed to update game state in Supabase");
+          console.error("Supabase update error:", updateError.message);
+          throw new Error("Failed to update game state in Supabase: " + updateError.message);
         }
 
         console.log(`Game ${this.gameId} marked as cancelled in Supabase`);
