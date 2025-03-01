@@ -588,7 +588,7 @@ class MultiplayerManager {
     try {
       const player = localStorage.getItem("currentPlayer");
       if (!player) {
-        alert("Please connect your wallet first.");
+        alert("Please connect your wallet first via the UI.");
         throw new Error("No wallet connected");
       }
 
@@ -625,13 +625,19 @@ class MultiplayerManager {
         throw new Error("Failed to connect to contract");
       }
 
+      const userAddress = await signer.getAddress();
+      const existingGame = await contract.playerToGame(userAddress);
+      if (existingGame !== "0x000000000000") {
+        alert("You are already in an active game. Please leave it before creating a new one.");
+        throw new Error("Already in a game");
+      }
+
       const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       const inviteCodeBytes = window.ethers.utils.formatBytes32String(inviteCode).slice(0, 14); // "0x" + 12 hex digits for bytes6
       console.log("inviteCode:", inviteCode, "as bytes6:", inviteCodeBytes);
       const wagerInWei = window.ethers.utils.parseUnits(wagerAmount.toString(), 6);
 
       const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F";
-      const userAddress = await signer.getAddress();
       const lawbContract = new window.ethers.Contract(lawbAddress, lawbTokenABI, signer);
 
       const allowance = await lawbContract.allowance(userAddress, contractAddress);
@@ -657,7 +663,7 @@ class MultiplayerManager {
           },
           current_player: "blue",
           game_state: "waiting",
-          wager_amount: wagerAmount,
+          bet_amount: wagerAmount, // Updated to match Supabase column name
           updated_at: new Date().toISOString(),
         })
         .select();
@@ -735,7 +741,7 @@ class MultiplayerManager {
       const contract = await this.connectToContract();
       if (!contract) throw new Error("Failed to connect to contract");
 
-      const wagerInWei = window.ethers.utils.parseUnits(game.wager_amount.toString(), 6);
+      const wagerInWei = window.ethers.utils.parseUnits(game.bet_amount.toString(), 6); // Updated to match Supabase column name
 
       const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F";
       const userAddress = await signer.getAddress();
@@ -795,7 +801,7 @@ class MultiplayerManager {
         .eq("game_id", inviteCode);
 
       const game = this.currentGameState;
-      const wagerAmount = window.ethers.utils.parseUnits(game.wager_amount.toString(), 6);
+      const wagerAmount = window.ethers.utils.parseUnits(game.bet_amount.toString(), 6); // Updated to match Supabase column name
       const totalPot = window.ethers.BigNumber.from(wagerAmount).mul(2);
       const houseFee = totalPot.mul(5).div(100);
       const payout = totalPot.sub(houseFee);
@@ -928,8 +934,8 @@ class MultiplayerManager {
         displayMessage = `Game Over - ${game.winner.charAt(0).toUpperCase() + game.winner.slice(1)} wins!`;
       }
 
-      if (game.wager_amount) {
-        const wagerInWei = window.ethers.utils.parseUnits(game.wager_amount.toString(), 6);
+      if (game.bet_amount) { // Updated to match Supabase column name
+        const wagerInWei = window.ethers.utils.parseUnits(game.bet_amount.toString(), 6);
         const totalPot = window.ethers.BigNumber.from(wagerInWei).mul(2);
         const houseFee = totalPot.mul(5).div(100);
         const payout = totalPot.sub(houseFee);
