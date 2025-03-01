@@ -411,7 +411,7 @@ class MultiplayerManager {
     const createGameBtn = document.getElementById("create-game");
     const joinGameBtn = document.getElementById("join-game");
     const cancelBtn = document.getElementById("cancel-matchmaking");
-    const leaveGameBtn = document.getElementById("leave-game"); // New button
+    const leaveGameBtn = document.getElementById("leave-game");
 
     let isCreatingGame = false;
 
@@ -476,7 +476,7 @@ class MultiplayerManager {
     }
 
     if (leaveGameBtn) {
-      leaveGameBtn.onclick = () => this.leaveGame(); // Add leave game functionality
+      leaveGameBtn.onclick = () => this.leaveGame();
     }
 
     const chessboard = document.getElementById("chessboard");
@@ -633,7 +633,6 @@ class MultiplayerManager {
       const userAddress = await signer.getAddress();
       const existingGame = await contract.playerToGame(userAddress);
       if (existingGame !== "0x000000000000") {
-        // Query Supabase for active games to provide specific feedback
         const { data: activeGames, error } = await this.supabase
           .from("chess_games")
           .select("game_id")
@@ -646,7 +645,7 @@ class MultiplayerManager {
       }
 
       const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const inviteCodeBytes = window.ethers.utils.formatBytes32String(inviteCode).slice(0, 14); // "0x" + 12 hex digits for bytes6
+      const inviteCodeBytes = window.ethers.utils.formatBytes32String(inviteCode).slice(0, 14);
       console.log("inviteCode:", inviteCode, "as bytes6:", inviteCodeBytes);
       const wagerInWei = window.ethers.utils.parseUnits(wagerAmount.toString(), 6);
 
@@ -676,7 +675,7 @@ class MultiplayerManager {
           },
           current_player: "blue",
           game_state: "waiting",
-          bet_amount: wagerAmount, // Matches Supabase column name
+          bet_amount: wagerAmount,
           updated_at: new Date().toISOString(),
         })
         .select();
@@ -754,7 +753,7 @@ class MultiplayerManager {
       const contract = await this.connectToContract();
       if (!contract) throw new Error("Failed to connect to contract");
 
-      const wagerInWei = window.ethers.utils.parseUnits(game.bet_amount.toString(), 6); // Matches Supabase column name
+      const wagerInWei = window.ethers.utils.parseUnits(game.bet_amount.toString(), 6);
 
       const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F";
       const userAddress = await signer.getAddress();
@@ -795,12 +794,15 @@ class MultiplayerManager {
     }
   }
 
+  // Updated endGame with better logging
   async endGame(inviteCode, winnerAddress) {
     try {
       const contract = await this.connectToContract();
       if (!contract) throw new Error("Failed to connect to contract");
 
+      console.log(`Attempting to end game ${inviteCode} with winner ${winnerAddress}`);
       const tx = await contract.endGame(inviteCode, winnerAddress);
+      console.log(`Transaction sent: ${tx.hash}`);
       await tx.wait();
       console.log(`Blockchain game ended with invite code ${inviteCode}, winner ${winnerAddress}`);
 
@@ -814,7 +816,7 @@ class MultiplayerManager {
         .eq("game_id", inviteCode);
 
       const game = this.currentGameState;
-      const wagerAmount = window.ethers.utils.parseUnits(game.bet_amount.toString(), 6); // Matches Supabase column name
+      const wagerAmount = window.ethers.utils.parseUnits(game.bet_amount.toString(), 6);
       const totalPot = window.ethers.BigNumber.from(wagerAmount).mul(2);
       const houseFee = totalPot.mul(5).div(100);
       const payout = totalPot.sub(houseFee);
@@ -824,30 +826,53 @@ class MultiplayerManager {
 
       this.handleGameEnd({ game_id: inviteCode, winner: winnerAddress });
     } catch (error) {
-      console.error("Error ending game:", error);
-      alert("Failed to end game. Check console for details.");
+      console.error(`Error ending game ${inviteCode}:`, error);
+      alert(`Failed to end game ${inviteCode}: ${error.message}`);
+      throw error; // Re-throw to handle in caller
     }
   }
 
+  // Updated endActiveGames to dynamically fetch and end the active game
   async endActiveGames() {
-    const userAddress = await (await this.initWeb3()).signer.getAddress();
-    const contract = await this.connectToContract();
-    const activeGames = ['MXH705', 'IF7UAQ', 'AW76ZO', 'IVYRGA']; // List from JSON data
+    try {
+      const userAddress = await (await this.initWeb3()).signer.getAddress();
+      const contract = await this.connectToContract();
+      if (!contract) throw new Error("Failed to connect to contract");
 
-    for (const gameId of activeGames) {
-      try {
-        // Determine winner based on playerColor (simplified logic)
-        const game = await this.supabase
-          .from("chess_games")
-          .select("*")
-          .eq("game_id", gameId)
-          .single();
-        const winner = game.data.blue_player === userAddress ? game.data.red_player : game.data.blue_player;
-        
-        await this.endGame(gameId, winner || '0x0000000000000000000000000000000000000000'); // Default to 0 if no opponent
-      } catch (error) {
-        console.error(`Error ending game ${gameId}:`, error);
+      // Check current game on-chain
+      const inviteCodeBytes = await contract.playerToGame(userAddress);
+      if (inviteCodeBytes === "0x000000000000") {
+        console.log("No active games found on-chain for address:", userAddress);
+        return;
       }
+
+      // Decode bytes6 to string (trimmed to 6 chars)
+      const inviteCode = window.ethers.utils.parseBytes32String(inviteCodeBytes).slice(0, 6);
+      console.log(`Found active game on-chain: ${inviteCode}`);
+
+      // Fetch game details from Supabase
+      const { data: gameData, error: fetchError } = await this.supabase
+        .from("chess_games")
+        .select("*")
+        .eq("game_id", inviteCode)
+        .single();
+
+      if (fetchError || !gameData) {
+        console.error(`Supabase fetch error for game ${inviteCode}:`, fetchError);
+        throw new Error("Game not found in Supabase");
+      }
+
+      const game = gameData;
+      // Determine opponent (forfeit assumes opponent wins if present, else no winner)
+      const opponent = game.blue_player === userAddress ? game.red_player : game.blue_player;
+      const winnerAddress = opponent || "0x0000000000000000000000000000000000000000";
+
+      // End the game on-chain
+      await this.endGame(inviteCode, winnerAddress);
+      console.log(`Successfully ended game ${inviteCode}`);
+    } catch (error) {
+      console.error("Error ending active games:", error);
+      alert("Failed to end active games: " + error.message);
     }
   }
 
@@ -969,7 +994,7 @@ class MultiplayerManager {
         displayMessage = `Game Over - ${game.winner.charAt(0).toUpperCase() + game.winner.slice(1)} wins!`;
       }
 
-      if (game.bet_amount) { // Matches Supabase column name
+      if (game.bet_amount) {
         const wagerInWei = window.ethers.utils.parseUnits(game.bet_amount.toString(), 6);
         const totalPot = window.ethers.BigNumber.from(wagerInWei).mul(2);
         const houseFee = totalPot.mul(5).div(100);
@@ -1051,23 +1076,34 @@ class MultiplayerManager {
     }
   }
 
+  // Updated leaveGame to ensure blockchain and Supabase cleanup
   async leaveGame() {
     if (this.subscription) {
       this.subscription.unsubscribe();
+      console.log("Unsubscribed from game channel");
     }
 
     if (this.gameId) {
       try {
-        await this.endActiveGames(); // End all active games on the blockchain
+        // End all active games on the blockchain
+        await this.endActiveGames();
 
-        await this.supabase
+        // Update Supabase to reflect cancellation
+        const { error: updateError } = await this.supabase
           .from("chess_games")
           .update({
-            game_state: "cancelled", // Use 'cancelled' for abandoned games
+            game_state: "cancelled",
             winner: null,
             updated_at: new Date().toISOString(),
           })
           .eq("game_id", this.gameId);
+
+        if (updateError) {
+          console.error("Supabase update error:", updateError);
+          throw new Error("Failed to update game state in Supabase");
+        }
+
+        console.log(`Game ${this.gameId} marked as cancelled in Supabase`);
 
         if (window.updateGameResult) {
           window.updateGameResult("loss");
@@ -1075,12 +1111,15 @@ class MultiplayerManager {
 
         if (window.leaderboardManager) {
           await window.leaderboardManager.loadLeaderboard();
+          console.log("Leaderboard updated after leaving game");
         }
       } catch (error) {
         console.error("Leave game error:", error);
+        alert("Error leaving game: " + error.message);
       }
     }
 
+    // Reset local state
     this.gameId = null;
     this.playerColor = null;
     this.currentGameState = null;
@@ -1088,10 +1127,12 @@ class MultiplayerManager {
     this.hasCreatedGame = false;
     MultiplayerManager.hasGameBeenCreated = false;
 
+    // Update UI
     const menuEl = document.querySelector(".multiplayer-menu");
     const gameEl = document.getElementById("chess-game");
     if (menuEl) menuEl.style.display = "block";
     if (gameEl) gameEl.style.display = "none";
+    console.log("Reset to multiplayer menu");
   }
 
   async updateGameStatus(status, winner = null) {
@@ -1110,10 +1151,13 @@ class MultiplayerManager {
         updateData.winner = winner;
       }
 
-      await this.supabase
+      const { error } = await this.supabase
         .from("chess_games")
         .update(updateData)
         .eq("game_id", this.gameId);
+
+      if (error) throw new Error(`Supabase update failed: ${error.message}`);
+      console.log(`Game ${this.gameId} status updated to ${status}`);
     } catch (error) {
       console.error("Error updating game status:", error);
     }
