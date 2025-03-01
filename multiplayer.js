@@ -594,8 +594,8 @@ class MultiplayerManager {
 
       if (window.ethereum) {
         const chainId = await window.ethereum.request({ method: "eth_chainId" });
-        console.log("Current chainId:", chainId); // Debug log
-        if (chainId.toLowerCase() !== "0x7cc") { // Sanko chain ID
+        console.log("Current chainId:", chainId);
+        if (chainId.toLowerCase() !== "0x7cc") {
           alert("Please switch to the Sanko network in MetaMask (chain ID 1996).");
           throw new Error("Wrong network");
         }
@@ -626,6 +626,8 @@ class MultiplayerManager {
       }
 
       const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const inviteCodeBytes = window.ethers.utils.formatBytes32String(inviteCode).slice(0, 14); // "0x" + 12 hex digits for bytes6
+      console.log("inviteCode:", inviteCode, "as bytes6:", inviteCodeBytes);
       const wagerInWei = window.ethers.utils.parseUnits(wagerAmount.toString(), 6);
 
       const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F";
@@ -639,7 +641,7 @@ class MultiplayerManager {
         console.log("Token approval successful");
       }
 
-      const tx = await contract.createGame(inviteCode, wagerInWei);
+      const tx = await contract.createGame(inviteCodeBytes, wagerInWei);
       await tx.wait();
       console.log(`Blockchain game created with invite code ${inviteCode} and wager ${wagerAmount} $LAWB`);
 
@@ -1075,7 +1077,7 @@ class MultiplayerManager {
 function initializeMultiplayerManager() {
   if (!window.gameDatabase) {
     console.log("Waiting for gameDatabase to initialize...");
-    setTimeout(initializeMultiplayerManager, 500); // Retry every 500ms
+    setTimeout(initializeMultiplayerManager, 500);
     return;
   }
   if (!window.multiplayerManager) {
