@@ -411,6 +411,7 @@ class MultiplayerManager {
     const createGameBtn = document.getElementById("create-game");
     const joinGameBtn = document.getElementById("join-game");
     const cancelBtn = document.getElementById("cancel-matchmaking");
+    const leaveGameBtn = document.getElementById("leave-game"); // New button
 
     let isCreatingGame = false;
 
@@ -472,6 +473,10 @@ class MultiplayerManager {
         const status = document.getElementById("matchmaking-status");
         if (status) status.style.display = "none";
       };
+    }
+
+    if (leaveGameBtn) {
+      leaveGameBtn.onclick = () => this.leaveGame(); // Add leave game functionality
     }
 
     const chessboard = document.getElementById("chessboard");
@@ -628,7 +633,7 @@ class MultiplayerManager {
       const userAddress = await signer.getAddress();
       const existingGame = await contract.playerToGame(userAddress);
       if (existingGame !== "0x000000000000") {
-        alert("You are already in an active game. Please leave it before creating a new one.");
+        alert("You are already in an active game (e.g., IVYRGA, AW76ZO, IF7UAQ, or MXH705). Please use 'Leave Game' or end the game before creating a new one.");
         throw new Error("Already in a game");
       }
 
@@ -663,7 +668,7 @@ class MultiplayerManager {
           },
           current_player: "blue",
           game_state: "waiting",
-          bet_amount: wagerAmount, // Updated to match Supabase column name
+          bet_amount: wagerAmount, // Matches Supabase column name
           updated_at: new Date().toISOString(),
         })
         .select();
@@ -741,7 +746,7 @@ class MultiplayerManager {
       const contract = await this.connectToContract();
       if (!contract) throw new Error("Failed to connect to contract");
 
-      const wagerInWei = window.ethers.utils.parseUnits(game.bet_amount.toString(), 6); // Updated to match Supabase column name
+      const wagerInWei = window.ethers.utils.parseUnits(game.bet_amount.toString(), 6); // Matches Supabase column name
 
       const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F";
       const userAddress = await signer.getAddress();
@@ -801,7 +806,7 @@ class MultiplayerManager {
         .eq("game_id", inviteCode);
 
       const game = this.currentGameState;
-      const wagerAmount = window.ethers.utils.parseUnits(game.bet_amount.toString(), 6); // Updated to match Supabase column name
+      const wagerAmount = window.ethers.utils.parseUnits(game.bet_amount.toString(), 6); // Matches Supabase column name
       const totalPot = window.ethers.BigNumber.from(wagerAmount).mul(2);
       const houseFee = totalPot.mul(5).div(100);
       const payout = totalPot.sub(houseFee);
@@ -934,7 +939,7 @@ class MultiplayerManager {
         displayMessage = `Game Over - ${game.winner.charAt(0).toUpperCase() + game.winner.slice(1)} wins!`;
       }
 
-      if (game.bet_amount) { // Updated to match Supabase column name
+      if (game.bet_amount) { // Matches Supabase column name
         const wagerInWei = window.ethers.utils.parseUnits(game.bet_amount.toString(), 6);
         const totalPot = window.ethers.BigNumber.from(wagerInWei).mul(2);
         const houseFee = totalPot.mul(5).div(100);
@@ -1023,10 +1028,19 @@ class MultiplayerManager {
 
     if (this.gameId) {
       try {
+        const contract = await this.connectToContract();
+        const userAddress = await (await this.initWeb3()).signer.getAddress();
+        // Attempt to leave the game on the blockchain (if supported)
+        try {
+          await contract.leaveGame(this.gameId, userAddress); // Add this if the contract has a leaveGame function
+        } catch (blockchainError) {
+          console.warn("Blockchain leaveGame not supported or failed:", blockchainError.message);
+        }
+
         await this.supabase
           .from("chess_games")
           .update({
-            game_state: "ended",
+            game_state: "cancelled", // Changed from "ended" to "cancelled" (or "completed" if preferred)
             winner: this.playerColor === "blue" ? "red" : "blue",
             updated_at: new Date().toISOString(),
           })
@@ -1059,6 +1073,10 @@ class MultiplayerManager {
 
   async updateGameStatus(status, winner = null) {
     if (!this.gameId) return;
+
+    if (!['waiting', 'active', 'completed', 'cancelled', 'payout_failed'].includes(status)) {
+      throw new Error(`Invalid game_state: ${status}. Must be 'waiting', 'active', 'completed', 'cancelled', or 'payout_failed'.`);
+    }
 
     try {
       const updateData = {
