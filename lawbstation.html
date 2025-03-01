@@ -487,6 +487,7 @@
                         console.log('Create Game button clicked');
                     } else {
                         console.error('MultiplayerManager not initialized');
+                        alert('Multiplayer system not initialized. Please try again.');
                     }
                 });
             }
@@ -504,6 +505,7 @@
                         console.log('Join Game button clicked with code:', gameCode);
                     } else {
                         console.error('MultiplayerManager not initialized');
+                        alert('Multiplayer system not initialized. Please try again.');
                     }
                 });
             }
@@ -514,6 +516,7 @@
                         console.log('Leave Game button clicked');
                         window.multiplayerManager.leaveGame().then(() => {
                             console.log('Successfully left game');
+                            alert('Successfully left the game.');
                         }).catch((error) => {
                             console.error('Error leaving game:', error);
                             alert('Failed to leave game: ' + error.message);
