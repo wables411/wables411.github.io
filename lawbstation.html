@@ -291,6 +291,7 @@
                         <input type="text" id="game-code-input" placeholder="Enter game code" maxlength="6" autocomplete="off">
                         <button class="multiplayer-btn" id="join-game">Join Game</button>
                         <input type="number" id="wagerAmount" placeholder="Wager amount in $LAWB (100–10,000,000)" min="100" max="10000000">
+                        <button class="multiplayer-btn" id="leave-game">Leave Game</button> <!-- Added Leave Game button -->
                     </div>
                     <div id="gameCodeDisplay" class="game-code-display">
                         <h4>Share this code with opponent:</h4>
@@ -429,9 +430,10 @@
                 difficultyScreen: document.getElementById('difficulty-screen'),
                 multiplayerMenu: document.querySelector('.multiplayer-menu'),
                 gameCodeInput: document.getElementById('game-code-input'),
-                gameCode: document.getElementById('gameCode'), // Corrected to target gameCode
+                gameCode: document.getElementById('gameCode'),
                 joinGameBtn: document.getElementById('join-game'),
                 createGameBtn: document.getElementById('create-game'),
+                leaveGameBtn: document.getElementById('leave-game'), // Added reference to Leave Game button
                 statusElement: document.getElementById('status')
             };
 
@@ -453,7 +455,7 @@
                 });
             }
 
-            if (elements.gameCode) { // Changed from gameCodeDisplay to gameCode
+            if (elements.gameCode) {
                 elements.gameCode.addEventListener('click', function() {
                     navigator.clipboard.writeText(this.textContent).then(() => {
                         const notification = document.getElementById('copyNotification');
@@ -484,6 +486,12 @@
                         return;
                     }
                     if (window.multiplayerManager) window.multiplayerManager.joinGameByCode(gameCode);
+                });
+            }
+
+            if (elements.leaveGameBtn) { // Add event listener for Leave Game button
+                elements.leaveGameBtn.addEventListener('click', () => {
+                    if (window.multiplayerManager) window.multiplayerManager.leaveGame();
                 });
             }
         });

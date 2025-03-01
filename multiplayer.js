@@ -633,7 +633,15 @@ class MultiplayerManager {
       const userAddress = await signer.getAddress();
       const existingGame = await contract.playerToGame(userAddress);
       if (existingGame !== "0x000000000000") {
-        alert("You are already in an active game (e.g., IVYRGA, AW76ZO, IF7UAQ, or MXH705). Please use 'Leave Game' or end the game before creating a new one.");
+        // Query Supabase for active games to provide specific feedback
+        const { data: activeGames, error } = await this.supabase
+          .from("chess_games")
+          .select("game_id")
+          .eq("blue_player", userAddress)
+          .or("red_player.eq." + userAddress)
+          .eq("game_state", "active");
+        const gameIds = activeGames?.map(game => game.game_id).join(", ") || "unknown game";
+        alert(`You are already in active games (${gameIds}). Please use 'Leave Game' or end them before creating a new one.`);
         throw new Error("Already in a game");
       }
 
@@ -818,6 +826,28 @@ class MultiplayerManager {
     } catch (error) {
       console.error("Error ending game:", error);
       alert("Failed to end game. Check console for details.");
+    }
+  }
+
+  async endActiveGames() {
+    const userAddress = await (await this.initWeb3()).signer.getAddress();
+    const contract = await this.connectToContract();
+    const activeGames = ['MXH705', 'IF7UAQ', 'AW76ZO', 'IVYRGA']; // List from JSON data
+
+    for (const gameId of activeGames) {
+      try {
+        // Determine winner based on playerColor (simplified logic)
+        const game = await this.supabase
+          .from("chess_games")
+          .select("*")
+          .eq("game_id", gameId)
+          .single();
+        const winner = game.data.blue_player === userAddress ? game.data.red_player : game.data.blue_player;
+        
+        await this.endGame(gameId, winner || '0x0000000000000000000000000000000000000000'); // Default to 0 if no opponent
+      } catch (error) {
+        console.error(`Error ending game ${gameId}:`, error);
+      }
     }
   }
 
@@ -1028,20 +1058,13 @@ class MultiplayerManager {
 
     if (this.gameId) {
       try {
-        const contract = await this.connectToContract();
-        const userAddress = await (await this.initWeb3()).signer.getAddress();
-        // Attempt to leave the game on the blockchain (if supported)
-        try {
-          await contract.leaveGame(this.gameId, userAddress); // Add this if the contract has a leaveGame function
-        } catch (blockchainError) {
-          console.warn("Blockchain leaveGame not supported or failed:", blockchainError.message);
-        }
+        await this.endActiveGames(); // End all active games on the blockchain
 
         await this.supabase
           .from("chess_games")
           .update({
-            game_state: "cancelled", // Changed from "ended" to "cancelled" (or "completed" if preferred)
-            winner: this.playerColor === "blue" ? "red" : "blue",
+            game_state: "cancelled", // Use 'cancelled' for abandoned games
+            winner: null,
             updated_at: new Date().toISOString(),
           })
           .eq("game_id", this.gameId);
