@@ -33,6 +33,7 @@
             flex-wrap: wrap;
             gap: 10px;
             justify-content: center;
+            align-items: center;
         }
         .join-game-container input {
             width: 100%;
@@ -291,7 +292,7 @@
                         <input type="text" id="game-code-input" placeholder="Enter game code" maxlength="6" autocomplete="off">
                         <button class="multiplayer-btn" id="join-game">Join Game</button>
                         <input type="number" id="wagerAmount" placeholder="Wager amount in $LAWB (100–10,000,000)" min="100" max="10000000">
-                        <button class="multiplayer-btn" id="leave-game">Leave Game</button> <!-- Added Leave Game button -->
+                        <button class="multiplayer-btn" id="leave-game">Leave Game</button>
                     </div>
                     <div id="gameCodeDisplay" class="game-code-display">
                         <h4>Share this code with opponent:</h4>
@@ -433,9 +434,12 @@
                 gameCode: document.getElementById('gameCode'),
                 joinGameBtn: document.getElementById('join-game'),
                 createGameBtn: document.getElementById('create-game'),
-                leaveGameBtn: document.getElementById('leave-game'), // Added reference to Leave Game button
+                leaveGameBtn: document.getElementById('leave-game'), // Ensure this is correctly referenced
                 statusElement: document.getElementById('status')
             };
+
+            // Debug log to verify elements
+            console.log('Elements:', elements);
 
             if (elements.multiplayerModeBtn) {
                 elements.multiplayerModeBtn.addEventListener('click', () => {
@@ -443,6 +447,7 @@
                     elements.multiplayerModeBtn.classList.add('selected');
                     elements.difficultyScreen.style.display = 'none';
                     elements.multiplayerMenu.style.display = 'block';
+                    console.log('Switched to multiplayer mode in HTML');
                 });
             }
 
@@ -452,6 +457,7 @@
                     elements.aiModeBtn.classList.add('selected');
                     elements.difficultyScreen.style.display = 'flex';
                     elements.multiplayerMenu.style.display = 'none';
+                    console.log('Switched to single player mode in HTML');
                 });
             }
 
@@ -461,6 +467,7 @@
                         const notification = document.getElementById('copyNotification');
                         notification.style.display = 'block';
                         setTimeout(() => notification.style.display = 'none', 2000);
+                        console.log('Game code copied to clipboard');
                     });
                 });
             }
@@ -469,12 +476,18 @@
                 elements.gameCodeInput.addEventListener('input', function() {
                     this.value = this.value.toUpperCase();
                     if (this.value.length > 6) this.value = this.value.slice(0, 6);
+                    console.log('Game code input updated:', this.value);
                 });
             }
 
             if (elements.createGameBtn) {
                 elements.createGameBtn.addEventListener('click', () => {
-                    if (window.multiplayerManager) window.multiplayerManager.createGame();
+                    if (window.multiplayerManager) {
+                        window.multiplayerManager.createGame();
+                        console.log('Create Game button clicked');
+                    } else {
+                        console.error('MultiplayerManager not initialized');
+                    }
                 });
             }
 
@@ -483,15 +496,32 @@
                     const gameCode = elements.gameCodeInput?.value?.trim();
                     if (!gameCode) {
                         alert('Please enter a game code');
+                        console.log('Join Game clicked, no game code provided');
                         return;
                     }
-                    if (window.multiplayerManager) window.multiplayerManager.joinGameByCode(gameCode);
+                    if (window.multiplayerManager) {
+                        window.multiplayerManager.joinGameByCode(gameCode);
+                        console.log('Join Game button clicked with code:', gameCode);
+                    } else {
+                        console.error('MultiplayerManager not initialized');
+                    }
                 });
             }
 
-            if (elements.leaveGameBtn) { // Add event listener for Leave Game button
+            if (elements.leaveGameBtn) {
                 elements.leaveGameBtn.addEventListener('click', () => {
-                    if (window.multiplayerManager) window.multiplayerManager.leaveGame();
+                    if (window.multiplayerManager) {
+                        console.log('Leave Game button clicked');
+                        window.multiplayerManager.leaveGame().then(() => {
+                            console.log('Successfully left game');
+                        }).catch((error) => {
+                            console.error('Error leaving game:', error);
+                            alert('Failed to leave game: ' + error.message);
+                        });
+                    } else {
+                        console.error('MultiplayerManager not initialized');
+                        alert('Multiplayer system not initialized. Please try again.');
+                    }
                 });
             }
         });
@@ -508,14 +538,17 @@
                 if (video.paused) {
                     video.play();
                     overlay.style.display = 'none';
+                    console.log('Video started playing');
                 } else {
                     video.pause();
                     overlay.style.display = 'flex';
+                    console.log('Video paused');
                 }
             });
 
             video.addEventListener('ended', function() {
                 overlay.style.display = 'flex';
+                console.log('Video ended');
             });
         });
     </script>
