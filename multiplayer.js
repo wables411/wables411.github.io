@@ -372,6 +372,7 @@ class MultiplayerManager {
 
   async initWeb3() {
     if (!window.walletConnector) {
+      console.error("WalletConnector not initialized");
       alert("Wallet system not initialized. Please connect via UI first.");
       return null;
     }
@@ -396,6 +397,7 @@ class MultiplayerManager {
     if (!web3) return null;
     const { signer } = web3;
     this.chessContract = new window.ethers.Contract(contractAddress, window.chessGameABI, signer);
+    console.log("Connected to ChessGame contract at:", contractAddress);
     return this.chessContract;
   }
 
@@ -794,7 +796,6 @@ class MultiplayerManager {
     }
   }
 
-  // Updated endGame with better logging
   async endGame(inviteCode, winnerAddress) {
     try {
       const contract = await this.connectToContract();
@@ -828,29 +829,37 @@ class MultiplayerManager {
     } catch (error) {
       console.error(`Error ending game ${inviteCode}:`, error);
       alert(`Failed to end game ${inviteCode}: ${error.message}`);
-      throw error; // Re-throw to handle in caller
+      throw error;
     }
   }
 
-  // Updated endActiveGames to dynamically fetch and end the active game
   async endActiveGames() {
+    console.log("Entering endActiveGames");
     try {
-      const userAddress = await (await this.initWeb3()).signer.getAddress();
-      const contract = await this.connectToContract();
-      if (!contract) throw new Error("Failed to connect to contract");
+      const web3 = await this.initWeb3();
+      if (!web3) {
+        console.error("Web3 initialization failed in endActiveGames");
+        throw new Error("Failed to initialize Web3");
+      }
+      const userAddress = await web3.signer.getAddress();
+      console.log("User address:", userAddress);
 
-      // Check current game on-chain
+      const contract = await this.connectToContract();
+      if (!contract) {
+        console.error("Contract connection failed in endActiveGames");
+        throw new Error("Failed to connect to contract");
+      }
+
       const inviteCodeBytes = await contract.playerToGame(userAddress);
+      console.log("playerToGame result:", inviteCodeBytes);
       if (inviteCodeBytes === "0x000000000000") {
         console.log("No active games found on-chain for address:", userAddress);
         return;
       }
 
-      // Decode bytes6 to string (trimmed to 6 chars)
       const inviteCode = window.ethers.utils.parseBytes32String(inviteCodeBytes).slice(0, 6);
       console.log(`Found active game on-chain: ${inviteCode}`);
 
-      // Fetch game details from Supabase
       const { data: gameData, error: fetchError } = await this.supabase
         .from("chess_games")
         .select("*")
@@ -863,15 +872,14 @@ class MultiplayerManager {
       }
 
       const game = gameData;
-      // Determine opponent (forfeit assumes opponent wins if present, else no winner)
       const opponent = game.blue_player === userAddress ? game.red_player : game.blue_player;
       const winnerAddress = opponent || "0x0000000000000000000000000000000000000000";
+      console.log(`Determined winner address: ${winnerAddress}`);
 
-      // End the game on-chain
       await this.endGame(inviteCode, winnerAddress);
       console.log(`Successfully ended game ${inviteCode}`);
     } catch (error) {
-      console.error("Error ending active games:", error);
+      console.error("Error in endActiveGames:", error.message);
       alert("Failed to end active games: " + error.message);
     }
   }
@@ -1076,8 +1084,8 @@ class MultiplayerManager {
     }
   }
 
-  // Updated leaveGame to ensure blockchain and Supabase cleanup
   async leaveGame() {
+    console.log("Entering leaveGame");
     if (this.subscription) {
       this.subscription.unsubscribe();
       console.log("Unsubscribed from game channel");
@@ -1085,10 +1093,10 @@ class MultiplayerManager {
 
     if (this.gameId) {
       try {
-        // End all active games on the blockchain
+        console.log(`Attempting to end active games for gameId: ${this.gameId}`);
         await this.endActiveGames();
 
-        // Update Supabase to reflect cancellation
+        console.log(`Updating Supabase for gameId: ${this.gameId}`);
         const { error: updateError } = await this.supabase
           .from("chess_games")
           .update({
@@ -1107,6 +1115,7 @@ class MultiplayerManager {
 
         if (window.updateGameResult) {
           window.updateGameResult("loss");
+          console.log("Updated game result to loss");
         }
 
         if (window.leaderboardManager) {
@@ -1114,12 +1123,13 @@ class MultiplayerManager {
           console.log("Leaderboard updated after leaving game");
         }
       } catch (error) {
-        console.error("Leave game error:", error);
+        console.error("Leave game error:", error.message);
         alert("Error leaving game: " + error.message);
       }
+    } else {
+      console.log("No active gameId to leave");
     }
 
-    // Reset local state
     this.gameId = null;
     this.playerColor = null;
     this.currentGameState = null;
@@ -1127,7 +1137,6 @@ class MultiplayerManager {
     this.hasCreatedGame = false;
     MultiplayerManager.hasGameBeenCreated = false;
 
-    // Update UI
     const menuEl = document.querySelector(".multiplayer-menu");
     const gameEl = document.getElementById("chess-game");
     if (menuEl) menuEl.style.display = "block";
@@ -1164,7 +1173,6 @@ class MultiplayerManager {
   }
 }
 
-// Deferred instantiation of MultiplayerManager
 function initializeMultiplayerManager() {
   if (!window.gameDatabase) {
     console.log("Waiting for gameDatabase to initialize...");
@@ -1179,8 +1187,6 @@ function initializeMultiplayerManager() {
   }
 }
 
-// Start the initialization process
 initializeMultiplayerManager();
 
-// Export for external triggering if needed
 window.initializeMultiplayerManager = initializeMultiplayerManager;
