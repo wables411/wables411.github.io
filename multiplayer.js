@@ -852,14 +852,14 @@ class MultiplayerManager {
       }
       const userAddress = await web3.signer.getAddress();
       console.log("User address:", userAddress);
-
+  
       console.log("Connecting to contract");
       const contract = await this.connectToContract();
       if (!contract) {
         console.error("Contract connection failed in endActiveGames");
         throw new Error("Failed to connect to contract");
       }
-
+  
       console.log("Checking playerToGame for address:", userAddress);
       const inviteCodeBytes = await contract.playerToGame(userAddress);
       console.log("playerToGame result:", inviteCodeBytes);
@@ -867,29 +867,36 @@ class MultiplayerManager {
         console.log("No active games found on-chain for address:", userAddress);
         return;
       }
-
-      const inviteCode = window.ethers.utils.parseBytes32String(inviteCodeBytes).slice(0, 6);
+  
+      // Fix: Directly use bytes6 as is (no need to parse as bytes32)
+      const inviteCode = inviteCodeBytes; // Keep as hex string for contract call
       console.log(`Found active game on-chain: ${inviteCode}`);
-
+  
       console.log("Fetching game data from Supabase for game:", inviteCode);
       const { data: gameData, error: fetchError } = await this.supabase
         .from("chess_games")
         .select("*")
-        .eq("game_id", inviteCode)
+        .eq("game_id", inviteCode.slice(2, 8)) // Convert bytes6 to 6-char string for Supabase
         .single();
-
+  
       if (fetchError || !gameData) {
         console.error(`Supabase fetch error for game ${inviteCode}:`, fetchError?.message || "No game data");
-        throw new Error("Game not found in Supabase");
+        // Proceed anyway since blockchain state is the priority
+      } else {
+        const game = gameData;
+        const opponent = game.blue_player === userAddress ? game.red_player : game.blue_player;
+        const winnerAddress = opponent || "0x0000000000000000000000000000000000000000";
+        console.log(`Determined winner address: ${winnerAddress}`);
+        console.log("Calling endGame for:", inviteCode);
+        await this.endGame(inviteCode, winnerAddress);
       }
-
-      const game = gameData;
-      const opponent = game.blue_player === userAddress ? game.red_player : game.blue_player;
-      const winnerAddress = opponent || "0x0000000000000000000000000000000000000000";
-      console.log(`Determined winner address: ${winnerAddress}`);
-
-      console.log("Calling endGame for:", inviteCode);
-      await this.endGame(inviteCode, winnerAddress);
+  
+      // If no Supabase data, still attempt to end with default winner
+      if (!gameData) {
+        console.log("No Supabase data found, ending game with default winner");
+        await this.endGame(inviteCode, "0x0000000000000000000000000000000000000000");
+      }
+  
       console.log(`Successfully ended game ${inviteCode}`);
     } catch (error) {
       console.error("Error in endActiveGames:", error.message);
