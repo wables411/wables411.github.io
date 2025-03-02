@@ -1103,13 +1103,13 @@ class MultiplayerManager {
       this.subscription.unsubscribe();
       console.log("Unsubscribed from game channel");
     }
-
-    if (this.gameId) {
-      console.log(`Processing gameId: ${this.gameId}`);
-      try {
-        console.log("Calling endActiveGames");
-        await this.endActiveGames();
-
+  
+    console.log(`Current gameId: ${this.gameId}`);
+    try {
+      console.log("Calling endActiveGames regardless of gameId");
+      await this.endActiveGames(); // Always try to clear blockchain state
+  
+      if (this.gameId) {
         console.log(`Updating Supabase for gameId: ${this.gameId}`);
         const { error: updateError } = await this.supabase
           .from("chess_games")
@@ -1119,38 +1119,37 @@ class MultiplayerManager {
             updated_at: new Date().toISOString(),
           })
           .eq("game_id", this.gameId);
-
+  
         if (updateError) {
           console.error("Supabase update error:", updateError.message);
           throw new Error("Failed to update game state in Supabase: " + updateError.message);
         }
-
         console.log(`Game ${this.gameId} marked as cancelled in Supabase`);
-
-        if (window.updateGameResult) {
-          window.updateGameResult("loss");
-          console.log("Updated game result to loss");
-        }
-
-        if (window.leaderboardManager) {
-          await window.leaderboardManager.loadLeaderboard();
-          console.log("Leaderboard updated after leaving game");
-        }
-      } catch (error) {
-        console.error("Leave game error:", error.message);
-        alert("Error leaving game: " + error.message);
+      } else {
+        console.log("No gameId set, skipping Supabase update");
       }
-    } else {
-      console.log("No active gameId to leave");
+  
+      if (window.updateGameResult) {
+        window.updateGameResult("loss");
+        console.log("Updated game result to loss");
+      }
+  
+      if (window.leaderboardManager) {
+        await window.leaderboardManager.loadLeaderboard();
+        console.log("Leaderboard updated after leaving game");
+      }
+    } catch (error) {
+      console.error("Leave game error:", error.message);
+      alert("Error leaving game: " + error.message);
     }
-
+  
     this.gameId = null;
     this.playerColor = null;
     this.currentGameState = null;
     this.selectedPiece = null;
     this.hasCreatedGame = false;
     MultiplayerManager.hasGameBeenCreated = false;
-
+  
     const menuEl = document.querySelector(".multiplayer-menu");
     const gameEl = document.getElementById("chess-game");
     if (menuEl) menuEl.style.display = "block";
