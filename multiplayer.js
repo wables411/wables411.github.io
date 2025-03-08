@@ -94,6 +94,25 @@ if (!window.chessGameABI) {
       "type": "event"
     },
     {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes6",
+          "name": "inviteCode",
+          "type": "bytes6"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "player1",
+          "type": "address"
+        }
+      ],
+      "name": "GameCancelled",
+      "type": "event"
+    },
+    {
       "inputs": [],
       "name": "MAX_WAGER",
       "outputs": [
@@ -230,7 +249,7 @@ if (!window.chessGameABI) {
       "name": "lawbToken",
       "outputs": [
         {
-          "internalType": "contract IERC20",
+          "internalType": "contract IERC20Upgradeable",
           "name": "",
           "type": "address"
         }
@@ -266,6 +285,19 @@ if (!window.chessGameABI) {
         }
       ],
       "name": "withdrawTokens",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes6",
+          "name": "inviteCode",
+          "type": "bytes6"
+        }
+      ],
+      "name": "cancelGame",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -335,7 +367,7 @@ const lawbTokenABI = [
   }
 ];
 
-// Contract address for ChessGame
+// Contract address for ChessGame (update this after redeploying if necessary)
 const contractAddress = "0x6aa574B21212C6E7436Eb26A27542F1AEFfFad87";
 
 // Sanko network configuration
@@ -723,14 +755,15 @@ class MultiplayerManager {
       const { data: games, error: queryError } = await this.supabase
         .from("chess_games")
         .select("*")
-        .eq("game_id", code.toUpperCase());
+        .eq("game_id", code.toUpperCase())
+        .single();
 
-      if (queryError || !games?.length) {
-        alert("Game not found");
+      if (queryError || !games) {
+        alert("Game not found or invalid code");
+        console.error("Supabase query error:", queryError?.message);
         return;
       }
-
-      const game = games[0];
+      const game = games;
       console.log("Found game:", game);
 
       if (game.game_state !== "waiting" && game.game_state !== "active") {
@@ -809,9 +842,15 @@ class MultiplayerManager {
       const contract = await this.connectToContract();
       if (!contract) throw new Error("Failed to connect to contract");
 
+      const game = await contract.games(inviteCode);
+      if (!game.isActive) {
+        console.log(`Game ${inviteCode} is not active`);
+        alert("This game is not active. It may have already ended or been cancelled.");
+        return;
+      }
+
       console.log(`Attempting to end game ${inviteCode} with winner ${winnerAddress}`);
       const tx = await contract.endGame(inviteCode, winnerAddress);
-      console.log(`Transaction sent: ${tx.hash}`);
       await tx.wait();
       console.log(`Blockchain game ended with invite code ${inviteCode}, winner ${winnerAddress}`);
 
@@ -824,8 +863,7 @@ class MultiplayerManager {
         })
         .eq("game_id", inviteCode);
 
-      const game = this.currentGameState;
-      const wagerAmount = window.ethers.utils.parseUnits(game.bet_amount.toString(), 6);
+      const wagerAmount = window.ethers.utils.parseUnits(game.wagerAmount.toString(), 6);
       const totalPot = window.ethers.BigNumber.from(wagerAmount).mul(2);
       const houseFee = totalPot.mul(5).div(100);
       const payout = totalPot.sub(houseFee);
@@ -836,72 +874,79 @@ class MultiplayerManager {
       this.handleGameEnd({ game_id: inviteCode, winner: winnerAddress });
     } catch (error) {
       console.error(`Error ending game ${inviteCode}:`, error.message);
-      alert(`Failed to end game ${inviteCode}: ${error.message}`);
-      throw error;
+      alert(`Failed to end game: ${error.message}`);
     }
   }
 
-  async endActiveGames() {
-    console.log("Entering endActiveGames");
-    try {
-      console.log("Initializing Web3");
-      const web3 = await this.initWeb3();
-      if (!web3) {
-        console.error("Web3 initialization failed in endActiveGames");
-        throw new Error("Failed to initialize Web3");
-      }
-      const userAddress = await web3.signer.getAddress();
-      console.log("User address:", userAddress);
-  
-      console.log("Connecting to contract");
-      const contract = await this.connectToContract();
-      if (!contract) {
-        console.error("Contract connection failed in endActiveGames");
-        throw new Error("Failed to connect to contract");
-      }
-  
-      console.log("Checking playerToGame for address:", userAddress);
-      const inviteCodeBytes = await contract.playerToGame(userAddress);
-      console.log("playerToGame result:", inviteCodeBytes);
-      if (inviteCodeBytes === "0x000000000000") {
-        console.log("No active games found on-chain for address:", userAddress);
-        return;
-      }
-  
-      // Fix: Directly use bytes6 as is (no need to parse as bytes32)
-      const inviteCode = inviteCodeBytes; // Keep as hex string for contract call
-      console.log(`Found active game on-chain: ${inviteCode}`);
-  
-      console.log("Fetching game data from Supabase for game:", inviteCode);
-      const { data: gameData, error: fetchError } = await this.supabase
-        .from("chess_games")
-        .select("*")
-        .eq("game_id", inviteCode.slice(2, 8)) // Convert bytes6 to 6-char string for Supabase
-        .single();
-  
-      if (fetchError || !gameData) {
-        console.error(`Supabase fetch error for game ${inviteCode}:`, fetchError?.message || "No game data");
-        // Proceed anyway since blockchain state is the priority
-      } else {
-        const game = gameData;
-        const opponent = game.blue_player === userAddress ? game.red_player : game.blue_player;
-        const winnerAddress = opponent || "0x0000000000000000000000000000000000000000";
-        console.log(`Determined winner address: ${winnerAddress}`);
-        console.log("Calling endGame for:", inviteCode);
-        await this.endGame(inviteCode, winnerAddress);
-      }
-  
-      // If no Supabase data, still attempt to end with default winner
-      if (!gameData) {
-        console.log("No Supabase data found, ending game with default winner");
-        await this.endGame(inviteCode, "0x0000000000000000000000000000000000000000");
-      }
-  
-      console.log(`Successfully ended game ${inviteCode}`);
-    } catch (error) {
-      console.error("Error in endActiveGames:", error.message);
-      alert("Failed to end active games: " + error.message);
+  async leaveGame() {
+    console.log("Entering leaveGame");
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+      console.log("Unsubscribed from game channel");
     }
+
+    try {
+      if (this.gameId) {
+        const web3 = await this.initWeb3();
+        if (!web3) throw new Error("Failed to initialize Web3");
+        const { signer } = web3;
+        const contract = await this.connectToContract();
+        if (!contract) throw new Error("Failed to connect to contract");
+
+        const userAddress = await signer.getAddress();
+        const inviteCode = await contract.playerToGame(userAddress);
+        if (inviteCode !== "0x000000000000") {
+          const game = await contract.games(inviteCode);
+          if (game.player2 === "0x0000000000000000000000000000000000000000") {
+            // Cancel game if Player 2 hasn’t joined
+            const tx = await contract.cancelGame(inviteCode);
+            await tx.wait();
+            console.log(`Cancelled game ${this.gameId} on blockchain`);
+          } else {
+            console.log("Game has two players, cannot cancel");
+            alert("Cannot leave an active game with two players. Finish the game first.");
+            return;
+          }
+        }
+
+        const { error } = await this.supabase
+          .from("chess_games")
+          .update({
+            game_state: "cancelled",
+            winner: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("game_id", this.gameId);
+        if (error) throw new Error("Supabase update failed: " + error.message);
+        console.log(`Game ${this.gameId} marked as cancelled in Supabase`);
+      } else {
+        console.log("No gameId set, skipping Supabase update");
+      }
+
+      this.resetGameState();
+      console.log("Successfully left game");
+    } catch (error) {
+      console.error("Leave game error:", error.message);
+      alert("Error leaving game: " + error.message);
+    }
+  }
+
+  resetGameState() {
+    this.gameId = null;
+    this.playerColor = null;
+    this.currentGameState = null;
+    this.selectedPiece = null;
+    this.hasCreatedGame = false;
+    MultiplayerManager.hasGameBeenCreated = false;
+
+    const menuEl = document.querySelector(".multiplayer-menu");
+    const gameEl = document.getElementById("chess-game");
+    if (menuEl) menuEl.style.display = "block";
+    if (gameEl) gameEl.style.display = "none";
+    console.log("Reset to multiplayer menu");
+
+    if (window.updateGameResult) window.updateGameResult("loss");
+    if (window.leaderboardManager) window.leaderboardManager.loadLeaderboard();
   }
 
   isMyTurn() {
@@ -1064,6 +1109,8 @@ class MultiplayerManager {
 
       if (window.isCheckmate && window.isCheckmate(nextPlayer)) {
         gameEndState = { game_state: "completed", winner: this.playerColor };
+        const winnerAddress = this.playerColor === "blue" ? this.currentGameState.blue_player : this.currentGameState.red_player;
+        await this.endGame(this.gameId, winnerAddress);
       } else if (window.isStalemate && window.isStalemate(nextPlayer)) {
         gameEndState = { game_state: "completed", winner: "draw" };
       }
@@ -1101,94 +1148,6 @@ class MultiplayerManager {
       return false;
     } finally {
       this.isProcessingMove = false;
-    }
-  }
-
-  async leaveGame() {
-    console.log("Entering leaveGame");
-    if (this.subscription) {
-      this.subscription.unsubscribe();
-      console.log("Unsubscribed from game channel");
-    }
-  
-    console.log(`Current gameId: ${this.gameId}`);
-    try {
-      console.log("Calling endActiveGames regardless of gameId");
-      await this.endActiveGames(); // Always try to clear blockchain state
-  
-      if (this.gameId) {
-        console.log(`Updating Supabase for gameId: ${this.gameId}`);
-        const { error: updateError } = await this.supabase
-          .from("chess_games")
-          .update({
-            game_state: "cancelled",
-            winner: null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("game_id", this.gameId);
-  
-        if (updateError) {
-          console.error("Supabase update error:", updateError.message);
-          throw new Error("Failed to update game state in Supabase: " + updateError.message);
-        }
-        console.log(`Game ${this.gameId} marked as cancelled in Supabase`);
-      } else {
-        console.log("No gameId set, skipping Supabase update");
-      }
-  
-      if (window.updateGameResult) {
-        window.updateGameResult("loss");
-        console.log("Updated game result to loss");
-      }
-  
-      if (window.leaderboardManager) {
-        await window.leaderboardManager.loadLeaderboard();
-        console.log("Leaderboard updated after leaving game");
-      }
-    } catch (error) {
-      console.error("Leave game error:", error.message);
-      alert("Error leaving game: " + error.message);
-    }
-  
-    this.gameId = null;
-    this.playerColor = null;
-    this.currentGameState = null;
-    this.selectedPiece = null;
-    this.hasCreatedGame = false;
-    MultiplayerManager.hasGameBeenCreated = false;
-  
-    const menuEl = document.querySelector(".multiplayer-menu");
-    const gameEl = document.getElementById("chess-game");
-    if (menuEl) menuEl.style.display = "block";
-    if (gameEl) gameEl.style.display = "none";
-    console.log("Reset to multiplayer menu");
-  }
-
-  async updateGameStatus(status, winner = null) {
-    if (!this.gameId) return;
-
-    if (!['waiting', 'active', 'completed', 'cancelled', 'payout_failed'].includes(status)) {
-      throw new Error(`Invalid game_state: ${status}. Must be 'waiting', 'active', 'completed', 'cancelled', or 'payout_failed'.`);
-    }
-
-    try {
-      const updateData = {
-        game_state: status,
-        updated_at: new Date().toISOString(),
-      };
-      if (winner) {
-        updateData.winner = winner;
-      }
-
-      const { error } = await this.supabase
-        .from("chess_games")
-        .update(updateData)
-        .eq("game_id", this.gameId);
-
-      if (error) throw new Error(`Supabase update failed: ${error.message}`);
-      console.log(`Game ${this.gameId} status updated to ${status}`);
-    } catch (error) {
-      console.error("Error updating game status:", error);
     }
   }
 }
