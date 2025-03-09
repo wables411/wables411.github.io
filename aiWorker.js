@@ -208,55 +208,51 @@ self.onmessage = (e) => {
     function evaluateBoard(board, color) {
         let score = 0;
         const opponentColor = color === 'red' ? 'blue' : 'red';
+        const kingCheck = { [color]: isKingInCheck(color, board), [opponentColor]: isKingInCheck(opponentColor, board) };
 
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
                 const piece = board[r][c];
                 if (piece) {
                     const value = PIECE_VALUES[piece.toLowerCase()] || 0;
-                    let positionBonus = 0;
-                    const pieceType = piece.toLowerCase() === 'p' ? 'pawn' : 
-                                     piece.toLowerCase() === 'n' ? 'knight' : 
-                                     piece.toLowerCase() === 'b' ? 'bishop' : 
-                                     piece.toLowerCase() === 'k' ? 'king' : null;
-                    if (pieceType && POSITION_WEIGHTS[pieceType]) {
-                        positionBonus = POSITION_WEIGHTS[pieceType][color === 'blue' ? r : 7 - r][c];
-                    }
-                    score += (getPieceColor(piece) === color) ? (value + positionBonus) : -(value + positionBonus);
+                    const pieceColor = getPieceColor(piece);
+                    const pieceType = piece.toLowerCase();
+                    const positionBonus = POSITION_WEIGHTS[pieceType === 'p' ? 'pawn' : pieceType === 'n' ? 'knight' :
+                                                          pieceType === 'b' ? 'bishop' : pieceType === 'k' ? 'king' : null]?.[color === 'blue' ? r : 7 - r]?.[c] || 0;
+                    score += (pieceColor === color ? 1 : -1) * (value + positionBonus);
 
-                    // Bonus for central control (d4, d5, e4, e5)
-                    if ((r === 3 || r === 4) && (c === 3 || c === 4)) {
-                        if (piece.toLowerCase() === 'n' || piece.toLowerCase() === 'b' || piece.toLowerCase() === 'q') {
-                            score += (getPieceColor(piece) === color) ? 20 : -20;
-                        }
+                    if ((r === 3 || r === 4) && (c === 3 || c === 4) && (pieceType === 'n' || pieceType === 'b' || pieceType === 'q')) {
+                        score += (pieceColor === color ? 20 : -20);
                     }
                 }
             }
         }
 
-        // Rook on open file bonus
         for (let c = 0; c < 8; c++) {
-            let pawnCount = 0;
+            let hasPawns = false;
             for (let r = 0; r < 8; r++) {
-                if (board[r][c] === (color === 'blue' ? 'p' : 'P') || board[r][c] === (color === 'blue' ? 'P' : 'p')) {
-                    pawnCount++;
-                }
+                if (board[r][c]?.toLowerCase() === 'p') { hasPawns = true; break; }
             }
-            if (pawnCount === 0) {
+            if (!hasPawns) {
                 for (let r = 0; r < 8; r++) {
-                    if (board[r][c] === (color === 'blue' ? 'r' : 'R')) {
-                        score += 40;
-                    } else if (board[r][c] === (color === 'blue' ? 'R' : 'r')) {
-                        score -= 40;
-                    }
+                    if (board[r][c] === (color === 'blue' ? 'r' : 'R')) score += 40;
+                    else if (board[r][c] === (color === 'blue' ? 'R' : 'r')) score -= 40;
                 }
             }
         }
 
-        if (isKingInCheck(color, board)) score -= 50;
-        if (isKingInCheck(opponentColor, board)) score += 50;
-
+        score += (kingCheck[color] ? -50 : 0) + (kingCheck[opponentColor] ? 50 : 0);
         return score;
+    }
+
+    function wouldMovePutInCheck(move, board) {
+        const originalPiece = board[move.endRow][move.endCol];
+        board[move.endRow][move.endCol] = move.piece;
+        board[move.startRow][move.startCol] = null;
+        const inCheck = isKingInCheck(currentPlayer === 'red' ? 'blue' : 'red', board);
+        board[move.startRow][move.startCol] = move.piece;
+        board[move.endRow][move.endCol] = originalPiece;
+        return inCheck;
     }
 
     function minimax(board, move, depth, isMaximizing, alpha, beta) {
@@ -270,19 +266,31 @@ self.onmessage = (e) => {
         } else {
             const moves = getAllLegalMoves(isMaximizing ? (currentPlayer === 'red' ? 'blue' : 'red') : currentPlayer, board);
             if (moves.length === 0) {
-                score = isKingInCheck(isMaximizing ? (currentPlayer === 'red' ? 'blue' : 'red') : currentPlayer, board) ? 
+                score = isKingInCheck(isMaximizing ? (currentPlayer === 'red' ? 'blue' : 'red') : currentPlayer, board) ?
                         (isMaximizing ? -10000 : 10000) : 0;
             } else if (isMaximizing) {
                 score = -Infinity;
                 for (const nextMove of moves) {
-                    score = Math.max(score, minimax(board, nextMove, depth - 1, false, alpha, beta));
+                    const evalScore = minimax(board, nextMove, depth - 1, false, alpha, beta);
+                    if (evalScore >= 10000) {
+                        board[move.startRow][move.startCol] = move.piece;
+                        board[move.endRow][move.endCol] = originalPiece;
+                        return evalScore; // Early win
+                    }
+                    score = Math.max(score, evalScore);
                     alpha = Math.max(alpha, score);
                     if (beta <= alpha) break;
                 }
             } else {
                 score = Infinity;
                 for (const nextMove of moves) {
-                    score = Math.min(score, minimax(board, nextMove, depth - 1, true, alpha, beta));
+                    const evalScore = minimax(board, nextMove, depth - 1, true, alpha, beta);
+                    if (evalScore <= -10000) {
+                        board[move.startRow][move.startCol] = move.piece;
+                        board[move.endRow][move.endCol] = originalPiece;
+                        return evalScore; // Early loss
+                    }
+                    score = Math.min(score, evalScore);
                     beta = Math.min(beta, score);
                     if (beta <= alpha) break;
                 }
@@ -300,6 +308,13 @@ self.onmessage = (e) => {
         return;
     }
 
+    // Sort moves for better alpha-beta pruning
+    moves.sort((a, b) => {
+        const aScore = (a.isCapture ? PIECE_VALUES[board[a.endRow][a.endCol]?.toLowerCase()] || 0 : 0) + (wouldMovePutInCheck(a, board) ? 100 : 0);
+        const bScore = (b.isCapture ? PIECE_VALUES[board[b.endRow][b.endCol]?.toLowerCase()] || 0 : 0) + (wouldMovePutInCheck(b, board) ? 100 : 0);
+        return bScore - aScore;
+    });
+
     let bestMove = null;
     if (difficulty === 'hard') {
         let bestScore = -Infinity;
@@ -308,7 +323,7 @@ self.onmessage = (e) => {
 
         for (const move of moves) {
             const tempBoard = board.map(row => [...row]);
-            const score = minimax(tempBoard, move, 4, false, alpha, beta); // Depth 4
+            const score = minimax(tempBoard, move, 2, false, alpha, beta); // Reduced depth to 2
             if (score > bestScore) {
                 bestScore = score;
                 bestMove = move;
