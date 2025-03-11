@@ -15,7 +15,7 @@ body, html, .lawbstation-body {
     box-sizing: border-box;
 }
 
-/* Navigation */
+/* Navigation (Revised for index) */
 nav {
     background-color: black;
     width: 100%;
@@ -23,37 +23,38 @@ nav {
     top: 0;
     left: 0;
     z-index: 1000;
+    padding: 5px 0; /* Slimmer nav */
 }
 nav ul {
     list-style: none;
-    padding: 10px 0;
+    padding: 0;
     margin: 0;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    max-height: 50vh; /* Limit height on mobile */
-    overflow-y: auto; /* Scroll if too tall */
 }
 nav li {
-    margin: 5px 10px;
+    display: inline;
+    margin: 0 10px; /* Closer together */
 }
-nav a, a:link, a:visited, a:hover, a:active {
+nav a, nav a:link, nav a:visited, nav a:hover, nav a:active {
     color: #FF0000;
     font-weight: bold;
-    text-decoration: none;
-    padding: clamp(8px, 2vw, 10px) clamp(10px, 2vw, 12px);
-    font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+    text-decoration: underline;
+    font-size: 14px; /* Smaller text */
+}
+nav a:hover {
+    color: #FFFF00; /* Retro hover */
 }
 
-/* Containers */
+/* Containers (Updated for index compatibility) */
 .container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-top: 20px;
+    padding-top: 50px; /* Adjusted for slimmer nav */
     max-width: 90%;
     margin: 0 auto;
 }
+
+/* Original Containers (Unchanged) */
 .link-container {
     margin-bottom: 20px;
     width: 100%;
@@ -71,8 +72,38 @@ nav a, a:link, a:visited, a:hover, a:active {
     background-color: rgba(0, 0, 0, 0.3);
     border-radius: 10px;
 }
+
+/* New Menu Buttons for Index */
+.menu-buttons {
+    margin: 10px 0;
+}
+.menu-buttons a {
+    display: inline-block;
+    margin: 5px;
+}
+.menu-image {
+    width: 100px; /* Smaller GIFs */
+    height: auto;
+    border: 2px solid #FF0000;
+    vertical-align: middle;
+}
+.menu-buttons .link-text { /* Override original .link-text for menu-buttons */
+    font-size: 12px; /* Smaller text */
+    color: #FF00FF;
+    text-decoration: blink;
+    display: block;
+}
+
+/* New Marquee for Index */
+marquee {
+    color: #FFFF00;
+    font-size: 16px;
+    margin: 10px 0;
+}
+
+/* Rest of Original CSS (Unchanged) */
 .main-content {
-    padding-top: clamp(80px, 20vh, 120px); /* Increased to account for taller nav */
+    padding-top: clamp(80px, 20vh, 120px);
     width: 100%;
     max-width: 100%;
     display: flex;
@@ -254,15 +285,15 @@ nav a, a:link, a:visited, a:hover, a:active {
     font-size: clamp(1.5rem, 4vw, 2rem);
 }
 
-/* Media Queries */
+/* Media Queries (Unchanged) */
 @media (max-width: 768px) {
     nav ul {
         flex-direction: column;
         align-items: center;
-        max-height: 25vh; /* Further reduce height */
+        max-height: 25vh;
     }
     nav li {
-        margin: 3px 0; /* Tighten spacing */
+        margin: 3px 0;
     }
     .container, .game-section, #meme-generator, .unicorn-gods-section {
         width: 95%;
@@ -280,10 +311,10 @@ nav a, a:link, a:visited, a:hover, a:active {
         padding: 6px 8px;
     }
     nav ul {
-        max-height: 20vh; /* Even smaller for tiny screens */
+        max-height: 20vh;
     }
     .main-content {
-        padding-top: clamp(60px, 15vh, 100px); /* Adjusted for smaller nav */
+        padding-top: clamp(60px, 15vh, 100px);
     }
     .game-section, #meme-generator {
         padding: 10px;
