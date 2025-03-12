@@ -1,4 +1,7 @@
 /* Reset and Base Styles */
+html {
+    scroll-behavior: smooth; /* Enable smooth scrolling */
+}
 body, html, .lawbstation-body {
     font-family: 'Impact', sans-serif;
     color: white;
@@ -15,15 +18,16 @@ body, html, .lawbstation-body {
     box-sizing: border-box;
 }
 
-/* Navigation (Revised for index) */
+/* Navigation (Updated for Fixed Left Menu) */
 nav {
-    background-color: black;
-    width: 100%;
+    background-color: rgba(0, 0, 0, 0);
+    width: 200px; /* Fixed width for left menu */
+    height: 100vh; /* Full viewport height */
     position: fixed;
     top: 0;
     left: 0;
     z-index: 1000;
-    padding: 5px 0; /* Slimmer nav */
+    padding: 20px 10px; /* Adjusted padding */
 }
 nav ul {
     list-style: none;
@@ -31,74 +35,106 @@ nav ul {
     margin: 0;
 }
 nav li {
-    display: inline;
-    margin: 0 10px; /* Closer together */
+    display: block; /* Stack vertically */
+    margin: 10px 0; /* Vertical spacing */
 }
 nav a, nav a:link, nav a:visited, nav a:hover, nav a:active {
     color: #FF0000;
     font-weight: bold;
     text-decoration: underline;
-    font-size: 14px; /* Smaller text */
+    font-size: 14px;
 }
 nav a:hover {
-    color: #FFFF00; /* Retro hover */
+    color: #FFFF00;
 }
 
-/* Containers (Updated for index compatibility) */
+/* Containers (Updated for Single-Page Layout) */
 .container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 50px; /* Adjusted for slimmer nav */
+    margin-left: 220px; /* Offset for nav width + padding */
+    padding: 20px;
     max-width: 90%;
-    margin: 0 auto;
+    margin-right: auto;
 }
 
-/* Original Containers (Unchanged) */
-.link-container {
-    margin-bottom: 20px;
-    width: 100%;
-}
-.link-text {
-    display: block;
-    margin-bottom: 10px;
-    font-size: clamp(1rem, 3vw, 1.2rem);
-}
-.index-image {
-    width: 100%;
-    height: auto;
-    max-height: 200px;
-    object-fit: contain;
-    background-color: rgba(0, 0, 0, 0.3);
+/* Section Styles */
+.section {
+    min-height: 100vh; /* Full-screen sections */
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.0); /* Match other sections */
     border-radius: 10px;
+    margin: 20px 0;
 }
-
-/* New Menu Buttons for Index */
-.menu-buttons {
-    margin: 10px 0;
+.section h1 {
+    color: #FF0000;
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    margin-bottom: 15px;
 }
-.menu-buttons a {
-    display: inline-block;
-    margin: 5px;
+.section p {
+    font-size: clamp(0.9rem, 2.5vw, 1rem);
+    margin-bottom: 15px;
 }
-.menu-image {
-    width: 100px; /* Smaller GIFs */
+.section-image {
+    max-width: 100%;
     height: auto;
     border: 2px solid #FF0000;
-    vertical-align: middle;
-}
-.menu-buttons .link-text { /* Override original .link-text for menu-buttons */
-    font-size: 12px; /* Smaller text */
-    color: #FF00FF;
-    text-decoration: blink;
-    display: block;
+    border-radius: 5px;
 }
 
-/* New Marquee for Index */
+/* Search Container (for Lawbsters) */
+.search-container {
+    margin: 20px 0;
+}
+.search-container input[type="number"] {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 150px;
+    font-size: clamp(0.8rem, 2vw, 1rem);
+}
+.search-button {
+    background-color: #FF0000;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    margin-left: 10px;
+    cursor: pointer;
+    font-size: clamp(0.8rem, 2vw, 1rem);
+}
+.search-button:hover {
+    background-color: #cc0000;
+}
+.image-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* Zora Embed (for Lawbsters) */
+.zora-embed {
+    text-align: center;
+    margin-top: 20px;
+}
+.zora-embed a {
+    color: #b3b3b3;
+    font-family: 'Inter', system-ui;
+    font-size: 10px;
+    text-decoration: none;
+    padding: 12px;
+    display: inline-block;
+}
+
+/* Marquee */
 marquee {
     color: #FFFF00;
     font-size: 16px;
     margin: 10px 0;
+}
+
+/* Removed Unused Styles */
+.menu-buttons, .menu-image, .menu-buttons .link-text, .link-container, .index-image {
+    /* Removed as they're replaced by section-based layout */
 }
 
 /* Rest of Original CSS (Unchanged) */
@@ -285,38 +321,41 @@ marquee {
     font-size: clamp(1.5rem, 4vw, 2rem);
 }
 
-/* Media Queries (Unchanged) */
+/* Media Queries */
 @media (max-width: 768px) {
+    nav {
+        width: 100%;
+        height: auto;
+        position: relative;
+        padding: 5px 0;
+    }
     nav ul {
-        flex-direction: column;
-        align-items: center;
-        max-height: 25vh;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
     }
     nav li {
-        margin: 3px 0;
+        display: inline;
+        margin: 3px 10px;
     }
-    .container, .game-section, #meme-generator, .unicorn-gods-section {
+    .container {
+        margin-left: 0;
         width: 95%;
     }
-    #game-container {
-        height: clamp(250px, 70vw, 450px);
-    }
-    .index-image {
-        max-height: 150px;
+    .section {
+        min-height: auto; /* Adjust for mobile */
     }
 }
 
 @media (max-width: 480px) {
     nav a {
-        padding: 6px 8px;
+        font-size: 12px;
     }
-    nav ul {
-        max-height: 20vh;
+    .section h1 {
+        font-size: clamp(1.2rem, 3vw, 1.5rem);
     }
-    .main-content {
-        padding-top: clamp(60px, 15vh, 100px);
-    }
-    .game-section, #meme-generator {
-        padding: 10px;
+    .section p {
+        font-size: clamp(0.8rem, 2vw, 0.9rem);
     }
 }

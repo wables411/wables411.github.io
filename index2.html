@@ -3,163 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🦞🦞🦞🦞</title>
+    <title>Lawb Lawb Lawb</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <style>
-        /* Inline CSS for standalone testing */
-        body {
-            font-family: 'Courier New', monospace;
-            color: #FFFFFF;
-            text-align: center;
-            background: url('images/oceanfloor.gif') fixed center/cover no-repeat;
-            margin: 0;
-            padding: 0;
-            cursor: url('images/lawbpointer.png'), default;
-        }
-        nav {
-            background: #000000;
-            position: fixed;
-            top: 0;
-            width: 100%;
-            padding: 5px 0;
-        }
-        nav a {
-            color: #FF0000;
-            text-decoration: underline;
-            font-size: 12px;
-            margin: 0 8px;
-        }
-        nav a:hover {
-            color: #FFFF00;
-        }
-        .content {
-            margin-top: 40px;
-            padding: 10px;
-        }
-        .section {
-            margin: 15px 0;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.5);
-        }
-        .section h1 {
-            color: #FF00FF;
-            font-size: 16px;
-            text-shadow: 1px 1px #000000;
-        }
-        .menu-buttons a {
-            display: inline-block;
-            margin: 5px;
-        }
-        .menu-image {
-            width: 80px;
-            border: 2px solid #FF0000;
-        }
-        .link-text {
-            font-size: 10px;
-            color: #FF00FF;
-            text-decoration: blink;
-        }
-        marquee {
-            color: #FFFF00;
-            font-size: 14px;
-            margin: 10px 0;
-        }
-        p {
-            font-size: 12px;
-            margin: 5px 0;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <nav>
-        <a href="#home">Home</a>
-        <a href="#lawbstation">Lawbstation</a>
-        <a href="#lawbsters">Lawbsters</a>
-        <a href="#lawbstarz">Lawbstarz</a>
-        <a href="#ascii">Ascii</a>
-        <a href="#burn">Burn</a>
-        <a href="#$lawb">$lawb</a>
-        <a href="#nexus">Nexus</a>
-        <a href="#halloween">Halloween</a>
-        <a href="#shop">Shop</a>
+        <ul>
+            <li><a href="#welcome">Welcome</a></li>
+            <li><a href="#nexus">Nexus</a></li>
+            <li><a href="#station">Station</a></li>
+            <li><a href="#starz">Starz</a></li>
+            <li><a href="#lawbsters">Lawbsters</a></li>
+            <li><a href="#lore">Lore</a></li>
+        </ul>
     </nav>
 
-    <div class="content">
+    <div class="container">
         <marquee>there is no meme we lawb you</marquee>
 
-        <!-- Home Section (index.html) -->
-        <div class="section" id="home">
-            <h1>Home</h1>
-            <p>Lawbsters seem nice but a human controlled by a lobster will never achieve anything without a roadmap. </p>
-            <div class="menu-buttons">
-                <a href="#lawbstation"><img src="images/lawbstation.GIF" alt="Lawbstation" class="menu-image"></a>
-                <a href="#lawbsters"><img src="images/lawbsters.gif" alt="Lawbsters" class="menu-image"></a>
-                <a href="#lawbstarz"><img src="images/lawbstarz_tease 2.gif" alt="Lawbstarz" class="menu-image"></a>
+        <!-- Section: Welcome -->
+        <div id="welcome" class="section">
+            <h1>Lawb Headquarters</h1>
+            <p>Lawbsters seem nice but a human controlled by a lobster will never ammount to anything without a roadmap.</p>
+            <h2>Lawb Meme Generator</h2>
+            <div id="meme-generator">
+                <label for="collection-selector">Select Collection:</label>
+                <select id="collection-selector"></select>
+                <br><br>
+                <label for="top-text">Top Text:</label>
+                <input type="text" id="top-text">
+                <br><br>
+                <label for="bottom-text">Bottom Text:</label>
+                <input type="text" id="bottom-text">
+                <br><br>
+                <button id="fetch-image">FETCH LAWB</button>
+                <button id="generate-meme">ADD TEXT</button>
+                <button id="deep-fry">DEEP FRY</button>
             </div>
-        </div>
-
-        <!-- Lawbstation Section (lawbstation.html) -->
-        <div class="section" id="lawbstation">
-            <h1>Lawbstation</h1>
-            <p>The hub of Lawb activity! (Add your lawbstation.html content here.)</p>
-            <img src="images/lawbstation.GIF" alt="Lawbstation" class="menu-image">
-        </div>
-
-        <!-- Lawbsters Section (lawbsters.html) -->
-        <div class="section" id="lawbsters">
-            <h1>Lawbsters</h1>
-            <p>Lawbsters unite! (Add your lawbsters.html content here.)</p>
-            <img src="images/lawbsters.gif" alt="Lawbsters" class="menu-image">
-        </div>
-
-        <!-- Lawbstarz Section (lawbstarz.html) -->
-        <div class="section" id="lawbstarz">
-            <h1>Lawbstarz</h1>
-            <p>Shining Lawb stars! (Add your lawbstarz.html content here.)</p>
-            <a href="https://sudoswap.xyz/#/browse/buy/0xd7922cd333da5ab3758c95f774b092a7b13a5449">
-                <img src="images/lawbstarz_tease 2.gif" alt="Lawbstarz" class="menu-image">
+            <br>
+            <img id="generated-meme" style="display:none;">
+            <canvas id="meme-canvas" style="display:none;"></canvas>
+            <div class="video-section" style="margin: 20px auto; max-width: 400px;">
+                <video autoplay loop controls style="display: block; margin: 0 auto; max-width: 100%;">
+                    <source src="images/bluelawbnifty.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                <p style="margin-top: 10px;">
+                    Join the <a href="https://www.niftyisland.com/communities/9e8a5749-8381-406c-93d3-bdb123a1f25c" target="_blank">Lawbster community</a> on Nifty Island
+                </p>
+            </div>
+            <h2 style="padding-left: 20px; padding-right: 20px;">A community art project. Lawbster Nft collections and $LAWB tokens available on Solana and EVM chains.</h2>
+            <a href="images/Lawbsters.vrm" download="Lawbsters.vrm">
+                <button>Streamers: click to download 3D VRM Lawbster</button>
+            </a>
+            <a href="https://boards.miladychan.org/milady/33793" target="_blank" class="miladychan-link">
+                <img src="/images/miladychan.png" alt="Miladychan Link">
             </a>
         </div>
 
-        <!-- Ascii Lawbsters Section (ascii_lawbsters.html) -->
-        <div class="section" id="ascii">
-            <h1>Ascii Lawbsters</h1>
-            <p>Retro art vibes. (Add your ascii_lawbsters.html content here, like ASCII text.)</p>
-            <pre style="font-size: 10px;">(Insert ASCII art here)</pre>
-        </div>
-
-        <!-- Burn Section (https://app.manifold.xyz/phy/lawbster-plushy) -->
-        <div class="section" id="burn">
-            <h1>Burn</h1>
-            <p>Lawbster Plushy Burn Page!</p>
-            <a href="https://app.manifold.xyz/phy/lawbster-plushy" class="link-text">Go to Burn Page</a>
-        </div>
-
-        <!-- $lawb Section ($lawb.html) -->
-        <div class="section" id="$lawb">
-            <h1>$lawb</h1>
-            <p>Token stuff? (Add your $lawb.html content here.)</p>
-        </div>
-
-        <!-- Nexus Section (nexus.html) -->
-        <div class="section" id="nexus">
+        <!-- Section: Nexus -->
+        <div id="nexus" class="section">
             <h1>Nexus</h1>
-            <p>The Lawb Nexus awaits. (Add your nexus.html content here.)</p>
-            <img src="images/f.png" alt="Nexus" class="menu-image">
+            <p>Content for Nexus goes here...</p>
+            <img src="images/f.png" alt="LawbNexus" class="section-image">
         </div>
 
-        <!-- Halloween Section (halloween.html) -->
-        <div class="section" id="halloween">
-            <h1>Halloween</h1>
-            <p>Spooky Lawb vibes! (Add your halloween.html content here.)</p>
+        <!-- Section: Station -->
+        <div id="station" class="section">
+            <h1>Station</h1>
+            <p>Content for Station goes here...</p>
+            <img src="images/lawbstation.GIF" alt="Lawbstation" class="section-image">
         </div>
 
-        <!-- Shop Section (https://lawb.shop) -->
-        <div class="section" id="shop">
-            <h1>Shop</h1>
-            <p>Get your Lawb gear!</p>
-            <a href="https://lawb.shop" class="link-text">Visit Lawb Shop</a>
+        <!-- Section: Starz -->
+        <div id="starz" class="section">
+            <h1>Starz</h1>
+            <p>Visit the Starz collection on SudoSwap: <a href="https://sudoswap.xyz/#/browse/buy/0xd7922cd333da5ab3758c95f774b092a7b13a5449">Link</a></p>
+            <img src="images/lawbstarz_tease 2.gif" alt="Lawbstarz" class="section-image">
+        </div>
+
+        <!-- Section: Lawbsters -->
+        <div id="lawbsters" class="section">
+            <h1>Lawbsters</h1>
+            <p>Lawbsters seem nice but a human controlled by a lobster will never achieve anything without a roadmap.</p>
+            <p>A Cigawrette Packs derivative. The first Lawbster collection on Eth. Quantity: 420</p>
+            <p>Collect on <a href="https://magiceden.us/collections/ethereum/0x0ef7ba09c38624b8e9cc4985790a2f5dbfc1dc42" target="_blank">secondary</a></p>
+            <blockquote class="twitter-tweet">
+                <p lang="en" dir="ltr">The following 🧵 has been transcripted from a live news broadcast:<br><br>"Just in, breaking news coming out of the high seas. A cargo ship has been hijacked by a group of degenerate lobsters, taking hostages & demanding a ransom. The situation is ongoing and authorities are scrambling <a href="https://t.co/lykBDDKYEb">pic.twitter.com/lykBDDKYEb</a></p>
+                — wables 🚬✰🍨🦞🍞 (@wables411) <a href="https://twitter.com/wables411/status/1620879129850834944?ref_src=twsrc%5Etfw">February 1, 2023</a>
+            </blockquote>
+            <p>CHOOSE YOUR FIGHTER. search lawbster by number. right click save. create a meme. start a fight. THIS IS MEMETIC WARFARE.</p>
+            <div class="search-container">
+                <input type="number" id="imageSearch" placeholder="Enter image number" min="0" max="419">
+                <button id="enterButton" class="search-button">Enter</button>
+                <button id="clearButton" class="search-button">Clear</button>
+            </div>
+            <div id="imageDisplay"></div>
+            <div id="imageGallery" class="image-container"></div>
+        </div>
+
+        <!-- Section: Lore -->
+        <div id="lore" class="section">
+            <h1>Lore</h1>
+            <p>Explore the Lore on Zora: <a href="https://zora.co/collect/base:0xd49c9461471934e87467af00fff8d63312db913a">Link</a></p>
+            <img src="images/lawblore.gif" alt="Lawb Lore" class="section-image">
         </div>
     </div>
+
+    <script src="loadimages.js"></script>
+    <script src="loadImages2.js"></script>
+    <script src="meme-generator.js"></script>
+    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 </body>
 </html>
