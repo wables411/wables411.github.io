@@ -1,11 +1,8 @@
-/* Game Section Layout - Overridden by style.css where applicable */
-.game-section {
-    padding: 15px;
-    margin: 20px auto;
-    max-width: 1000px;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 10px;
-    border: 1px solid rgba(50, 205, 50, 0.3);
+/* Reset to match style.css */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
 }
 
 /* Wallet Connection Styles */
@@ -15,6 +12,8 @@
     align-items: center;
     gap: 15px;
     margin: 15px 0;
+    width: 100%;
+    max-width: 600px;
 }
 
 .wallet-btn {
@@ -69,11 +68,20 @@
 
 /* Leaderboard Section */
 .leaderboard-section {
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     padding: 15px;
     border-radius: 8px;
     border: 1px solid rgba(153, 69, 255, 0.3);
     background: rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 800px;
+    text-align: center;
+}
+
+/* Hide leaderboard when difficulty screen or multiplayer menu is active */
+.game-section.show-difficulty .leaderboard-section,
+.game-section.show-multiplayer .leaderboard-section {
+    display: none;
 }
 
 .leaderboard-title {
@@ -82,9 +90,7 @@
     text-transform: uppercase;
     letter-spacing: 2px;
     color: #fff;
-    text-shadow: 0 0 5px #32CD32,
-                 0 0 10px #32CD32,
-                 0 0 15px #32CD32;
+    text-shadow: 0 0 5px #32CD32, 0 0 10px #32CD32, 0 0 15px #32CD32;
     margin-bottom: 15px;
 }
 
@@ -121,10 +127,10 @@
 
 .leaderboard-table th,
 .leaderboard-table td {
-    padding: 8px;
+    padding: 10px;
     text-align: center;
     border: 1px solid rgba(50, 205, 50, 0.2);
-    font-size: clamp(0.8rem, 2vw, 1rem);
+    font-size: clamp(0.9rem, 2vw, 1rem);
 }
 
 .leaderboard-table th {
@@ -141,14 +147,30 @@
 /* Chess Container */
 .chess-container {
     width: 100%;
-    max-width: min(90vw, 600px);
+    max-width: calc(100% - 220px);
     margin: 20px auto;
+    margin-left: 220px;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-grow: 1;
 }
 
+/* Show chess-container when difficulty screen or multiplayer menu is active */
+.game-section.show-difficulty .chess-container,
+.game-section.show-multiplayer .chess-container {
+    display: flex; /* Ensure container remains visible */
+}
+
+/* Chessboard */
 #chessboard {
     width: 100%;
-    aspect-ratio: 1;
+    max-width: min(80vw, calc(100vh - 250px)); /* Increased size */
+    max-height: calc(100vh - 250px); /* Leave room for status, leaderboard */
+    aspect-ratio: 1 / 1;
+    min-width: 500px; /* Increased from 400px */
+    min-height: 500px;
     position: relative;
     border-radius: 8px;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
@@ -157,12 +179,16 @@
     background-repeat: no-repeat;
     touch-action: manipulation;
     border: 2px solid rgba(50, 205, 50, 0.3);
+    display: block;
 }
 
+/* Pieces */
 .piece {
     position: absolute;
     width: 12.5%;
     height: 12.5%;
+    min-width: 60px; /* Increased from 50px */
+    min-height: 60px;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -172,7 +198,8 @@
     touch-action: none;
 }
 
-.piece:hover, .piece:active {
+.piece:hover,
+.piece:active {
     transform: scale(1.1);
     filter: brightness(1.2) drop-shadow(0 0 8px rgba(50, 205, 50, 0.7));
     z-index: 3;
@@ -199,13 +226,23 @@
 /* Difficulty Selection */
 #difficulty-screen {
     width: 100%;
+    max-width: 600px;
     padding: 20px;
-    display: flex;
+    display: none;
     flex-direction: column;
     align-items: center;
     gap: 15px;
     border-radius: 10px;
     border: 1px solid rgba(50, 205, 50, 0.3);
+    background: rgba(0, 0, 0, 0.7);
+    margin: 20px 0; /* Add margin to separate from mode selection */
+    z-index: 0; /* Reset z-index to avoid overlap */
+    position: static; /* Remove absolute positioning */
+}
+
+/* Show difficulty screen when active */
+.game-section.show-difficulty #difficulty-screen {
+    display: flex;
 }
 
 #difficulty-screen h2 {
@@ -214,9 +251,7 @@
     text-transform: uppercase;
     letter-spacing: 2px;
     color: #fff;
-    text-shadow: 0 0 5px #32CD32,
-                 0 0 10px #32CD32,
-                 0 0 15px #32CD32;
+    text-shadow: 0 0 5px #32CD32, 0 0 10px #32CD32, 0 0 15px #32CD32;
 }
 
 .difficulty-buttons {
@@ -265,8 +300,10 @@
 /* Game Info */
 .game-info-container {
     width: 100%;
-    max-width: min(90vw, 500px);
-    margin: 20px auto;
+    max-width: min(90vw, 600px);
+    margin: 10px auto;
+    display: flex;
+    justify-content: center;
 }
 
 #game-info {
@@ -276,6 +313,16 @@
     padding: 15px;
     border-radius: 8px;
     border: 1px solid rgba(50, 205, 50, 0.3);
+    background: rgba(0, 0, 0, 0.7);
+    width: 100%;
+    max-width: 600px;
+    text-align: center;
+}
+
+/* Hide game info when difficulty screen or multiplayer menu is active */
+.game-section.show-difficulty #game-info,
+.game-section.show-multiplayer #game-info {
+    display: none;
 }
 
 #status {
@@ -284,9 +331,7 @@
     text-align: center;
     text-transform: uppercase;
     letter-spacing: 1px;
-    text-shadow: 0 0 5px #32CD32,
-                 0 0 10px #32CD32,
-                 0 0 15px #32CD32;
+    text-shadow: 0 0 5px #32CD32, 0 0 10px #32CD32, 0 0 15px #32CD32;
 }
 
 #move-history {
@@ -328,6 +373,14 @@
     justify-content: center;
     gap: 15px;
     margin: 15px 0;
+    width: 100%;
+    max-width: 600px;
+}
+
+/* Ensure mode selection remains visible */
+.game-section.show-difficulty .game-mode-selection,
+.game-section.show-multiplayer .game-mode-selection {
+    display: flex; /* Override previous hiding behavior */
 }
 
 .mode-btn {
@@ -350,6 +403,37 @@
 .mode-btn.selected {
     background: rgba(50, 205, 50, 0.3);
     border-color: rgba(50, 205, 50, 0.6);
+}
+
+/* Multiplayer Menu */
+.multiplayer-menu {
+    width: 100%;
+    max-width: 600px;
+    padding: 20px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    border-radius: 10px;
+    border: 1px solid rgba(50, 205, 50, 0.3);
+    background: rgba(0, 0, 0, 0.7);
+    margin: 20px 0; /* Add margin to separate from mode selection */
+    z-index: 0; /* Reset z-index to avoid overlap */
+    position: static; /* Remove absolute positioning */
+}
+
+/* Show multiplayer menu when active */
+.game-section.show-multiplayer .multiplayer-menu {
+    display: flex;
+}
+
+.multiplayer-menu h2 {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-family: Impact, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #fff;
+    text-shadow: 0 0 5px #32CD32, 0 0 10px #32CD32, 0 0 15px #32CD32;
 }
 
 /* Promotion Dialog */
@@ -409,10 +493,135 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+/* Multiplayer Buttons */
+.multiplayer-btn {
+    background: rgba(50, 205, 50, 0.2);
+    border: 2px solid rgba(50, 205, 50, 0.3);
+    padding: 8px 15px;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+    font-family: Impact, sans-serif;
+}
+
+.multiplayer-btn:hover:not(:disabled) {
+    background: rgba(50, 205, 50, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
+}
+
+.cancel-btn {
+    background: rgba(255, 0, 0, 0.2);
+    border-color: rgba(255, 0, 0, 0.3);
+}
+
+.cancel-btn:hover {
+    background: rgba(255, 0, 0, 0.3);
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+}
+
+/* Join Game Container */
+.join-game-container {
+    margin: 10px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+}
+
+.join-game-container input {
+    width: 100%;
+    max-width: 180px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(50, 205, 50, 0.3);
+    color: white;
+    border-radius: 4px;
+    font-family: monospace;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+/* Game Code Display */
+.game-code-display {
+    margin: 10px 0;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(50, 205, 50, 0.3);
+    border-radius: 5px;
+    display: none;
+    text-align: center;
+}
+
+.game-code-display h4 {
+    color: #32CD32;
+    margin: 0 0 10px 0;
+    font-family: Impact, sans-serif;
+}
+
+.game-code {
+    font-family: monospace;
+    font-size: clamp(1.2rem, 3vw, 1.5rem);
+    color: white;
+    letter-spacing: 2px;
+    cursor: pointer;
+}
+
+.game-code:hover {
+    color: #32CD32;
+}
+
+/* Matchmaking Status */
+#matchmaking-status {
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid rgba(50, 205, 50, 0.3);
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.status-text {
+    margin-bottom: 10px;
+    color: #32CD32;
+    font-family: monospace;
+}
+
+/* Copy Notification */
+.copy-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(50, 205, 50, 0.9);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    display: none;
+    z-index: 2000;
+    font-family: Impact, sans-serif;
+}
+
 /* Mobile Optimizations */
 @media (max-width: 768px) {
-    .game-section {
-        padding: 10px;
+    .chess-container {
+        margin-left: 0;
+        max-width: 95%;
+    }
+    #chessboard {
+        max-width: min(85vw, calc(100vh - 200px));
+        max-height: calc(100vh - 200px);
+        min-width: 400px;
+        min-height: 400px;
+    }
+    .piece {
+        min-width: 50px;
+        min-height: 50px;
     }
     .username-input {
         flex-direction: column;
@@ -426,31 +635,62 @@
     #status {
         font-size: 1.4rem;
     }
-    #move-history {
-        height: 80px;
-    }
-    .difficulty-btn, .start-btn {
+    .difficulty-btn,
+    .start-btn {
         padding: 8px 16px;
         font-size: 1rem;
     }
-    .leaderboard-table th, .leaderboard-table td {
+    .leaderboard-table th,
+    .leaderboard-table td {
         padding: 6px;
         font-size: 0.8rem;
     }
-    #difficulty-screen h2 {
-        font-size: 1.6rem;
+    #difficulty-screen {
+        width: 90%;
+        max-width: none;
     }
-    .chess-container {
-        max-width: min(85vw, 400px);
+    .multiplayer-menu {
+        width: 90%;
+        max-width: none;
+    }
+    .game-mode-selection {
+        flex-direction: column; /* Stack buttons vertically on mobile */
+        gap: 10px;
+    }
+    #difficulty-screen,
+    .multiplayer-menu {
+        margin: 10px 0; /* Reduce margin on mobile */
     }
 }
 
 @media (max-width: 480px) {
-    .chess-container {
-        max-width: min(90vw, 320px);
+    #chessboard {
+        max-width: min(90vw, calc(100vh - 150px));
+        max-height: calc(100vh - 150px);
+        min-width: 350px;
+        min-height: 350px;
     }
-    .piece, .highlight {
-        width: 12.5%;
-        height: 12.5%;
+    .piece {
+        min-width: 40px;
+        min-height: 40px;
+    }
+}
+
+/* Larger Screens */
+@media (min-width: 1200px) {
+    #chessboard {
+        max-width: min(80vw, calc(100vh - 250px));
+        max-height: calc(100vh - 250px);
+        min-width: 600px;
+        min-height: 600px;
+    }
+    .piece {
+        min-width: 70px;
+        min-height: 70px;
+    }
+    .leaderboard-table th,
+    .leaderboard-table td {
+        padding: 12px;
+        font-size: 1.1rem;
     }
 }

@@ -6,6 +6,7 @@ const GameMode = {
 
 // Game initialization flags
 let isGameInitialized = false;
+let hasInitialized = false; // Prevent duplicate initialization
 let currentGameMode = GameMode.AI;
 let multiplayerManager = null;
 let isMultiplayerMode = false;
@@ -67,12 +68,7 @@ const pieceImages = {
 
 // AI evaluation constants
 const PIECE_VALUES = {
-    'p': 100,  // Pawn
-    'n': 320,  // Knight
-    'b': 330,  // Bishop
-    'r': 500,  // Rook
-    'q': 900,  // Queen
-    'k': 20000 // King
+    'p': 100, 'n': 320, 'b': 330, 'r': 500, 'q': 900, 'k': 20000
 };
 
 const POSITION_WEIGHTS = {
@@ -138,7 +134,6 @@ let debugTimeout = null;
 function debug(message) {
     console.log(message);
     debugQueue.push(message);
-
     if (!debugTimeout) {
         debugTimeout = setTimeout(() => {
             const debugElement = document.getElementById('debug');
@@ -148,7 +143,7 @@ function debug(message) {
                 debugQueue = [];
             }
             debugTimeout = null;
-        }, 100); // Batch every 100ms
+        }, 100);
     }
 }
 
@@ -160,7 +155,6 @@ function updateStatusDisplay(message) {
     }
 }
 
-// Make core functions globally available
 window.debug = debug;
 window.updateStatusDisplay = updateStatusDisplay;
 
@@ -181,7 +175,6 @@ function updateDifficultyButtons(difficultySelected) {
             hardBtn.classList.remove('selected');
         }
         startBtn.disabled = !difficultySelected;
-        
         startBtn.style.cssText = startBtn.disabled ? 
             'opacity: 0.5; cursor: not-allowed; pointer-events: none;' :
             'opacity: 1; cursor: pointer; pointer-events: auto;';
@@ -208,10 +201,7 @@ function getPieceColor(piece) {
 }
 
 function getPieceName(piece) {
-    const names = {
-        'p': 'pawn', 'r': 'rook', 'n': 'knight',
-        'b': 'bishop', 'q': 'queen', 'k': 'king'
-    };
+    const names = { 'p': 'pawn', 'r': 'rook', 'n': 'knight', 'b': 'bishop', 'q': 'queen', 'k': 'king' };
     return names[piece.toLowerCase()];
 }
 
@@ -223,7 +213,6 @@ function coordsToAlgebraic(row, col) {
     return `${String.fromCharCode(97 + col)}${8 - row}`;
 }
 
-// Make core functions globally available
 window.getPieceColor = getPieceColor;
 window.getPieceName = getPieceName;
 window.isWithinBoard = isWithinBoard;
@@ -371,7 +360,7 @@ function promptPawnPromotion(startRow, startCol, endRow, endCol) {
             executeMove(startRow, startCol, endRow, endCol, promotedPiece);
             dialog.remove();
         };
-        pieceButton.addEventListener('touchend', (e) => { // Mobile support for promotion
+        pieceButton.addEventListener('touchend', (e) => {
             e.preventDefault();
             executeMove(startRow, startCol, endRow, endCol, promotedPiece);
             dialog.remove();
@@ -1094,8 +1083,11 @@ function wouldMovePutInCheck(move, opponentColor) { // Kept for reference
 // UI Event Handlers
 function onPieceClick(event) {
     try {
+        if (window.isMultiplayerMode && window.multiplayerManager) {
+            debug('Deferring piece click to MultiplayerManager');
+            return;
+        }
         if (!checkGameAccess()) return;
-        if (window.isMultiplayerMode && window.multiplayerManager) return;
         if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') return;
         if (gameState !== 'active' && gameState !== 'check') return;
         
@@ -1139,7 +1131,10 @@ function onPieceClick(event) {
 
 function onSquareClick(row, col) {
     try {
-        if (window.isMultiplayerMode && window.multiplayerManager) return;
+        if (window.isMultiplayerMode && window.multiplayerManager) {
+            debug('Deferring square click to MultiplayerManager');
+            return;
+        }
         if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') return;
         if (gameState !== 'active' && gameState !== 'check') return;
         
@@ -1255,6 +1250,12 @@ function executeMove(startRow, startCol, endRow, endCol, promotionPiece = null) 
     const color = getPieceColor(piece);
     const capturedPiece = window.board[endRow][endCol];
     
+    if (window.isMultiplayerMode && window.multiplayerManager) {
+        debug('Notifying MultiplayerManager of move');
+        window.multiplayerManager.makeMove(startRow, startCol, endRow, endCol, promotionPiece);
+        return true;
+    }
+    
     if (promotionPiece) {
         window.board[endRow][endCol] = promotionPiece;
     } else {
@@ -1300,13 +1301,13 @@ function executeMove(startRow, startCol, endRow, endCol, promotionPiece = null) 
         } else if (isKingInCheck(window.currentPlayer)) {
             gameState = 'check';
             updateStatusDisplay(`${window.currentPlayer.charAt(0).toUpperCase() + window.currentPlayer.slice(1)} is in check!`);
-            if (currentGameMode === GameMode.AI && window.currentPlayer === 'red' && !window.isMultiplayerMode) {
+            if (currentGameMode === GameMode.AI && window.currentPlayer === 'red') {
                 setTimeout(makeAIMove, 500);
             }
         } else {
             gameState = 'active';
             updateStatusDisplay(`${window.currentPlayer.charAt(0).toUpperCase() + window.currentPlayer.slice(1)}'s turn`);
-            if (currentGameMode === GameMode.AI && window.currentPlayer === 'red' && !window.isMultiplayerMode) {
+            if (currentGameMode === GameMode.AI && window.currentPlayer === 'red') {
                 setTimeout(makeAIMove, 500);
             }
         }
@@ -1528,7 +1529,8 @@ function resetGame() {
         const chessboard = document.getElementById('chessboard');
         if (chessboard) {
             chessboard.style.pointerEvents = 'auto';
-            chessboard.innerHTML = '';
+            const pieces = chessboard.querySelectorAll('.piece, .highlight');
+            pieces.forEach(piece => piece.remove());
         }
         
         debug('Game reset completed');
@@ -1555,7 +1557,7 @@ function initGame() {
 
         setupModeButtons();
         setupDifficultyButtons();
-        setupTouchEvents(); // Add touch support
+        setupTouchEvents();
         
         const elements = initializeElements();
         if (elements.buttons.restartBtn) {
@@ -1602,11 +1604,21 @@ window.initGame = initGame;
 window.resetGame = resetGame;
 
 window.addEventListener('DOMContentLoaded', () => {
-    debug('DOM Content Loaded - Initializing game...');
-    initGame();
+    if (!hasInitialized) {
+        debug('DOM Content Loaded - Initializing game...');
+        initGame();
+        hasInitialized = true;
+    } else {
+        debug('DOM Content Loaded - Initialization already completed, skipping...');
+    }
 });
 
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    debug('Document already loaded - Running backup initialization...');
-    initGame();
+    if (!hasInitialized) {
+        debug('Document already loaded - Running backup initialization...');
+        initGame();
+        hasInitialized = true;
+    } else {
+        debug('Document already loaded - Initialization already completed, skipping...');
+    }
 }

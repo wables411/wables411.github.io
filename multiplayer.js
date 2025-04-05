@@ -1,22 +1,95 @@
-// multiplayer.js
-
-// Ensure Ethers.js is loaded from CDN (e.g., in lawbstation.html)
 if (typeof window.ethers === "undefined") {
   throw new Error("Ethers.js not loaded. Please include the CDN in your HTML.");
 }
 
-// ChessGame Contract ABI
 if (!window.chessGameABI) {
-  const chessGameABI = [
+  window.chessGameABI = [
     {
       "inputs": [],
       "stateMutability": "nonpayable",
       "type": "constructor"
     },
     {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "target",
+          "type": "address"
+        }
+      ],
+      "name": "AddressEmptyCode",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "implementation",
+          "type": "address"
+        }
+      ],
+      "name": "ERC1967InvalidImplementation",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "ERC1967NonPayable",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "FailedCall",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidInitialization",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "NotInitializing",
+      "type": "error"
+    },
+    {
       "inputs": [],
       "name": "ReentrancyGuardReentrantCall",
       "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "UUPSUnauthorizedCallContext",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "slot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "UUPSUnsupportedProxiableUUID",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes6",
+          "name": "inviteCode",
+          "type": "bytes6"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "player1",
+          "type": "address"
+        }
+      ],
+      "name": "GameCancelled",
+      "type": "event"
     },
     {
       "anonymous": false,
@@ -67,7 +140,7 @@ if (!window.chessGameABI) {
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "wagerPayout",
+          "name": "payoutOrRefund",
           "type": "uint256"
         }
       ],
@@ -98,18 +171,25 @@ if (!window.chessGameABI) {
       "inputs": [
         {
           "indexed": false,
-          "internalType": "bytes6",
-          "name": "inviteCode",
-          "type": "bytes6"
-        },
+          "internalType": "uint64",
+          "name": "version",
+          "type": "uint64"
+        }
+      ],
+      "name": "Initialized",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
         {
-          "indexed": false,
+          "indexed": true,
           "internalType": "address",
-          "name": "player1",
+          "name": "implementation",
           "type": "address"
         }
       ],
-      "name": "GameCancelled",
+      "name": "Upgraded",
       "type": "event"
     },
     {
@@ -139,21 +219,42 @@ if (!window.chessGameABI) {
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "UPGRADE_INTERFACE_VERSION",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "bytes6",
           "name": "inviteCode",
           "type": "bytes6"
-        },
+        }
+      ],
+      "name": "cancelGame",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
         {
-          "internalType": "uint256",
-          "name": "wagerAmount",
-          "type": "uint256"
+          "internalType": "bytes6",
+          "name": "inviteCode",
+          "type": "bytes6"
         }
       ],
       "name": "createGame",
       "outputs": [],
-      "stateMutability": "nonpayable",
+      "stateMutability": "payable",
       "type": "function"
     },
     {
@@ -232,6 +333,13 @@ if (!window.chessGameABI) {
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "initialize",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "bytes6",
@@ -241,17 +349,23 @@ if (!window.chessGameABI) {
       ],
       "name": "joinGame",
       "outputs": [],
-      "stateMutability": "nonpayable",
+      "stateMutability": "payable",
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "lawbToken",
-      "outputs": [
+      "inputs": [
         {
-          "internalType": "contract IERC20Upgradeable",
+          "internalType": "address",
           "name": "",
           "type": "address"
+        }
+      ],
+      "name": "leaderboard",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -277,14 +391,27 @@ if (!window.chessGameABI) {
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "proxiableUUID",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
-          "name": "recipient",
+          "name": "player",
           "type": "address"
         }
       ],
-      "name": "withdrawTokens",
+      "name": "resetPlayerGame",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -292,100 +419,49 @@ if (!window.chessGameABI) {
     {
       "inputs": [
         {
-          "internalType": "bytes6",
-          "name": "inviteCode",
-          "type": "bytes6"
+          "internalType": "address",
+          "name": "newImplementation",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
         }
       ],
-      "name": "cancelGame",
+      "name": "upgradeToAndCall",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address payable",
+          "name": "recipient",
+          "type": "address"
+        }
+      ],
+      "name": "withdrawFunds",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     }
   ];
-  window.chessGameABI = chessGameABI;
 } else {
   console.log("chessGameABI already defined, reusing existing definition");
 }
 
-// LAWb Token ABI (standard ERC-20, verified via Parsec.fi)
-const lawbTokenABI = [
-  {
-    "constant": true,
-    "inputs": [
-      { "name": "owner", "type": "address" },
-      { "name": "spender", "type": "address" }
-    ],
-    "name": "allowance",
-    "outputs": [{ "name": "", "type": "uint256" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      { "name": "spender", "type": "address" },
-      { "name": "value", "type": "uint256" }
-    ],
-    "name": "approve",
-    "outputs": [{ "name": "", "type": "bool" }],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [
-      { "name": "account", "type": "address" }
-    ],
-    "name": "balanceOf",
-    "outputs": [{ "name": "", "type": "uint256" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      { "name": "to", "type": "address" },
-      { "name": "value", "type": "uint256" }
-    ],
-    "name": "transfer",
-    "outputs": [{ "name": "", "type": "bool" }],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      { "name": "from", "type": "address" },
-      { "name": "to", "type": "address" },
-      { "name": "value", "type": "uint256" }
-    ],
-    "name": "transferFrom",
-    "outputs": [{ "name": "", "type": "bool" }],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  }
-];
-
-// Contract address for ChessGame (update this after redeploying if necessary)
-const contractAddress = "0x6aa574B21212C6E7436Eb26A27542F1AEFfFad87";
-
-// Sanko network configuration
-const sankoNetwork = {
-  chainId: 1996,
-  name: "Sanko",
-};
+const contractAddress = "0x3112AF5728520F52FD1C6710dD7bD52285a68e47";
+const sankoNetwork = { chainId: 1992, name: "Sanko Testnet" };
 
 let isMultiplayerInitialized = false;
-let lastGlobalCreateClick = 0;
 
 class MultiplayerManager {
   static hasGameBeenCreated = false;
 
   constructor() {
-    if (!window.gameDatabase) {
-      throw new Error("Supabase not initialized. Please wait for gameDatabase.");
-    }
+    if (!window.gameDatabase) throw new Error("Supabase not initialized.");
     this.supabase = window.gameDatabase;
     this.gameId = null;
     this.playerColor = null;
@@ -394,28 +470,22 @@ class MultiplayerManager {
     this.isMultiplayerMode = false;
     this.isProcessingMove = false;
     this.selectedPiece = null;
-    this.handleCreateGame = null;
+    this.chessContract = null;
     this.lastCreateClick = 0;
     this.hasCreatedGame = false;
-    this.chessContract = null;
     this.initializeEventListeners();
     console.log("MultiplayerManager initialized");
   }
 
   async initWeb3() {
-    console.log("Entering initWeb3");
     if (!window.walletConnector) {
       console.error("WalletConnector not initialized");
-      alert("Wallet system not initialized. Please connect via UI first.");
+      alert("Please connect via UI first.");
       return null;
     }
     try {
-      console.log("Attempting to connect EVM wallet");
       const address = await window.walletConnector.connectEVMWallet();
-      if (!address) {
-        throw new Error("No address returned from wallet connection.");
-      }
-      console.log("Wallet connected, address:", address);
+      if (!address) throw new Error("No address returned.");
       const provider = new window.ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
       console.log("Web3 initialized with address:", address);
@@ -428,44 +498,72 @@ class MultiplayerManager {
   }
 
   async connectToContract() {
-    console.log("Entering connectToContract");
+    if (this.chessContract) return this.chessContract;
     const web3 = await this.initWeb3();
-    if (!web3) {
-      console.error("Web3 not initialized, cannot connect to contract");
-      return null;
-    }
+    if (!web3) return null;
     const { signer } = web3;
     this.chessContract = new window.ethers.Contract(contractAddress, window.chessGameABI, signer);
-    console.log("Connected to ChessGame contract at:", contractAddress);
+    console.log("Connected to contract at:", contractAddress);
+
+    // Event listeners (only attach once)
+    this.chessContract.on("GameCreated", (inviteCode, player1, wagerAmount) => {
+      const inviteCodeStr = window.ethers.utils.toUtf8String(window.ethers.utils.hexDataSlice(inviteCode, 0, 6)).replace(/\0/g, "");
+      console.log(`GameCreated: ${inviteCodeStr}, ${player1}, ${window.ethers.utils.formatEther(wagerAmount)} tDMT`);
+      if (player1.toLowerCase() === localStorage.getItem("currentPlayer")?.toLowerCase()) {
+        this.gameId = inviteCodeStr;
+        this.playerColor = "blue";
+        this.showGame("blue");
+      }
+    });
+
+    this.chessContract.on("GameJoined", (inviteCode, player2) => {
+      const inviteCodeStr = window.ethers.utils.toUtf8String(window.ethers.utils.hexDataSlice(inviteCode, 0, 6)).replace(/\0/g, "");
+      console.log(`GameJoined: ${inviteCodeStr}, ${player2}`);
+      if (this.gameId && inviteCodeStr === this.gameId) {
+        this.playerColor = "red";
+        this.showGame("red");
+      }
+    });
+
+    this.chessContract.on("GameEnded", (inviteCode, winner, houseFee, payoutOrRefund) => {
+      const inviteCodeStr = window.ethers.utils.toUtf8String(window.ethers.utils.hexDataSlice(inviteCode, 0, 6)).replace(/\0/g, "");
+      console.log(`GameEnded: ${inviteCodeStr}, ${winner}, ${window.ethers.utils.formatEther(houseFee)} tDMT, ${window.ethers.utils.formatEther(payoutOrRefund)} tDMT`);
+      if (this.gameId && inviteCodeStr === this.gameId) {
+        this.handleGameEnd({ game_id: this.gameId, winner });
+      }
+    });
+
+    this.chessContract.on("GameCancelled", (inviteCode, player1) => {
+      const inviteCodeStr = window.ethers.utils.toUtf8String(window.ethers.utils.hexDataSlice(inviteCode, 0, 6)).replace(/\0/g, "");
+      console.log(`GameCancelled: ${inviteCodeStr}, ${player1}`);
+      if (this.gameId && inviteCodeStr === this.gameId) {
+        this.handleGameEnd({ game_id: this.gameId, winner: window.ethers.constants.AddressZero });
+      }
+    });
+
     return this.chessContract;
   }
 
   initializeEventListeners() {
-    if (isMultiplayerInitialized) {
-      console.log("Event listeners already initialized, skipping");
-      return;
-    }
+    if (isMultiplayerInitialized) return;
     isMultiplayerInitialized = true;
 
-    const multiplayerBtn = document.getElementById("multiplayer-mode");
-    const singlePlayerBtn = document.getElementById("ai-mode");
-    const createGameBtn = document.getElementById("create-game");
-    const joinGameBtn = document.getElementById("join-game");
-    const cancelBtn = document.getElementById("cancel-matchmaking");
-    const leaveGameBtn = document.getElementById("leave-game");
+    const elements = {
+      multiplayerBtn: document.getElementById("multiplayer-mode"),
+      singlePlayerBtn: document.getElementById("ai-mode"),
+      chessboard: document.getElementById("chessboard")
+    };
 
-    let isCreatingGame = false;
-
-    if (multiplayerBtn) {
-      multiplayerBtn.addEventListener("click", () => {
+    if (elements.multiplayerBtn) {
+      elements.multiplayerBtn.addEventListener("click", () => {
         this.isMultiplayerMode = true;
         window.isMultiplayerMode = true;
         console.log("Switched to multiplayer mode");
       });
     }
 
-    if (singlePlayerBtn) {
-      singlePlayerBtn.addEventListener("click", () => {
+    if (elements.singlePlayerBtn) {
+      elements.singlePlayerBtn.addEventListener("click", () => {
         this.isMultiplayerMode = false;
         window.isMultiplayerMode = false;
         console.log("Switched to single player mode");
@@ -473,65 +571,13 @@ class MultiplayerManager {
       });
     }
 
-    if (createGameBtn) {
-      createGameBtn.removeEventListener("click", this.handleCreateGame);
-      this.handleCreateGame = async () => {
-        createGameBtn.disabled = true;
-        const now = Date.now();
-        if (isCreatingGame || this.gameId || now - lastGlobalCreateClick < 1000) {
-          console.log("Game creation blocked: in progress, active, or too soon");
-          createGameBtn.disabled = false;
-          return;
-        }
-        this.lastCreateClick = now;
-        lastGlobalCreateClick = now;
-        isCreatingGame = true;
-        try {
-          console.log("Triggering createGame from handleCreateGame");
-          await this.createGame();
-        } finally {
-          isCreatingGame = false;
-          createGameBtn.disabled = false;
-        }
-      };
-      createGameBtn.addEventListener("click", this.handleCreateGame);
-    }
-
-    if (joinGameBtn) {
-      joinGameBtn.onclick = () => {
-        const code = document.getElementById("game-code-input")?.value?.trim();
-        if (code) {
-          this.joinGameByCode(code);
-        } else {
-          alert("Please enter a game code");
-        }
-      };
-    }
-
-    if (cancelBtn) {
-      cancelBtn.onclick = () => {
-        this.leaveGame();
-        const status = document.getElementById("matchmaking-status");
-        if (status) status.style.display = "none";
-      };
-    }
-
-    if (leaveGameBtn) {
-      leaveGameBtn.onclick = () => this.leaveGame();
-    }
-
-    const chessboard = document.getElementById("chessboard");
-    if (chessboard) {
-      chessboard.addEventListener("click", (e) => this.handleBoardClick(e));
+    if (elements.chessboard) {
+      elements.chessboard.addEventListener("click", (e) => this.handleBoardClick(e));
     }
   }
 
   handleBoardClick(e) {
-    if (!this.isMultiplayerMode) return;
-    if (!this.isMyTurn() || this.isProcessingMove) {
-      console.log("Not player turn or processing move");
-      return;
-    }
+    if (!this.isMultiplayerMode || !this.isMyTurn() || this.isProcessingMove) return;
 
     const piece = e.target.closest(".piece");
     const square = e.target.closest(".highlight");
@@ -539,20 +585,7 @@ class MultiplayerManager {
     if (piece) {
       const row = parseInt(piece.getAttribute("data-row"));
       const col = parseInt(piece.getAttribute("data-col"));
-      if (this.selectedPiece) {
-        const targetPiece = window.board[row][col];
-        if (targetPiece && window.getPieceColor(targetPiece) !== this.playerColor) {
-          const startRow = this.selectedPiece.row;
-          const startCol = this.selectedPiece.col;
-          if (window.canMakeMove(startRow, startCol, row, col)) {
-            this.makeMove(startRow, startCol, row, col);
-            this.selectedPiece = null;
-            window.removeHighlights();
-            return;
-          }
-        }
-      }
-      this.handlePieceClick(row, col);
+      this.handlePieceClick(row, col, piece);
     } else if (square && this.selectedPiece) {
       const row = parseInt(square.getAttribute("data-row"));
       const col = parseInt(square.getAttribute("data-col"));
@@ -560,28 +593,25 @@ class MultiplayerManager {
     }
   }
 
-  handlePieceClick(row, col) {
+  handlePieceClick(row, col, pieceElement) {
     if (!this.isMultiplayerMode || !this.isMyTurn()) return;
 
     const piece = window.board[row][col];
-    if (!piece) return;
+    if (!piece || window.getPieceColor(piece) !== this.playerColor) return;
 
-    const pieceColor = window.getPieceColor(piece);
-    if (pieceColor !== this.playerColor) return;
+    if (this.selectedPiece) {
+      this.selectedPiece.element.style.opacity = "1";
+      window.removeHighlights();
+    }
 
-    window.removeHighlights();
-
-    if (this.selectedPiece && this.selectedPiece.row === row && this.selectedPiece.col === col) {
+    if (this.selectedPiece?.row === row && this.selectedPiece?.col === col) {
       this.selectedPiece = null;
       return;
     }
 
-    this.selectedPiece = { row, col };
-    const validMoves = window.getValidMoves(row, col);
-    validMoves.forEach(move => {
-      const isCapture = window.board[move.row][move.col] !== null;
-      window.highlightSquare(move.row, move.col, isCapture);
-    });
+    this.selectedPiece = { row, col, element: pieceElement };
+    pieceElement.style.opacity = "0.7";
+    window.showLegalMoves(row, col);
   }
 
   async handleSquareClick(row, col) {
@@ -591,118 +621,72 @@ class MultiplayerManager {
     const startCol = this.selectedPiece.col;
     const piece = window.board[startRow][startCol];
 
-    if (this.isPawnPromotion(piece, row)) {
-      const promotionPiece = await this.handlePawnPromotion();
-      if (!promotionPiece) return;
+    if (window.canMakeMove(startRow, startCol, row, col)) {
+      let promotionPiece = null;
+      if (this.isPawnPromotion(piece, row)) {
+        window.promptPawnPromotion(startRow, startCol, row, col); // Delegate to chess.js
+        return;
+      }
       await this.makeMove(startRow, startCol, row, col, promotionPiece);
-    } else {
-      await this.makeMove(startRow, startCol, row, col);
     }
 
+    this.selectedPiece.element.style.opacity = "1";
     this.selectedPiece = null;
     window.removeHighlights();
   }
 
   isPawnPromotion(piece, targetRow) {
-    return (piece.toLowerCase() === "p" && 
-            ((this.playerColor === "blue" && targetRow === 0) || 
-             (this.playerColor === "red" && targetRow === 7)));
+    return piece.toLowerCase() === "p" && 
+           ((this.playerColor === "blue" && targetRow === 0) || 
+            (this.playerColor === "red" && targetRow === 7));
   }
 
-  handlePawnPromotion() {
-    return new Promise((resolve) => {
-      const options = ["q", "r", "n", "b"];
-      const choice = window.prompt("Choose promotion piece (Q/R/N/B):", "Q");
-      if (!choice) {
-        resolve(null);
-        return;
-      }
-      const piece = choice.toLowerCase().charAt(0);
-      resolve(options.includes(piece) ? piece : "q");
-    });
-  }
-
-  async createGame() {
-    console.log("Entering createGame");
-    if (MultiplayerManager.hasGameBeenCreated || this.hasCreatedGame) {
-      console.log("Game already created this session, ignoring additional call");
+  async createGame(wagerAmount = 0.1) {
+    if (this.hasCreatedGame) {
+      console.log("Game already created this session");
       return;
     }
-    MultiplayerManager.hasGameBeenCreated = true;
     this.hasCreatedGame = true;
+
+    const createBtn = document.getElementById("create-game");
+    if (createBtn) createBtn.disabled = true;
 
     try {
       const player = localStorage.getItem("currentPlayer");
-      if (!player) {
-        alert("Please connect your wallet first via the UI.");
-        throw new Error("No wallet connected");
-      }
-
-      if (window.ethereum) {
-        const chainId = await window.ethereum.request({ method: "eth_chainId" });
-        console.log("Current chainId:", chainId);
-        if (chainId.toLowerCase() !== "0x7cc") {
-          alert("Please switch to the Sanko network in MetaMask (chain ID 1996).");
-          throw new Error("Wrong network");
-        }
-      } else {
-        alert("Ethereum provider not detected. Please ensure MetaMask is installed.");
-        throw new Error("No Ethereum provider");
-      }
+      if (!player) throw new Error("No wallet connected");
 
       const web3 = await this.initWeb3();
-      if (!web3 || !web3.signer) {
-        throw new Error("Failed to initialize Web3");
-      }
+      if (!web3) throw new Error("Failed to initialize Web3");
       const { signer } = web3;
 
-      const wagerInput = document.getElementById("wagerAmount");
-      const wagerAmount = parseFloat(wagerInput?.value) || 1000;
-      const minWager = 100;
-      const maxWager = 10000000;
-
-      if (wagerAmount < minWager || wagerAmount > maxWager) {
-        alert(`Wager must be between ${minWager} and ${maxWager} $LAWB`);
-        throw new Error("Invalid wager amount");
+      if (window.ethereum.chainId !== "0x7c8") {
+        alert("Please switch to Sanko Testnet (chain ID 1992).");
+        throw new Error("Wrong network");
       }
 
       const contract = await this.connectToContract();
-      if (!contract) {
-        throw new Error("Failed to connect to contract");
+      const minWager = parseFloat(window.ethers.utils.formatEther(await contract.MIN_WAGER()));
+      const maxWager = parseFloat(window.ethers.utils.formatEther(await contract.MAX_WAGER()));
+
+      if (wagerAmount < minWager || wagerAmount > maxWager) {
+        alert(`Wager must be between ${minWager} and ${maxWager} tDMT`);
+        throw new Error("Invalid wager amount");
       }
 
       const userAddress = await signer.getAddress();
       const existingGame = await contract.playerToGame(userAddress);
       if (existingGame !== "0x000000000000") {
-        const { data: activeGames, error } = await this.supabase
-          .from("chess_games")
-          .select("game_id")
-          .eq("blue_player", userAddress)
-          .or("red_player.eq." + userAddress)
-          .eq("game_state", "active");
-        const gameIds = activeGames?.map(game => game.game_id).join(", ") || "unknown game";
-        alert(`You are already in active games (${gameIds}). Please use 'Leave Game' or end them before creating a new one.`);
+        alert("You are already in a game. Leave or end it first.");
         throw new Error("Already in a game");
       }
 
       const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const inviteCodeBytes = window.ethers.utils.formatBytes32String(inviteCode).slice(0, 14);
-      console.log("inviteCode:", inviteCode, "as bytes6:", inviteCodeBytes);
-      const wagerInWei = window.ethers.utils.parseUnits(wagerAmount.toString(), 6);
+      const inviteCodeBytes = window.ethers.utils.hexlify(window.ethers.utils.toUtf8Bytes(inviteCode)).slice(2, 14); // 6 bytes
+      const wagerInWei = window.ethers.utils.parseEther(wagerAmount.toString());
 
-      const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F";
-      const lawbContract = new window.ethers.Contract(lawbAddress, lawbTokenABI, signer);
-
-      const allowance = await lawbContract.allowance(userAddress, contractAddress);
-      if (allowance.lt(wagerInWei)) {
-        const approveTx = await lawbContract.approve(contractAddress, wagerInWei);
-        await approveTx.wait();
-        console.log("Token approval successful");
-      }
-
-      const tx = await contract.createGame(inviteCodeBytes, wagerInWei);
+      const tx = await contract.createGame(inviteCodeBytes, { value: wagerInWei });
       await tx.wait();
-      console.log(`Blockchain game created with invite code ${inviteCode} and wager ${wagerAmount} $LAWB`);
+      console.log(`Game created: ${inviteCode}, wager: ${wagerAmount} tDMT`);
 
       const boardState = JSON.parse(JSON.stringify(window.initialBoard));
       const { data, error } = await this.supabase
@@ -710,10 +694,7 @@ class MultiplayerManager {
         .insert({
           game_id: inviteCode,
           blue_player: player,
-          board: {
-            positions: boardState,
-            piece_state: window.pieceState || {},
-          },
+          board: { positions: boardState, piece_state: window.pieceState },
           current_player: "blue",
           game_state: "waiting",
           bet_amount: wagerAmount,
@@ -735,82 +716,64 @@ class MultiplayerManager {
         gameCode.textContent = inviteCode;
         gameCodeDisplay.style.display = "block";
       }
-      alert(`Game code: ${inviteCode} with wager ${wagerAmount} $LAWB`);
+      alert(`Game code: ${inviteCode} with wager ${wagerAmount} tDMT`);
     } catch (error) {
       console.error("Error creating game:", error.message);
       alert("Game creation failed: " + error.message);
-      MultiplayerManager.hasGameBeenCreated = false;
       this.hasCreatedGame = false;
+    } finally {
+      if (createBtn) createBtn.disabled = false;
     }
   }
 
   async joinGameByCode(code) {
+    const joinBtn = document.getElementById("join-game");
+    if (joinBtn) joinBtn.disabled = true;
+
     try {
       const player = localStorage.getItem("currentPlayer");
-      if (!player) {
-        alert("Connect wallet first");
+      if (!player) throw new Error("Connect wallet first");
+
+      const contract = await this.connectToContract();
+      const inviteCodeBytes = window.ethers.utils.hexlify(window.ethers.utils.toUtf8Bytes(code.toUpperCase())).slice(2, 14); // 6 bytes
+      const game = await contract.games(inviteCodeBytes);
+
+      if (!game.isActive || game.player2 !== window.ethers.constants.AddressZero) {
+        alert("Game not available or already joined");
         return;
       }
 
-      const { data: games, error: queryError } = await this.supabase
+      const { data: games, error } = await this.supabase
         .from("chess_games")
         .select("*")
         .eq("game_id", code.toUpperCase())
         .single();
 
-      if (queryError || !games) {
-        alert("Game not found or invalid code");
-        console.error("Supabase query error:", queryError?.message);
-        return;
-      }
-      const game = games;
-      console.log("Found game:", game);
+      if (error || !games) throw new Error("Game not found: " + error?.message);
 
-      if (game.game_state !== "waiting" && game.game_state !== "active") {
-        alert(`Game is ${game.game_state}`);
+      if (games.game_state !== "waiting" && games.game_state !== "active") {
+        alert(`Game is ${games.game_state}`);
         return;
       }
 
-      if (game.red_player === player || game.blue_player === player) {
-        console.log("Rejoining existing game");
-        this.gameId = game.game_id;
-        this.playerColor = game.blue_player === player ? "blue" : "red";
-        this.currentGameState = game;
+      if (games.red_player === player || games.blue_player === player) {
+        this.gameId = games.game_id;
+        this.playerColor = games.blue_player === player ? "blue" : "red";
+        this.currentGameState = games;
         await this.subscribeToGame();
         await this.showGame(this.playerColor);
         return;
       }
 
-      if (game.red_player) {
+      if (games.red_player) {
         alert("Game already has both players");
         return;
       }
 
-      const web3 = await this.initWeb3();
-      if (!web3 || !web3.signer) {
-        throw new Error("Failed to initialize Web3");
-      }
-      const { signer } = web3;
-
-      const contract = await this.connectToContract();
-      if (!contract) throw new Error("Failed to connect to contract");
-
-      const wagerInWei = window.ethers.utils.parseUnits(game.bet_amount.toString(), 6);
-
-      const lawbAddress = "0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F";
-      const userAddress = await signer.getAddress();
-      const lawbContract = new window.ethers.Contract(lawbAddress, lawbTokenABI, signer);
-
-      const allowance = await lawbContract.allowance(userAddress, contractAddress);
-      if (allowance.lt(wagerInWei)) {
-        const approveTx = await lawbContract.approve(contractAddress, wagerInWei);
-        await approveTx.wait();
-        console.log("Token approval successful");
-      }
-
-      const tx = await contract.joinGame(game.game_id);
+      const wagerInWei = game.wagerAmount;
+      const tx = await contract.joinGame(inviteCodeBytes, { value: wagerInWei });
       await tx.wait();
-      console.log(`Blockchain game joined with invite code ${game.game_id}`);
+      console.log(`Joined game: ${code}`);
 
       const { data: updateData, error: updateError } = await this.supabase
         .from("chess_games")
@@ -819,57 +782,47 @@ class MultiplayerManager {
           game_state: "active",
           updated_at: new Date().toISOString(),
         })
-        .eq("game_id", game.game_id)
+        .eq("game_id", code.toUpperCase())
         .select()
         .single();
 
-      if (updateError) throw new Error("Failed to join game");
+      if (updateError) throw new Error("Failed to join game: " + updateError.message);
 
-      this.gameId = game.game_id;
+      this.gameId = code;
       this.playerColor = "red";
       this.currentGameState = updateData;
       await this.subscribeToGame();
       await this.showGame("red");
     } catch (error) {
-      console.error("Join game error:", error);
+      console.error("Join game error:", error.message);
       alert(`Failed to join game: ${error.message}`);
+    } finally {
+      if (joinBtn) joinBtn.disabled = false;
     }
   }
 
   async endGame(inviteCode, winnerAddress) {
-    console.log("Entering endGame");
     try {
       const contract = await this.connectToContract();
-      if (!contract) throw new Error("Failed to connect to contract");
-
-      const game = await contract.games(inviteCode);
+      const inviteCodeBytes = window.ethers.utils.hexlify(window.ethers.utils.toUtf8Bytes(inviteCode)).slice(2, 14); // 6 bytes
+      const game = await contract.games(inviteCodeBytes);
       if (!game.isActive) {
-        console.log(`Game ${inviteCode} is not active`);
-        alert("This game is not active. It may have already ended or been cancelled.");
+        alert("Game is not active.");
         return;
       }
 
-      console.log(`Attempting to end game ${inviteCode} with winner ${winnerAddress}`);
-      const tx = await contract.endGame(inviteCode, winnerAddress);
+      const tx = await contract.endGame(inviteCodeBytes, winnerAddress);
       await tx.wait();
-      console.log(`Blockchain game ended with invite code ${inviteCode}, winner ${winnerAddress}`);
+      console.log(`Game ended: ${inviteCode}, winner: ${winnerAddress}`);
 
       await this.supabase
         .from("chess_games")
         .update({
           game_state: "completed",
-          winner: this.playerColor === "blue" ? "blue" : "red",
+          winner: winnerAddress === this.currentGameState.blue_player ? "blue" : "red",
           updated_at: new Date().toISOString(),
         })
         .eq("game_id", inviteCode);
-
-      const wagerAmount = window.ethers.utils.parseUnits(game.wagerAmount.toString(), 6);
-      const totalPot = window.ethers.BigNumber.from(wagerAmount).mul(2);
-      const houseFee = totalPot.mul(5).div(100);
-      const payout = totalPot.sub(houseFee);
-      const payoutInLAWB = window.ethers.utils.formatUnits(payout, 6);
-
-      alert(`Game ended! Winner payout: ${payoutInLAWB} $LAWB (after 5% house fee of ${window.ethers.utils.formatUnits(houseFee, 6)} $LAWB)`);
 
       this.handleGameEnd({ game_id: inviteCode, winner: winnerAddress });
     } catch (error) {
@@ -879,7 +832,6 @@ class MultiplayerManager {
   }
 
   async leaveGame() {
-    console.log("Entering leaveGame");
     if (this.subscription) {
       this.subscription.unsubscribe();
       console.log("Unsubscribed from game channel");
@@ -891,20 +843,16 @@ class MultiplayerManager {
         if (!web3) throw new Error("Failed to initialize Web3");
         const { signer } = web3;
         const contract = await this.connectToContract();
-        if (!contract) throw new Error("Failed to connect to contract");
-
         const userAddress = await signer.getAddress();
         const inviteCode = await contract.playerToGame(userAddress);
         if (inviteCode !== "0x000000000000") {
           const game = await contract.games(inviteCode);
-          if (game.player2 === "0x0000000000000000000000000000000000000000") {
-            // Cancel game if Player 2 hasn’t joined
+          if (game.player2 === window.ethers.constants.AddressZero) {
             const tx = await contract.cancelGame(inviteCode);
             await tx.wait();
-            console.log(`Cancelled game ${this.gameId} on blockchain`);
+            console.log(`Cancelled game ${this.gameId}`);
           } else {
-            console.log("Game has two players, cannot cancel");
-            alert("Cannot leave an active game with two players. Finish the game first.");
+            alert("Cannot leave an active game with two players.");
             return;
           }
         }
@@ -918,9 +866,6 @@ class MultiplayerManager {
           })
           .eq("game_id", this.gameId);
         if (error) throw new Error("Supabase update failed: " + error.message);
-        console.log(`Game ${this.gameId} marked as cancelled in Supabase`);
-      } else {
-        console.log("No gameId set, skipping Supabase update");
       }
 
       this.resetGameState();
@@ -928,6 +873,7 @@ class MultiplayerManager {
     } catch (error) {
       console.error("Leave game error:", error.message);
       alert("Error leaving game: " + error.message);
+      this.resetGameState(); // Reset even on error
     }
   }
 
@@ -937,15 +883,14 @@ class MultiplayerManager {
     this.currentGameState = null;
     this.selectedPiece = null;
     this.hasCreatedGame = false;
-    MultiplayerManager.hasGameBeenCreated = false;
+    this.lastCreateClick = 0;
 
     const menuEl = document.querySelector(".multiplayer-menu");
     const gameEl = document.getElementById("chess-game");
     if (menuEl) menuEl.style.display = "block";
     if (gameEl) gameEl.style.display = "none";
-    console.log("Reset to multiplayer menu");
 
-    if (window.updateGameResult) window.updateGameResult("loss");
+    if (window.updateGameResult) window.updateGameResult({ winner: "loss", player: localStorage.getItem("currentPlayer"), mode: "online" });
     if (window.leaderboardManager) window.leaderboardManager.loadLeaderboard();
   }
 
@@ -970,6 +915,7 @@ class MultiplayerManager {
 
       if (this.currentGameState?.board?.positions) {
         window.board = JSON.parse(JSON.stringify(this.currentGameState.board.positions));
+        window.pieceState = this.currentGameState.board.piece_state || window.pieceState;
       }
 
       window.placePieces();
@@ -1001,9 +947,7 @@ class MultiplayerManager {
   }
 
   async subscribeToGame() {
-    if (this.subscription) {
-      this.subscription.unsubscribe();
-    }
+    if (this.subscription) this.subscription.unsubscribe();
 
     this.subscription = this.supabase
       .channel(`game_${this.gameId}`)
@@ -1012,10 +956,7 @@ class MultiplayerManager {
         schema: "public",
         table: "chess_games",
         filter: `game_id=eq.${this.gameId}`,
-      },
-      (payload) => {
-        this.handleUpdate(payload.new);
-      })
+      }, (payload) => this.handleUpdate(payload.new))
       .subscribe((status) => {
         if (status === "CHANNEL_ERROR") {
           console.log("Subscription error, retrying...");
@@ -1030,16 +971,14 @@ class MultiplayerManager {
       this.currentGameState = game;
       if (game.board?.positions) {
         window.board = JSON.parse(JSON.stringify(game.board.positions));
+        window.pieceState = game.board.piece_state || window.pieceState;
         window.placePieces();
       }
       if (game.current_player) {
         window.currentPlayer = game.current_player;
         this.updateBoardInteractivity();
         const baseStatus = this.isMyTurn() ? "Your turn" : "Opponent's turn";
-        console.log(
-          `Checking ${game.current_player}'s king: inCheck=${window.isKingInCheck(game.current_player)}, checkmate=${window.isCheckmate(game.current_player)}`
-        );
-        if (window.isKingInCheck && window.isKingInCheck(game.current_player)) {
+        if (window.isKingInCheck(game.current_player)) {
           window.updateStatusDisplay(`Check! ${baseStatus}`);
         } else if (game.game_state !== "completed") {
           window.updateStatusDisplay(baseStatus);
@@ -1056,30 +995,39 @@ class MultiplayerManager {
 
   async handleGameEnd(game) {
     try {
-      let gameResult;
-      let displayMessage;
+      let gameResult, displayMessage;
 
       if (game.winner === "draw") {
         gameResult = "draw";
         displayMessage = "Game Over - Draw!";
+      } else if (game.winner === window.ethers.constants.AddressZero) {
+        gameResult = "loss";
+        displayMessage = "Game Cancelled!";
       } else {
-        gameResult = game.winner === this.playerColor ? "win" : "loss";
-        displayMessage = `Game Over - ${game.winner.charAt(0).toUpperCase() + game.winner.slice(1)} wins!`;
+        gameResult = game.winner === (this.playerColor === "blue" ? this.currentGameState.blue_player : this.currentGameState.red_player) ? "win" : "loss";
+        displayMessage = `Game Over - ${game.winner === this.currentGameState.blue_player ? "Blue" : "Red"} wins!`;
       }
 
       if (game.bet_amount) {
-        const wagerInWei = window.ethers.utils.parseUnits(game.bet_amount.toString(), 6);
-        const totalPot = window.ethers.BigNumber.from(wagerInWei).mul(2);
+        const wagerAmount = window.ethers.utils.parseEther(game.bet_amount.toString());
+        const totalPot = wagerAmount.mul(2);
         const houseFee = totalPot.mul(5).div(100);
         const payout = totalPot.sub(houseFee);
-        const payoutInLAWB = window.ethers.utils.formatUnits(payout, 6);
-        displayMessage += `\nWinner payout: ${payoutInLAWB} $LAWB (after 5% house fee of ${window.ethers.utils.formatUnits(houseFee, 6)} $LAWB)`;
+        const payoutInTDMT = window.ethers.utils.formatEther(payout);
+        const houseFeeInTDMT = window.ethers.utils.formatEther(houseFee);
+
+        if (game.winner === "draw") {
+          const refundPerPlayer = window.ethers.utils.formatEther(payout.div(2));
+          displayMessage += `\nEach player refunded: ${refundPerPlayer} tDMT (after 5% house fee of ${houseFeeInTDMT} tDMT)`;
+        } else if (game.winner !== window.ethers.constants.AddressZero) {
+          displayMessage += `\nWinner payout: ${payoutInTDMT} tDMT (after 5% house fee of ${houseFeeInTDMT} tDMT)`;
+        }
       }
 
       window.updateStatusDisplay(displayMessage);
 
       if (window.updateGameResult) {
-        window.updateGameResult(gameResult);
+        window.updateGameResult({ winner: gameResult, player: localStorage.getItem("currentPlayer"), mode: "online" });
       }
 
       if (window.leaderboardManager) {
@@ -1087,9 +1035,7 @@ class MultiplayerManager {
       }
 
       const chessboard = document.getElementById("chessboard");
-      if (chessboard) {
-        chessboard.style.pointerEvents = "none";
-      }
+      if (chessboard) chessboard.style.pointerEvents = "none";
     } catch (error) {
       console.error("Error handling game end:", error);
     }
@@ -1097,40 +1043,66 @@ class MultiplayerManager {
 
   async makeMove(startRow, startCol, endRow, endCol, promotion = null) {
     if (!this.gameId || this.isProcessingMove || !this.isMyTurn()) return false;
+    this.isProcessingMove = true;
+
     try {
-      this.isProcessingMove = true;
+      const piece = window.board[startRow][startCol];
       const newBoard = JSON.parse(JSON.stringify(window.board));
-      newBoard[endRow][endCol] = promotion || newBoard[startRow][startCol];
+      const capturedPiece = newBoard[endRow][endCol];
+      newBoard[endRow][endCol] = promotion || piece;
       newBoard[startRow][startCol] = null;
+
+      // Update pieceState for castling/en passant
+      const color = window.getPieceColor(piece);
+      if (piece.toLowerCase() === "k") {
+        if (color === "blue") window.pieceState.blueKingMoved = true;
+        else window.pieceState.redKingMoved = true;
+        if (Math.abs(endCol - startCol) === 2) {
+          const row = color === "blue" ? 7 : 0;
+          if (endCol === 6) {
+            newBoard[row][5] = newBoard[row][7];
+            newBoard[row][7] = null;
+          } else if (endCol === 2) {
+            newBoard[row][3] = newBoard[row][0];
+            newBoard[row][0] = null;
+          }
+        }
+      }
+      if (piece.toLowerCase() === "r") {
+        if (color === "blue") {
+          if (startCol === 0) window.pieceState.blueRooksMove.left = true;
+          if (startCol === 7) window.pieceState.blueRooksMove.right = true;
+        } else {
+          if (startCol === 0) window.pieceState.redRooksMove.left = true;
+          if (startCol === 7) window.pieceState.redRooksMove.right = true;
+        }
+      }
+      if (piece.toLowerCase() === "p" && Math.abs(startRow - endRow) === 2) {
+        window.pieceState.lastPawnDoubleMove = { row: endRow, col: endCol };
+      } else {
+        window.pieceState.lastPawnDoubleMove = null;
+      }
+
       const nextPlayer = this.playerColor === "blue" ? "red" : "blue";
       let gameEndState = null;
 
       window.board = newBoard;
 
-      if (window.isCheckmate && window.isCheckmate(nextPlayer)) {
+      if (window.isCheckmate(nextPlayer)) {
         gameEndState = { game_state: "completed", winner: this.playerColor };
         const winnerAddress = this.playerColor === "blue" ? this.currentGameState.blue_player : this.currentGameState.red_player;
         await this.endGame(this.gameId, winnerAddress);
-      } else if (window.isStalemate && window.isStalemate(nextPlayer)) {
+      } else if (window.isStalemate(nextPlayer)) {
         gameEndState = { game_state: "completed", winner: "draw" };
       }
 
       const updateData = {
-        board: { positions: newBoard, piece_state: window.pieceState || {} },
+        board: { positions: newBoard, piece_state: window.pieceState },
         current_player: nextPlayer,
-        last_move: {
-          start_row: startRow,
-          start_col: startCol,
-          end_row: endRow,
-          end_col: endCol,
-          piece: newBoard[endRow][endCol],
-          promotion,
-        },
+        last_move: { start_row: startRow, start_col: startCol, end_row: endRow, end_col: endCol, piece, promotion },
         updated_at: new Date().toISOString(),
         ...(gameEndState || {}),
       };
-
-      console.log("Updating game with payload:", JSON.stringify(updateData, null, 2));
 
       const { error } = await this.supabase
         .from("chess_games")
@@ -1141,7 +1113,6 @@ class MultiplayerManager {
 
       window.board = newBoard;
       window.placePieces();
-
       return true;
     } catch (error) {
       console.error("Move error:", error.message);
@@ -1153,19 +1124,19 @@ class MultiplayerManager {
 }
 
 function initializeMultiplayerManager() {
-  if (!window.gameDatabase) {
-    console.log("Waiting for gameDatabase to initialize...");
-    setTimeout(initializeMultiplayerManager, 500);
-    return;
-  }
-  if (!window.multiplayerManager) {
-    window.multiplayerManager = new MultiplayerManager();
-    console.log("MultiplayerManager initialized successfully");
-  } else {
-    console.log("MultiplayerManager already initialized, reusing instance");
-  }
+  document.addEventListener('supabaseReady', () => {
+    if (!window.multiplayerManager) {
+      window.multiplayerManager = new MultiplayerManager();
+      console.log("MultiplayerManager initialized successfully");
+    }
+  });
 }
 
-initializeMultiplayerManager();
-
 window.initializeMultiplayerManager = initializeMultiplayerManager;
+
+// Trigger initialization after Supabase is ready
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.gameDatabase) {
+    document.dispatchEvent(new CustomEvent('supabaseReady'));
+  }
+});

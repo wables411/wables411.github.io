@@ -6,50 +6,445 @@
     <title>Lawb Lawb Lawb</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" charset="utf-8"></script>
+    <script>
+        window.ownerId = "BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo";
+        window.collectionId = "iVhHZ1Oy0LrIoVTG9C2v";
+    </script>
+    <script type="module" src="https://storage.googleapis.com/scriptslmt/0.1.3/solana.js"></script>
+    <link rel="stylesheet" href="https://storage.googleapis.com/scriptslmt/0.1.3/solana.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.55.2/phaser.min.js"></script>
+    <script src="//embed.typeform.com/next/embed.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@0.6.11/lib/three-vrm.min.js"></script>
 </head>
 <body>
     <nav>
         <ul>
-            <li><a href="headquarters.html">Home</a></li>
-            <li><a href="nexus.html">LawbNexus</a></li>
-            <li><a href="lawbstation.html">LawbStation</a></li>
-            <li><a href="lawbstarz.html">LawbStarz</a></li>
-            <li><a href="lawbsters.html">Lawbsters</a></li>
-            <li><a href="$lawb.html">$LAWB</a></li>
-            <li><a href="https://zora.co/collect/base:0xd49c9461471934e87467af00fff8d63312db913a">Lore</a></li>
+            <li><a href="#welcome">Welcome</a></li>
+            <li><a href="#lawb-token">$LAWB</a></li>
+            <li><a href="#nexus">LawbNexus</a></li>
+            <li><a href="#station">LawbStation</a></li>
+            <li><a href="lawbchess.html" target="_blank">Play Chess</a></li>
+            <li><a href="#starz">LawbStarz</a></li>
+            <li><a href="#lawbsters">Lawbsters</a></li>
+            <li><a href="#lore">Lore</a></li>
+            <li><a href="#halloween">Halloween</a></li>
+            <li><a href="https://x.com/LawbStation" target="_blank">Lawbstation Twitter</a></li>
+            <li><a href="https://x.com/LawbNexus" target="_blank">LawbNexus Twitter</a></li>
+            <li><a href="https://t.me/tickerlawb" target="_blank">Telegram</a></li>
+            <li><a href="https://lawb.shop" target="_blank">Shop</a></li>
         </ul>
     </nav>
 
     <div class="container">
         <marquee>there is no meme we lawb you</marquee>
 
-        <div class="menu-buttons">
-            <a href="headquarters.html">
-                <span class="link-text">Home</span>
-                <img src="images/lawbstation_documents.JPEG" alt="Lawb Sightings" class="menu-image">
+        <section id="welcome" class="section">
+            <h1>Lawb Headquarters</h1>
+            <p>Lawbsters seem nice but a human controlled by a lobster will never amount to anything without a roadmap.</p>
+            <h2>Lawb Meme Generator</h2>
+            <div id="meme-generator">
+                <label for="collection-selector">Select Collection:</label>
+                <select id="collection-selector"></select>
+                <label for="top-text">Top Text:</label>
+                <input type="text" id="top-text">
+                <label for="bottom-text">Bottom Text:</label>
+                <input type="text" id="bottom-text">
+                <button id="fetch-image">FETCH LAWB</button>
+                <button id="generate-meme">ADD TEXT</button>
+                <button id="deep-fry">DEEP FRY</button>
+            </div>
+            <img id="generated-meme" style="display:none;">
+            <canvas id="meme-canvas" style="display:none;"></canvas>
+
+            <div id="lawb-token">
+                <img src="images/lawbticker.gif" alt="ticker $lawb" class="section-image">
+                <h1><a href="https://dexscreener.com/solana/dtxvuypheobwo66afefp9mfgt2e14c6ufexnvxwnvep" target="_blank">🦞 $LAWB</a></h1>
+                <p>$lawb seems nice but a lawbster token on the Solana blockchain will never achieve anything without a roadmap.
+                Token created 03.15.24 on <a href="https://www.pump.fun/65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6" target="_blank">pump.fun</a>.</p>
+                <p>$lawb airdropped to LawbStation holders 03.19.24</p>
+                <p>THERE IS NO MEME WE $LAWB YOU</p>
+                <p>(sol) ca: 65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6</p>
+                <p>(arb) ca: 0x741f8FbF42485E772D97f1955c31a5B8098aC962</p>
+                <p>(dmt) ca: 0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F</p>
+                <p>if you wish to bridge your $lawb token from solana to arbitrum to sanko, a wormhole is available via https://portalbridge.com/</p>
+                <p>step 1. connect solana wallet and select $lawb token (65GVcFcSqQcaMNeBkYcen4ozeT83tr13CeDLU4sUUdV6)</p>
+                <p>step 2. connect arbitrum wallet and select $lawb token (0x741f8FbF42485E772D97f1955c31a5B8098aC962)</p>
+                <p>step 3. select token quantity, confirm transactions.</p>
+                <p>step 4. now that you have $lawb on arbitrum, visit https://sanko.xyz/bridge and connect your arb wallet.</p>
+                <p>step 5. from arb wallet, select $lawb token.</p>
+                <p>step 6. connect to sanko chain. if not already selected, select $lawb token on sanko (0xA7DA528a3F4AD9441CaE97e1C33D49db91c82b9F)</p>
+                <p>step 7. select quantity and confirm transactions.</p>
+                <div id="dexscreener-embed">
+                    <iframe src="https://dexscreener.com/solana/DTxVuYphEobWo66afEfP9MfGt2E14C6UfeXnvXWnvep?embed=1&theme=dark&info=0"></iframe>
+                </div>
+                <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+                    <p>swap $lawb token on Unicorn Meme Market</p>
+                    <a href="https://uwu.pro/memoji/ulawb" target="_blank">
+                        <img src="images/lawbuwu.png" alt="UWU Chart" class="section-image-half">
+                    </a>
+                </div>
+                <p><a href="https://www.purity.finance/lawb" target="_blank">Click to purify your Solana wallet with Purity Finance. Consolidate dust tokens, unused accounts, and unwanted NFTs into $LAWB in just one click, helping you reclaim hidden value from your wallet.</a></p>
+            </div>
+            <div class="video-section">
+                <video autoplay loop controls>
+                    <source src="images/bluelawbnifty.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                <p>Join the <a href="https://www.niftyisland.com/communities/9e8a5749-8381-406c-93d3-bdb123a1f25c" target="_blank">Lawbster community</a> on Nifty Island</p>
+            </div>
+            <h2>A community art project.</h2>
+            <h2>Lawbster NFT collections and $LAWB token available on Solana and EVM chains.</h2>
+            <a href="images/Lawbsters.vrm" download="Lawbsters.vrm"><button>Streamers: click to download 3D VRM Lawbster</button></a>
+            <a href="https://boards.miladychan.org/milady/33793" target="_blank" class="miladychan-link">
+                <img src="/images/miladychan.png" alt="Miladychan Link">
             </a>
-            <a href="nexus.html">
-                <span class="link-text">LawbNexus</span>
-                <img src="images/f.png" alt="LawbNexus" class="menu-image">
-            </a>
-            <a href="lawbstation.html">
-                <span class="link-text">LawbStation</span>
-                <img src="images/lawbstation.GIF" alt="Lawbstation" class="menu-image">
-            </a>
-            <a href="lawbstarz.html">
-                <span class="link-text">LawbStarz</span>
-                <img src="images/lawbstarz_tease 2.gif" alt="Lawbstarz" class="menu-image">
-            </a>
-            <a href="lawbsters.html">
-                <span class="link-text">Lawbsters</span>
-                <img src="images/lawbsters.gif" alt="Lawbsters" class="menu-image">
-            </a>
-            <a href="https://zora.co/collect/base:0xd49c9461471934e87467af00fff8d63312db913a">
-                <span class="link-text">Lore</span>
-                <img src="images/lawblore.gif" alt="Lawb Lore" class="menu-image">
-            </a>
-        </div>
+        </section>
+
+        <section id="nexus" class="section">
+            <h1>LawbNexus</h1>
+            <div class="video-container">
+                <video id="nexusVideo" autoplay muted loop>
+                    <source src="images/nexusminting.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                <button id="nexusToggleButton" onclick="toggleNexusPlay()">Toggle Play/Pause</button>
+            </div>
+            <div class="mint-section">
+                <h2>LawbNexus 1000x Xtra Ultra High Definition Lawbsters, packaged and distributed on Solana.</h2>
+                <p>Collect on <a href="https://magiceden.us/marketplace/AfXkPjcfTWHz9WDjvXxZBkHSWQ1H7xsg7jT2fFLkAAi" target="_blank">secondary.</a></p>
+                <p>Each collection has 24 hours to mint via <a href="https://www.launchmynft.io/collections/BeKFkmLuHigZMDaKysu2ugBymkmKfcrHkMz6rWBQzzSo/iVhHZ1Oy0LrIoVTG9C2v" target="_blank">LaunchMyNFT</a>.</p>
+                <p><strong>*UPDATE: Due to reasons outside of Lawb control, LawbNexus sold out during the BadMen tier*</strong></p>
+                <div class="image-button-row">
+                    <a href="https://dexscreener.com/solana/7jx9p6iobf3uy3kukt3s4jqswqat1bvumncd6awlaaeb" target="_blank"><img src="images/lawbstation.GIF" alt="LAWBSTATION" class="section-image"></a>
+                    <a href="https://dexscreener.com/solana/dtxvuypheobwo66afefp9mfgt2e14c6ufexnvxwnvep" target="_blank"><img src="images/lawbticker.gif" alt="$LAWB" class="section-image"></a>
+                    <a href="https://www.tensor.trade/trade/bad_men" target="_blank"><img src="images/badmen.GIF" alt="BADMEN" class="section-image"></a>
+                    <a href="https://dexscreener.com/solana/cgju7wmnlhpefngqemq1rpiztvicrg8xx2gzdgnbhjd8" target="_blank"><img src="images/yippie.png" alt="$YIPPIE" class="section-image"></a>
+                    <a href="https://dexscreener.com/solana/7jx9p6iobf3uy3kukt3s4jqswqat1bvumncd6awlaaeb" target="_blank"><img src="images/bipci.png" alt="$BIPCI" class="section-image"></a>
+                    <a href="https://dexscreener.com/solana/4pdwjssg28c4azs6esaxp7msyaqn8cfgdsy4gnrdtvmr" target="_blank"><img src="images/swag.png" alt="$SWAG" class="section-image"></a>
+                    <a href="https://dexscreener.com/solana/bcdfb7vnroy57exbxaybnyl9thsvimu1umow1acxccfv" target="_blank"><img src="images/nbuttt.png" alt="$NIGGABUTT" class="section-image"></a>
+                    <a href="https://www.tensor.trade/trade/relaxio" target="_blank"><img src="images/relaxio.png" alt="RELAXIO" class="section-image"></a>
+                </div>
+                <p>Follow <a href="https://twitter.com/LawbNexus" target="_blank">@LawbNexus</a> on Twitter to stay updated.</p>
+                <a href="https://zora.co/collect/base:0xeffa1125545cb24b8526fa7d0752c385128fbcc7/1" target="_blank" class="bottom-button">
+                    <img src="images/final lawb gif.gif" alt="LawbNexus" class="section-image">
+                </a>
+            </div>
+            <div class="meme-section">
+                <h2>Create Your LawbNexus Meme</h2>
+                <p>Download an isolated LawbNexus, create a meme, start a fight! Post your original meme and tag <a href="https://twitter.com/LawbNexus" target="_blank">@LawbNexus</a>.</p>
+                <p><a href="https://dropbox.com/scl/fo/8y3guocdhd0r6znrv8zoe/AKSy0plIj4Ejx_z0Zsu3l6s?rlkey=qdb2mb24lbxv9uccg89j9jobb&st=3oznr6bp&dl=0" target="_blank" class="download-btn">Download Isolated LawbNexus</a></p>
+                <a href="https://zora.co/collect/base:0xeffa1125545cb24b8526fa7d0752c385128fbcc7/1" target="_blank" class="bottom-button">
+                    <img src="images/0059_1.gif" alt="LawbNexus Meme" class="section-image">
+                </a>
+            </div>
+            <p>Choose your fighter. Search isolated LawbNexus by number. Right-click save. Create a meme. Start a fight. This is memetic warfare.</p>
+            <div class="search-container">
+                <input type="number" id="nexusImageSearch" placeholder="Enter image number" min="0" max="999">
+                <button id="nexusEnterButton" class="search-button">Enter</button>
+                <button id="nexusClearButton" class="search-button">Clear</button>
+            </div>
+            <div id="nexusImageDisplay"></div>
+        </section>
+
+        <section id="station" class="section">
+            <h1>LawbStation</h1>
+            <div class="video-container">
+                <video id="stationVideo" muted>
+                    <source src="images/lawbstation_promo 3.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                <div class="play-overlay"></div>
+            </div>
+            <div class="top-gif-container">
+                <div class="tenor-gif-embed" data-postid="14418647991790600316" data-share-method="host" data-aspect-ratio="1">
+                    <a href="https://tenor.com/view/lawb-i-lawb-u-i-lawb-you-lawbstation-portionclub-gif-14418647991790600316">Lawb I Lawb U GIF</a>
+                </div>
+            </div>
+            <p>LawbStations seem nice but a Lawbster built on <a href="https://www.miladystation2.net/" target="_blank">$MS2</a> technology living on the Solana blockchain will never achieve anything without a roadmap.</p>
+            <p>1st Lawbster collection on Solana. Quantity: 420. Collect on <a href="https://magiceden.us/marketplace/lawbstation" target="_blank">secondary.</a></p>
+            <p>Choose your fighter. Search isolated LawbStation by number. Right-click save. Create a meme. Start a fight. This is memetic warfare.</p>
+            <div class="search-container">
+                <input type="number" id="stationImageSearch" placeholder="Enter image number" min="0" max="419">
+                <button id="stationEnterButton" class="search-button">Enter</button>
+                <button id="stationClearButton" class="search-button">Clear</button>
+            </div>
+            <div id="stationImageDisplay"></div>
+            <div id="stationImageGallery" class="image-container"></div>
+        </section>
+
+        <section id="starz" class="section">
+            <h1>LawbStarz</h1>
+            <img src="images/lawbstarz_bg2.png" alt="Lawbstarz Image" class="section-image">
+            <p>
+                ☆ LAWBSTARZ 666x LOBSTERS DRIPPED IN BUTTER ☆ 666x PREMIUM PFP COLLECTION ☆ LAWBSTARZ IS A MUSIC NFT ☆ THE 1ST 
+                <a href="https://allstarz.world/" target="_blank">ALLSTARZ DERIVATIVE</a> ☆ LAWBSTARZ IS INSPIRED BY 
+                <a href="https://ilongfornetworkspirituality.net/" target="_blank">REMILIA CORP</a> ☆ LED BY NETWORK SPIRITUALITY ☆ 666 
+                <a href="https://www.cigawrettepacks.shop/" target="_blank">CIGAWRETTEPACKS</a> WERE CONSUMED BY 
+                <a href="https://nouns.build/dao/ethereum/0x0c12aba58fc88f1267fa772012495b47aaf31cab/" target="_blank">PORTIONCLUB69</a> 
+                AND FRIENDS DURING THE CREATION OF LAWBSTARZ v1 ☆
+            </p>
+            <blockquote class="twitter-tweet">
+                <p lang="en" dir="ltr">The following 🧵 has been transcripted from a live news broadcast:<br><br>"Good evening, viewers. Tonight, we embark on an extraordinary journey that defies rational explanation. It all began with February's Cigawrette Packs cargo ship hijacking, little did we know that the.." <a href="https://t.co/BWgLOk59N4">pic.twitter.com/BWgLOk59N4</a></p>
+                — wables 🚬✰🍨🦞🍞 (@wables411) <a href="https://twitter.com/wables411/status/1669009492007354369?ref_src=twsrc%5Etfw">June 14, 2023</a>
+            </blockquote>
+            <div class="scatter-section">
+                <a href="https://www.scatter.art/lawbstarz?tab=mint">
+                    <img src="images/lawbstarzhotelroom.PNG" alt="Lawbstarz Image" class="section-image">
+                </a>
+                <p class="scatter-text">minted out on <a href="https://www.scatter.art/lawbstarz?tab=mint" class="button">Scatter</a></p>
+            </div>
+            <p><a href="https://magiceden.us/collections/ethereum/0xd7922cd333da5ab3758c95f774b092a7b13a5449">Click here to collect Lawbstarz on secondary</a></p>
+            <div class="audio-player">
+                <iframe src="https://audius.co/embed/track/PbYM2zm?flavor=tiny" width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>
+            </div>
+        </section>
+
+        <section id="lawbsters" class="section">
+            <h1>Lawbsters</h1>
+            <p>Lawbsters seem nice but a human controlled by a lobster will never achieve anything without a roadmap.</p>
+            <p>A Cigawrette Packs derivative. The first Lawbster collection on Eth. Quantity: 420</p>
+            <p>Collect on <a href="https://magiceden.us/collections/ethereum/0x0ef7ba09c38624b8e9cc4985790a2f5dbfc1dc42" target="_blank">secondary</a></p>
+            <blockquote class="twitter-tweet">
+                <p lang="en" dir="ltr">The following 🧵 has been transcripted from a live news broadcast:<br><br>"Just in, breaking news coming out of the high seas. A cargo ship has been hijacked by a group of degenerate lobsters, taking hostages & demanding a ransom. The situation is ongoing and authorities are scrambling <a href="https://t.co/lykBDDKYEb">pic.twitter.com/lykBDDKYEb</a></p>
+                — wables 🚬✰🍨🦞🍞 (@wables411) <a href="https://twitter.com/wables411/status/1620879129850834944?ref_src=twsrc%5Etfw">February 1, 2023</a>
+            </blockquote>
+            <p>CHOOSE YOUR FIGHTER. Search Lawbster by number. Right-click save. Create a meme. Start a fight. THIS IS MEMETIC WARFARE.</p>
+            <div class="search-container">
+                <input type="number" id="imageSearch" placeholder="Enter image number" min="0" max="419">
+                <button id="enterButton" class="search-button">Enter</button>
+                <button id="clearButton" class="search-button">Clear</button>
+            </div>
+            <div id="imageDisplay"></div>
+            <div id="imageGallery" class="image-container"></div>
+        </section>
+
+        <section id="halloween" class="section">
+            <h1>Halloween</h1>
+            <p>
+                🦞🎃 a Lawbster Halloween party seems nice but a group of what seems to be
+                humans controlled by lobsters just hijacked the Spirit Halloween Superstore. 🎃🦞
+            </p>
+            <blockquote class="twitter-tweet">
+                <p lang="en" dir="ltr">🚨EXPERT ANALYSIS: WHO HIJACKED THE SPIRIT HALLOWEEN SUPERSTORE?<br><br>Marine Corps Veteran expert analysis of the recent hijacking incident at the superstore reveals critical findings:<br>🧵 <a href="https://t.co/m4Iy5wdjre">pic.twitter.com/m4Iy5wdjre</a></p>
+                — portionclub (@PortionClub69) <a href="https://twitter.com/PortionClub69/status/1716485680040407145?ref_src=twsrc%5Etfw">October 23, 2023</a>
+            </blockquote>
+            <p>a portion club collection</p>
+            <img src="images/lawbsterhalloween.gif" alt="A Lawbster Halloween" class="section-image">
+            <p>Collect on <a href="https://magiceden.us/collections/base/0x8ab6733f8f8702c233f3582ec2a2750d3fc63a97" target="_blank">secondary</a></p>
+        </section>
+
+        <section id="lore" class="section">
+            <h1>Lore</h1>
+            <p>Explore the Lore on Zora: <a href="https://zora.co/collect/base:0xd49c9461471934e87467af00fff8d63312db913a">Link</a></p>
+            <img src="images/lawblore.gif" alt="Lawb Lore" class="section-image">
+        </section>
+
+        <div id="vrm-container"></div>
+        <div id="game-container"></div>
     </div>
-    <script src="loadimages.js"></script>
+
+    <!-- Scripts -->
+    <script>
+        let databaseInitAttempts = 0;
+        const initializeSupabase = async () => {
+            try {
+                if (!window.supabase) {
+                    if (databaseInitAttempts < 5) {
+                        databaseInitAttempts++;
+                        console.log(`Supabase not loaded, retrying (${databaseInitAttempts}/5)...`);
+                        setTimeout(initializeSupabase, 1000);
+                        return;
+                    }
+                    throw new Error('Supabase library not loaded');
+                }
+                window.gameDatabase = window.supabase.createClient(
+                    'https://roxwocgknkiqnsgiojgz.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
+                );
+                const { data, error } = await window.gameDatabase.from('leaderboard').select('count').single();
+                if (error) throw error;
+                console.log('Supabase connection verified');
+                await loadGameScripts();
+            } catch (error) {
+                console.error('Supabase initialization failed:', error);
+                if (databaseInitAttempts < 5) {
+                    databaseInitAttempts++;
+                    setTimeout(initializeSupabase, 1000);
+                }
+            }
+        };
+
+        function loadScript(src, retryCount = 0) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.type = 'text/javascript';
+                script.onload = () => {
+                    console.log(`${src} loaded successfully`);
+                    resolve();
+                };
+                script.onerror = () => {
+                    if (retryCount < 3) {
+                        console.log(`Retrying ${src} (${retryCount + 1}/3)`);
+                        setTimeout(() => loadScript(src, retryCount + 1).then(resolve).catch(reject), 1000);
+                    } else {
+                        console.error(`Failed to load script: ${src}`);
+                        reject(new Error(`Failed to load script: ${src}`));
+                    }
+                };
+                document.body.appendChild(script);
+            });
+        }
+
+        async function loadGameScripts() {
+            try {
+                const scripts = ['loadImages.js', 'loadImages2.js', 'loadImages3.js', 'meme-generator.js'];
+                for (const script of scripts) {
+                    console.log(`Attempting to load ${script}`);
+                    await loadScript(script);
+                }
+                console.log('All scripts loaded, setting up event listeners');
+                setupEventListeners();
+            } catch (error) {
+                console.error('Error in loadGameScripts:', error);
+            }
+        }
+
+        function setupEventListeners() {
+            console.log('setupEventListeners called');
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeSupabase);
+        if (document.readyState === 'complete' || document.readyState === 'interactive') initializeSupabase();
+
+        function toggleNexusPlay() {
+            const video = document.getElementById('nexusVideo');
+            if (video.paused) video.play();
+            else video.pause();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const videoContainer = document.querySelector('#station .video-container');
+            const video = document.getElementById('stationVideo');
+            const overlay = document.querySelector('#station .play-overlay');
+            if (videoContainer && video && overlay) {
+                videoContainer.addEventListener('click', function() {
+                    if (video.paused) {
+                        video.play();
+                        overlay.style.display = 'none';
+                    } else {
+                        video.pause();
+                        overlay.style.display = 'flex';
+                    }
+                });
+                video.addEventListener('ended', function() {
+                    overlay.style.display = 'flex';
+                });
+            }
+        });
+
+        // Phaser Game Logic
+        function initGame() {
+            const canvas = document.createElement('canvas');
+            canvas.setAttribute('willReadFrequently', 'true'); // Case-sensitive attribute
+            const config = {
+                type: Phaser.CANVAS,
+                width: 800,
+                height: 600,
+                parent: 'game-container',
+                canvas: canvas,
+                physics: { default: 'arcade', arcade: { gravity: { y: 300 }, debug: false } },
+                scene: { preload: preload, create: create, update: update },
+                audio: { disableWebAudio: true }
+            };
+            let game = new Phaser.Game(config);
+
+            let player, emojis, score = 0, scoreText, timeLeft = 120, timeText, background, isGameOver = true;
+
+            function preload() {
+                this.load.image('lawb', 'images/69lawbster.png');
+                this.load.image('emoji', 'images/clownemoji.png');
+                this.load.image('background', 'images/oceanfloor.gif');
+            }
+
+            function create() {
+                background = this.add.image(400, 300, 'background').setDisplaySize(config.width, config.height);
+                player = this.physics.add.sprite(400, 550, 'lawb').setCollideWorldBounds(true).setVisible(false);
+                emojis = this.physics.add.group();
+                scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#FFF' }).setVisible(false);
+                timeText = this.add.text(16, 56, 'Time: 2:00', { fontSize: '32px', fill: '#FFF' }).setVisible(false);
+                const startButton = this.add.text(400, 300, 'Start Game', { fontSize: '48px', fill: '#00FF00' })
+                    .setOrigin(0.5).setInteractive().on('pointerdown', () => {
+                        startButton.setVisible(false);
+                        startGameplay.call(this);
+                    });
+                this.input.on('pointermove', function(pointer) {
+                    if (!isGameOver) player.x = Phaser.Math.Clamp(pointer.x, player.width / 2, config.width - player.width / 2);
+                }, this);
+            }
+
+            function startGameplay() {
+                isGameOver = false;
+                player.setVisible(true);
+                scoreText.setVisible(true);
+                timeText.setVisible(true);
+                score = 0;
+                timeLeft = 120;
+                scoreText.setText('Score: 0');
+                timeText.setText('Time: 2:00');
+                this.time.addEvent({ delay: 1000, callback: updateTimer, callbackScope: this, loop: true });
+                this.time.addEvent({ delay: 1500, callback: spawnEmoji, callbackScope: this, loop: true });
+            }
+
+            function update() { if (!isGameOver) this.physics.overlap(player, emojis, collectEmoji, null, this); }
+
+            function spawnEmoji() {
+                if (!isGameOver) {
+                    const x = Phaser.Math.Between(0, 800);
+                    const emoji = emojis.create(x, 0, 'emoji').setBounce(0.7).setCollideWorldBounds(true).setVelocity(Phaser.Math.Between(-100, 100), 20);
+                    this.time.addEvent({ delay: 10000, callback: () => { if (emoji.active) emoji.destroy(); }, loop: false });
+                }
+            }
+
+            function collectEmoji(player, emoji) {
+                emoji.disableBody(true, true);
+                score += 10;
+                scoreText.setText('Score: ' + score);
+            }
+
+            function updateTimer() {
+                if (!isGameOver) {
+                    timeLeft--;
+                    const minutes = Math.floor(timeLeft / 60);
+                    const seconds = timeLeft % 60;
+                    timeText.setText(`Time: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+                    if (timeLeft <= 0) gameOver.call(this);
+                }
+            }
+
+            function gameOver() {
+                isGameOver = true;
+                this.physics.pause();
+                emojis.children.entries.forEach(emoji => emoji.setVelocity(0, 0));
+                this.add.text(400, 250, 'Game Over', { fontSize: '64px', fill: '#FF0000' }).setOrigin(0.5);
+                this.add.text(400, 320, `Final Score: ${score}`, { fontSize: '32px', fill: '#FFFFFF' }).setOrigin(0.5);
+                this.add.text(400, 400, 'Restart Game', { fontSize: '32px', fill: '#00FF00' })
+                    .setOrigin(0.5).setInteractive().on('pointerdown', () => this.scene.restart());
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof Phaser !== 'undefined') initGame();
+        });
+    </script>
+
+    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+    <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
+    <script src="loadImages.js"></script>
+    <script src="loadImages2.js"></script>
+    <script src="loadImages3.js"></script>
 </body>
 </html>

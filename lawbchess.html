@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lawb Chess</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <!-- Dependencies -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" charset="utf-8"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="chess.css">
+    <!-- Inline Styles -->
+    <style>
+        .wallet-connection {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            border: 1px solid rgba(50, 205, 50, 0.3);
+            width: 100%;
+            max-width: 600px;
+        }
+        .wallet-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        .wallet-btn {
+            background: rgba(255, 69, 0, 0.2);
+            border: 2px solid rgba(255, 69, 0, 0.5);
+            padding: 10px 20px;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: Impact, sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-width: 180px;
+            margin-top: 10px;
+        }
+        .wallet-btn:hover:not(:disabled) {
+            background: rgba(255, 69, 0, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(255, 69, 0, 0.3);
+        }
+        .multiplayer-btn {
+            background: rgba(50, 205, 50, 0.2);
+            border: 2px solid rgba(50, 205, 50, 0.3);
+            padding: 10px 20px;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: Impact, sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-width: 160px;
+        }
+        .multiplayer-btn:hover:not(:disabled) {
+            background: rgba(50, 205, 50, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
+        }
+        .cancel-btn {
+            background: rgba(255, 0, 0, 0.2);
+            border-color: rgba(255, 0, 0, 0.3);
+        }
+        .cancel-btn:hover {
+            background: rgba(255, 0, 0, 0.3);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+        }
+        #matchmaking-status {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid rgba(50, 205, 50, 0.3);
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .status-text {
+            margin-bottom: 10px;
+            color: #32CD32;
+            font-family: monospace;
+        }
+        .game-code-display {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(50, 205, 50, 0.3);
+            border-radius: 5px;
+            display: none;
+        }
+        .game-code-display h4 {
+            color: #32CD32;
+            margin: 0 0 10px 0;
+        }
+        .game-code {
+            font-family: monospace;
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+            color: white;
+            letter-spacing: 2px;
+            cursor: pointer;
+        }
+        .game-code:hover {
+            color: #32CD32;
+        }
+        .copy-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(50, 205, 50, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: none;
+            z-index: 1000;
+            font-family: Impact, sans-serif;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        .marquee {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            animation: marquee 10s linear infinite;
+        }
+        @keyframes marquee {
+            0% { text-indent: 100%; }
+            100% { text-indent: -100%; }
+        }
+        /* Ensure visibility toggling works */
+        .show-difficulty #difficulty-screen { display: flex; }
+        .show-multiplayer .multiplayer-menu { display: block; }
+        .show-chess #chess-game { display: block; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="lawbstation.html">LawbStation</a></li>
+            <li><a href="lawbsters.html">Lawbsters</a></li>
+            <li><a href="lawbstarz.html">LawbStarz</a></li>
+            <li><a href="ascii_lawbsters.html">ASCII</a></li>
+            <li><a href="https://app.manifold.xyz/phy/lawbster-plushy">Burn</a></li>
+            <li><a href="$lawb.html">$LAWB</a></li>
+            <li><a href="nexus.html">Nexus</a></li>
+            <li><a href="halloween.html">Halloween</a></li>
+            <li><a href="https://lawb.shop">Shop</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="marquee">there is no meme we lawb you</div>
+
+        <!-- Chess Game Section -->
+        <div class="game-section">
+            <h2>LAWB CHESS</h2>
+            <div class="leaderboard-section">
+                <h2 class="leaderboard-title">🦞🦞🦞🦞</h2>
+                <div class="wallet-connection">
+                    <div class="wallet-buttons"></div>
+                    <div id="wallet-address" class="wallet-address" style="display: none;"></div>
+                    <button id="disconnect-wallet" class="wallet-btn" style="display: none;">Disconnect Wallet</button>
+                </div>
+                <div class="leaderboard-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Player</th>
+                                <th>Points</th>
+                                <th>W/L/D</th>
+                                <th>Games</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="game-mode-selection">
+                <button id="ai-mode" class="mode-btn selected">Single Player</button>
+                <button id="multiplayer-mode" class="mode-btn">Multiplayer</button>
+            </div>
+
+            <div class="chess-container">
+                <div id="difficulty-screen" style="display: none;">
+                    <h2>Select Difficulty</h2>
+                    <div class="difficulty-buttons">
+                        <button id="easy-mode" class="difficulty-btn">Easy Mode</button>
+                        <button id="hard-mode" class="difficulty-btn">Harder Mode</button>
+                    </div>
+                    <button id="start-game" class="start-btn" disabled>Start Game</button>
+                </div>
+
+                <div class="multiplayer-menu" style="display: none;">
+                    <h2>PvP</h2>
+                    <div class="join-game-container">
+                        <button class="multiplayer-btn" id="create-game">Create Game</button>
+                        <input type="text" id="game-code-input" placeholder="Enter game code" maxlength="6" autocomplete="off">
+                        <button class="multiplayer-btn" id="join-game">Join Game</button>
+                        <input type="number" id="wagerAmount" placeholder="Wager amount in tDMT (0.1–1000)" min="0.1" max="1000" step="0.1">
+                        <button class="multiplayer-btn" id="leave-game">Leave Game</button>
+                    </div>
+                    <div id="gameCodeDisplay" class="game-code-display">
+                        <h4>Share this code with opponent:</h4>
+                        <div class="game-code" id="gameCode"></div>
+                    </div>
+                    <div id="matchmaking-status" style="display: none;">
+                        <p class="status-text">Finding opponent...</p>
+                        <button class="multiplayer-btn cancel-btn" id="cancel-matchmaking">Cancel</button>
+                    </div>
+                </div>
+
+                <div id="chess-game" style="display: none;">
+                    <div id="chessboard"></div>
+                </div>
+            </div>
+
+            <div class="game-info-container">
+                <div id="game-info">
+                    <div id="status">Connect to play</div>
+                    <div id="move-history"></div>
+                    <button id="restart-game" class="difficulty-btn">Restart Game</button>
+                </div>
+                <div id="debug"></div>
+            </div>
+        </div>
+
+        <div id="copyNotification" class="copy-notification">Code copied to clipboard!</div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module">
+        // Supabase Initialization
+        console.log('Starting Supabase initialization...');
+        window.gameDatabase = window.supabase.createClient(
+            'https://roxwocgknkiqnsgiojgz.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
+        );
+
+        async function waitForSupabase() {
+            try {
+                const { data, error } = await window.gameDatabase
+                    .from('leaderboard')
+                    .select('count')
+                    .single();
+                if (error) throw error;
+                console.log('Supabase connection verified');
+                return true;
+            } catch (error) {
+                console.error('Supabase verification failed:', error);
+                return false;
+            }
+        }
+
+        // Wallet Connector
+        class WalletConnector {
+            async connectEVMWallet() {
+                if (!window.ethereum) {
+                    alert("Please install MetaMask!");
+                    return null;
+                }
+                try {
+                    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+                    localStorage.setItem("currentPlayer", accounts[0]);
+                    document.dispatchEvent(new CustomEvent("walletConnected", { detail: { address: accounts[0] } }));
+                    return accounts[0];
+                } catch (error) {
+                    console.error("Wallet connection failed:", error);
+                    return null;
+                }
+            }
+            disconnectWallet() {
+                localStorage.removeItem("currentPlayer");
+                document.dispatchEvent(new CustomEvent("walletDisconnected"));
+            }
+        }
+        window.walletConnector = new WalletConnector();
+
+        // Import Modules
+        import './leaderboard.js';
+        import './multiplayer.js';
+        import './chess.js';
+
+        async function initializeGame() {
+            await waitForSupabase();
+            if (typeof window.initializeMultiplayerManager === 'function') {
+                window.initializeMultiplayerManager();
+            }
+            if (window.LeaderboardManager && !window.leaderboardManager) {
+                window.leaderboardManager = new window.LeaderboardManager();
+            }
+            if (typeof window.initGame === 'function') {
+                window.initGame();
+            }
+            // Add Connect Wallet button
+            const walletButtons = document.querySelector('.wallet-buttons');
+            const connectBtn = document.createElement('button');
+            connectBtn.className = 'wallet-btn';
+            connectBtn.textContent = 'Connect MetaMask';
+            connectBtn.addEventListener('click', () => window.walletConnector.connectEVMWallet());
+            walletButtons.appendChild(connectBtn);
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeGame);
+
+        // Game UI Initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            const elements = {
+                gameSection: document.querySelector('.game-section'),
+                aiModeBtn: document.getElementById('ai-mode'),
+                multiplayerModeBtn: document.getElementById('multiplayer-mode'),
+                difficultyScreen: document.getElementById('difficulty-screen'),
+                multiplayerMenu: document.querySelector('.multiplayer-menu'),
+                gameCodeInput: document.getElementById('game-code-input'),
+                gameCode: document.getElementById('gameCode'),
+                joinGameBtn: document.getElementById('join-game'),
+                createGameBtn: document.getElementById('create-game'),
+                leaveGameBtn: document.getElementById('leave-game'),
+                disconnectWalletBtn: document.getElementById('disconnect-wallet'),
+                statusElement: document.getElementById('status'),
+                chessGame: document.getElementById('chess-game')
+            };
+
+            const startGameBtn = document.getElementById('start-game');
+            if (!startGameBtn) {
+                console.error('Start Game button not found.');
+                return;
+            }
+
+            // Verify critical elements
+            for (const [key, value] of Object.entries(elements)) {
+                if (!value) console.error(`${key} not found.`);
+            }
+
+            // Mode switching
+            elements.aiModeBtn.addEventListener('click', () => {
+                elements.multiplayerModeBtn.classList.remove('selected');
+                elements.aiModeBtn.classList.add('selected');
+                elements.gameSection.classList.remove('show-multiplayer', 'show-chess');
+                elements.gameSection.classList.add('show-difficulty');
+                elements.difficultyScreen.style.display = 'flex';
+                elements.multiplayerMenu.style.display = 'none';
+                elements.chessGame.style.display = 'none';
+            });
+
+            elements.multiplayerModeBtn.addEventListener('click', () => {
+                elements.aiModeBtn.classList.remove('selected');
+                elements.multiplayerModeBtn.classList.add('selected');
+                elements.gameSection.classList.remove('show-difficulty', 'show-chess');
+                elements.gameSection.classList.add('show-multiplayer');
+                elements.difficultyScreen.style.display = 'none';
+                elements.multiplayerMenu.style.display = 'block';
+                elements.chessGame.style.display = 'none';
+            });
+
+            // Start game
+            startGameBtn.addEventListener('click', () => {
+                if (typeof window.startGame === 'function') {
+                    window.startGame();
+                    elements.gameSection.classList.remove('show-difficulty', 'show-multiplayer');
+                    elements.gameSection.classList.add('show-chess');
+                    elements.difficultyScreen.style.display = 'none';
+                    elements.multiplayerMenu.style.display = 'none';
+                    elements.chessGame.style.display = 'block';
+                }
+            });
+
+            // Multiplayer controls
+            elements.gameCode.addEventListener('click', function() {
+                navigator.clipboard.writeText(this.textContent).then(() => {
+                    const notification = document.getElementById('copyNotification');
+                    notification.style.display = 'block';
+                    setTimeout(() => notification.style.display = 'none', 2000);
+                });
+            });
+
+            elements.gameCodeInput.addEventListener('input', function() {
+                this.value = this.value.toUpperCase();
+                if (this.value.length > 6) this.value = this.value.slice(0, 6);
+            });
+
+            elements.createGameBtn.addEventListener('click', () => {
+                const wagerInput = document.getElementById('wagerAmount');
+                const wagerValue = parseFloat(wagerInput.value) || 0.1;
+                if (wagerValue < 0.1 || wagerValue > 1000) {
+                    alert('Wager must be between 0.1 and 1000 tDMT');
+                    console.log('Invalid wager amount:', wagerValue);
+                    return;
+                }
+                if (window.multiplayerManager) {
+                    window.multiplayerManager.createGame(wagerValue);
+                } else {
+                    console.error('MultiplayerManager not initialized');
+                    alert('Multiplayer system not initialized.');
+                }
+            });
+
+            elements.joinGameBtn.addEventListener('click', () => {
+                const gameCode = elements.gameCodeInput.value.trim();
+                if (!gameCode) {
+                    alert('Please enter a game code');
+                    return;
+                }
+                if (window.multiplayerManager) {
+                    window.multiplayerManager.joinGameByCode(gameCode);
+                } else {
+                    console.error('MultiplayerManager not initialized');
+                    alert('Multiplayer system not initialized.');
+                }
+            });
+
+            elements.leaveGameBtn.addEventListener('click', () => {
+                if (window.multiplayerManager) {
+                    window.multiplayerManager.leaveGame().then(() => {
+                        alert('Successfully left the game.');
+                        elements.gameSection.classList.remove('show-chess', 'show-multiplayer');
+                        elements.gameSection.classList.add('show-difficulty');
+                        elements.chessGame.style.display = 'none';
+                        elements.multiplayerMenu.style.display = 'none';
+                        elements.difficultyScreen.style.display = 'flex';
+                    }).catch(error => {
+                        console.error('Error leaving game:', error);
+                        alert('Failed to leave game: ' + error.message);
+                    });
+                } else {
+                    console.error('MultiplayerManager not initialized');
+                    alert('Multiplayer system not initialized.');
+                }
+            });
+
+            elements.disconnectWalletBtn.addEventListener('click', () => {
+                if (window.walletConnector) {
+                    window.walletConnector.disconnectWallet();
+                    document.getElementById('wallet-address').style.display = 'none';
+                    elements.disconnectWalletBtn.style.display = 'none';
+                    document.querySelector('.wallet-buttons').style.display = 'flex';
+                    elements.difficultyScreen.style.display = 'none';
+                    elements.statusElement.textContent = 'Connect to play';
+                    elements.gameSection.classList.remove('show-chess', 'show-multiplayer');
+                }
+            });
+
+            document.addEventListener('walletConnected', (e) => {
+                const { address } = e.detail;
+                document.getElementById('wallet-address').textContent = address;
+                document.getElementById('wallet-address').style.display = 'block';
+                document.querySelector('.wallet-buttons').style.display = 'none';
+                elements.disconnectWalletBtn.style.display = 'block';
+                if (elements.aiModeBtn.classList.contains('selected')) {
+                    elements.gameSection.classList.add('show-difficulty');
+                    elements.difficultyScreen.style.display = 'flex';
+                }
+            });
+
+            document.addEventListener('walletDisconnected', () => {
+                elements.gameSection.classList.remove('show-difficulty', 'show-multiplayer', 'show-chess');
+                elements.difficultyScreen.style.display = 'none';
+                elements.multiplayerMenu.style.display = 'none';
+                elements.chessGame.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>
