@@ -133,10 +133,9 @@
                 </a>
             </div>
             <div class="meme-section">
-                <video controls class="section-image" style="width: 100%;">
-                    <source src="images/bapelawb.mp4" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
+                <h2>Create Your LawbNexus Meme</h2>
+                <p>Download an isolated LawbNexus, create a meme, start a fight! Post your original meme and tag <a href="https://twitter.com/LawbNexus" target="_blank">@LawbNexus</a>.</p>
+                <p><a href="https://dropbox.com/scl/fo/8y3guocdhd0r6znrv8zoe/AKSy0plIj4Ejx_z0Zsu3l6s?rlkey=qdb2mb24lbxv9uccg89j9jobb&st=3oznr6bp&dl=0" target="_blank" class="download-btn">Download Isolated LawbNexus</a></p>
                 <a href="https://zora.co/collect/base:0xeffa1125545cb24b8526fa7d0752c385128fbcc7/1" target="_blank" class="bottom-button">
                     <img src="images/0059_1.gif" alt="LawbNexus Meme" class="section-image">
                 </a>
