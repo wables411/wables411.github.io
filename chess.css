@@ -5,190 +5,107 @@
     box-sizing: border-box;
 }
 
-/* Wallet Connection Styles */
-.wallet-connection {
+/* Disable scrolling and set full height */
+html, body {
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* Main layout */
+body {
+    display: flex;
+    flex-direction: row;
+    /* Removed background: #000; to let style.css's oceanfloor.gif apply */
+}
+
+/* Navigation (Left Side) */
+nav {
+    width: 200px;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    position: fixed;
+    top: 0;
+    left: 0;
+    overflow-y: auto;
+}
+
+nav ul {
+    list-style: none;
+    padding: 10px;
+    margin: 0;
+}
+
+nav ul li {
+    margin: 10px 0;
+}
+
+nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-family: Impact, sans-serif;
+    font-size: 1.1rem;
+}
+
+/* Main content area */
+.main-container {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    margin-left: 200px;
+    height: 100vh;
+}
+
+/* Chess Container (Center) */
+.chess-container {
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15px;
-    margin: 15px 0;
-    width: 100%;
-    max-width: 600px;
-}
-
-.wallet-btn {
-    background: transparent;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 50px;
-    color: white;
-    font-family: Impact, sans-serif;
-    font-size: clamp(0.9rem, 2.5vw, 1rem);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    min-width: 160px;
-    height: 36px;
-    display: flex;
-    align-items: center;
     justify-content: center;
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    padding: 20px;
+    overflow: hidden;
 }
 
-.wallet-btn:hover {
-    opacity: 0.95;
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
-}
-
-.wallet-btn[onclick*="phantom" i] {
-    background: rgba(147, 112, 219, 0.8);
-}
-
-.wallet-btn[onclick*="solflare" i] {
-    background: rgba(247, 147, 26, 0.8);
-}
-
-.wallet-btn[onclick*="magic" i] {
-    background: rgba(237, 75, 158, 0.8);
-}
-
-.wallet-address {
-    font-family: monospace;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 8px 12px;
-    border-radius: 4px;
-    margin: 8px 0;
-    word-break: break-all;
-    border: 1px solid #FF0000;
-    color: #FF0000;
-    text-shadow: none;
-    font-size: clamp(0.8rem, 2vw, 0.9rem);
-}
-
-/* Leaderboard Section */
-.leaderboard-section {
-    margin-bottom: 20px;
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid rgba(153, 69, 255, 0.3);
-    background: rgba(0, 0, 0, 0.2);
-    width: 100%;
-    max-width: 800px;
-    text-align: center;
-}
-
-/* Hide leaderboard when difficulty screen or multiplayer menu is active */
-.game-section.show-difficulty .leaderboard-section,
-.game-section.show-multiplayer .leaderboard-section {
-    display: none;
-}
-
-.leaderboard-title {
-    font-size: clamp(1.5rem, 4vw, 2rem);
+.chess-container h2 {
+    font-size: clamp(1.5rem, 3vw, 2rem);
     font-family: Impact, sans-serif;
     text-transform: uppercase;
     letter-spacing: 2px;
     color: #fff;
-    text-shadow: 0 0 5px #32CD32, 0 0 10px #32CD32, 0 0 15px #32CD32;
-    margin-bottom: 15px;
+    text-shadow: 0 0 5px #32CD32;
+    margin-bottom: 10px;
 }
 
-.username-input {
-    margin: 15px 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-}
-
-.username-input input {
-    padding: 10px;
-    border: 1px solid rgba(50, 205, 50, 0.3);
-    background: transparent;
-    color: white;
-    border-radius: 4px;
-    font-family: monospace;
+/* Chess Game Section */
+#chess-game {
+    display: none; /* Hidden by default, shown by JS */
     width: 100%;
-    max-width: 200px;
-}
-
-.leaderboard-table {
-    width: 100%;
-    overflow-x: auto;
-    margin-top: 15px;
-}
-
-.leaderboard-table table {
-    width: 100%;
-    border-collapse: collapse;
-    color: white;
-}
-
-.leaderboard-table th,
-.leaderboard-table td {
-    padding: 10px;
+    max-width: 600px;
     text-align: center;
-    border: 1px solid rgba(50, 205, 50, 0.2);
-    font-size: clamp(0.9rem, 2vw, 1rem);
-}
-
-.leaderboard-table th {
-    background: rgba(50, 205, 50, 0.2);
-    font-family: Impact, sans-serif;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.leaderboard-table tr:nth-child(even) {
-    background: rgba(50, 205, 50, 0.1);
-}
-
-/* Chess Container */
-.chess-container {
-    width: 100%;
-    max-width: calc(100% - 220px);
-    margin: 20px auto;
-    margin-left: 220px;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex-grow: 1;
-}
-
-/* Show chess-container when difficulty screen or multiplayer menu is active */
-.game-section.show-difficulty .chess-container,
-.game-section.show-multiplayer .chess-container {
-    display: flex; /* Ensure container remains visible */
 }
 
 /* Chessboard */
 #chessboard {
-    width: 100%;
-    max-width: min(80vw, calc(100vh - 250px)); /* Increased size */
-    max-height: calc(100vh - 250px); /* Leave room for status, leaderboard */
-    aspect-ratio: 1 / 1;
-    min-width: 500px; /* Increased from 400px */
-    min-height: 500px;
     position: relative;
-    border-radius: 8px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    width: 400px; /* Fixed size for consistent piece positioning */
+    height: 400px;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    touch-action: manipulation;
+    margin: 0 auto;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
     border: 2px solid rgba(50, 205, 50, 0.3);
-    display: block;
+    touch-action: manipulation;
 }
 
 /* Pieces */
 .piece {
     position: absolute;
-    width: 12.5%;
+    width: 12.5%; /* 1/8 of 400px = 50px */
     height: 12.5%;
-    min-width: 60px; /* Increased from 50px */
-    min-height: 60px;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -208,14 +125,14 @@
 /* Highlight Effects */
 .highlight {
     position: absolute;
+    width: 12.5%;
+    height: 12.5%;
     background-color: rgba(0, 255, 0, 0.3);
     border-radius: 50%;
     pointer-events: auto;
     cursor: pointer;
     z-index: 1;
     animation: pulse 2s infinite;
-    width: 12.5%;
-    height: 12.5%;
 }
 
 .highlight.capture {
@@ -223,41 +140,162 @@
     border: 2px solid rgba(255, 0, 0, 0.5);
 }
 
-/* Difficulty Selection */
-#difficulty-screen {
-    width: 100%;
-    max-width: 600px;
-    padding: 20px;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-    border-radius: 10px;
-    border: 1px solid rgba(50, 205, 50, 0.3);
-    background: rgba(0, 0, 0, 0.7);
-    margin: 20px 0; /* Add margin to separate from mode selection */
-    z-index: 0; /* Reset z-index to avoid overlap */
-    position: static; /* Remove absolute positioning */
-}
-
-/* Show difficulty screen when active */
-.game-section.show-difficulty #difficulty-screen {
+/* Right Panel (Leaderboard + Game Info) */
+.right-panel {
+    width: 300px;
+    height: 100vh;
     display: flex;
+    flex-direction: column;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    overflow: hidden;
 }
 
-#difficulty-screen h2 {
-    font-size: clamp(1.5rem, 4vw, 2rem);
+/* Leaderboard Section */
+.leaderboard-section {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(153, 69, 255, 0.3);
+    background: rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+.leaderboard-title {
+    font-size: clamp(1.2rem, 2vw, 1.5rem);
     font-family: Impact, sans-serif;
     text-transform: uppercase;
     letter-spacing: 2px;
     color: #fff;
-    text-shadow: 0 0 5px #32CD32, 0 0 10px #32CD32, 0 0 15px #32CD32;
+    text-shadow: 0 0 5px #32CD32;
+    margin-bottom: 10px;
+}
+
+.wallet-connection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.wallet-btn {
+    background: transparent;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 50px;
+    color: white;
+    font-family: Impact, sans-serif;
+    font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+.wallet-btn:hover {
+    opacity: 0.95;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+.wallet-address {
+    font-family: monospace;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 6px 10px;
+    border-radius: 4px;
+    margin: 6px 0;
+    word-break: break-all;
+    border: 1px solid #FF0000;
+    color: #FF0000;
+    text-shadow: none;
+    font-size: clamp(0.7rem, 1.5vw, 0.8rem);
+}
+
+.leaderboard-table {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 10px;
+}
+
+.leaderboard-table table {
+    width: 100%;
+    border-collapse: collapse;
+    color: white;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+    padding: 8px;
+    text-align: center;
+    border: 1px solid rgba(50, 205, 50, 0.2);
+    font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+}
+
+.leaderboard-table th {
+    background: rgba(50, 205, 50, 0.2);
+    font-family: Impact, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.leaderboard-table tr:nth-child(even) {
+    background: rgba(50, 205, 50, 0.1);
+}
+
+/* Game Info */
+#status {
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    font-family: Impact, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 0 5px #32CD32;
+    margin: 10px 0;
+}
+
+#move-history {
+    height: 80px;
+    overflow-y: auto;
+    padding: 8px;
+    border-radius: 8px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    border: 1px solid rgba(50, 205, 50, 0.3);
+    font-size: clamp(0.7rem, 1.5vw, 0.8rem);
+    color: white; /* Ensure text visibility */
+    background: rgba(0, 0, 0, 0.7); /* Contrast background */
+    width: 100%;
+    max-width: 400px; /* Match chessboard width */
+    margin: 10px auto; /* Center it */
+}
+
+/* Difficulty Selection */
+#difficulty-screen {
+    width: 100%;
+    padding: 15px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(50, 205, 50, 0.3);
+    background: rgba(0, 0, 0, 0.7);
+}
+
+#difficulty-screen h2 {
+    font-size: clamp(1.2rem, 2vw, 1.5rem);
+    font-family: Impact, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #fff;
+    text-shadow: 0 0 5px #32CD32;
 }
 
 .difficulty-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 15px;
+    gap: 10px;
     justify-content: center;
 }
 
@@ -268,8 +306,8 @@
     border: 2px solid rgba(153, 69, 255, 0.5);
     color: white;
     text-shadow: 0 0 5px rgba(153, 69, 255, 0.5);
-    padding: 10px 20px;
-    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+    padding: 8px 15px;
+    font-size: clamp(0.8rem, 1.5vw, 1rem);
     transition: all 0.3s ease;
     font-family: Impact, sans-serif;
     text-transform: uppercase;
@@ -282,7 +320,7 @@
 .start-btn:hover:not(:disabled) {
     background: rgba(153, 69, 255, 0.3);
     transform: translateY(-2px);
-    box-shadow: 0 0 20px rgba(153, 69, 255, 0.4);
+    box-shadow: 0 0 15px rgba(153, 69, 255, 0.4);
 }
 
 .difficulty-btn:disabled,
@@ -294,76 +332,7 @@
 .difficulty-btn.selected {
     background: rgba(153, 69, 255, 0.4);
     transform: scale(1.05);
-    box-shadow: 0 0 25px rgba(153, 69, 255, 0.5);
-}
-
-/* Game Info */
-.game-info-container {
-    width: 100%;
-    max-width: min(90vw, 600px);
-    margin: 10px auto;
-    display: flex;
-    justify-content: center;
-}
-
-#game-info {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid rgba(50, 205, 50, 0.3);
-    background: rgba(0, 0, 0, 0.7);
-    width: 100%;
-    max-width: 600px;
-    text-align: center;
-}
-
-/* Hide game info when difficulty screen or multiplayer menu is active */
-.game-section.show-difficulty #game-info,
-.game-section.show-multiplayer #game-info {
-    display: none;
-}
-
-#status {
-    font-size: clamp(1.2rem, 3vw, 1.8rem);
-    font-family: Impact, sans-serif;
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    text-shadow: 0 0 5px #32CD32, 0 0 10px #32CD32, 0 0 15px #32CD32;
-}
-
-#move-history {
-    height: 100px;
-    overflow-y: auto;
-    padding: 10px;
-    border-radius: 8px;
-    font-family: monospace;
-    white-space: pre-wrap;
-    border: 1px solid rgba(50, 205, 50, 0.3);
-    font-size: clamp(0.8rem, 2vw, 1rem);
-}
-
-#debug {
-    width: 100%;
-    max-width: 400px;
-    height: 80px;
-    overflow-y: auto;
-    padding: 10px;
-    border-radius: 12px;
-    font-family: monospace;
-    font-size: 0.9rem;
-    margin: 10px auto;
-    border: 1px solid rgba(50, 205, 50, 0.3);
-    text-align: center;
-}
-
-/* Animations */
-@keyframes pulse {
-    0% { opacity: 0.3; transform: scale(0.95); }
-    50% { opacity: 0.6; transform: scale(1); }
-    100% { opacity: 0.3; transform: scale(0.95); }
+    box-shadow: 0 0 20px rgba(153, 69, 255, 0.5);
 }
 
 /* Game Mode Selection Styles */
@@ -371,33 +340,25 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 15px;
-    margin: 15px 0;
-    width: 100%;
-    max-width: 600px;
-}
-
-/* Ensure mode selection remains visible */
-.game-section.show-difficulty .game-mode-selection,
-.game-section.show-multiplayer .game-mode-selection {
-    display: flex; /* Override previous hiding behavior */
+    gap: 10px;
+    margin: 10px 0;
 }
 
 .mode-btn {
     background: rgba(0, 0, 0, 0.7);
     border: 2px solid rgba(50, 205, 50, 0.3);
-    padding: 10px 20px;
+    padding: 8px 15px;
     border-radius: 8px;
     color: white;
     font-family: Impact, sans-serif;
-    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    font-size: clamp(0.9rem, 1.5vw, 1rem);
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
 .mode-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
+    box-shadow: 0 0 10px rgba(50, 205, 50, 0.3);
 }
 
 .mode-btn.selected {
@@ -408,32 +369,46 @@
 /* Multiplayer Menu */
 .multiplayer-menu {
     width: 100%;
-    max-width: 600px;
-    padding: 20px;
+    padding: 15px;
     display: none;
     flex-direction: column;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
     border-radius: 10px;
     border: 1px solid rgba(50, 205, 50, 0.3);
     background: rgba(0, 0, 0, 0.7);
-    margin: 20px 0; /* Add margin to separate from mode selection */
-    z-index: 0; /* Reset z-index to avoid overlap */
-    position: static; /* Remove absolute positioning */
-}
-
-/* Show multiplayer menu when active */
-.game-section.show-multiplayer .multiplayer-menu {
-    display: flex;
 }
 
 .multiplayer-menu h2 {
-    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-size: clamp(1.2rem, 2vw, 1.5rem);
     font-family: Impact, sans-serif;
     text-transform: uppercase;
     letter-spacing: 2px;
     color: #fff;
-    text-shadow: 0 0 5px #32CD32, 0 0 10px #32CD32, 0 0 15px #32CD32;
+    text-shadow: 0 0 5px #32CD32;
+}
+
+/* Join Game Container */
+.join-game-container {
+    margin: 5px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+}
+
+.join-game-container input {
+    width: 100%;
+    max-width: 150px;
+    padding: 6px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(50, 205, 50, 0.3);
+    color: white;
+    border-radius: 4px;
+    font-family: monospace;
+    text-align: center;
+    text-transform: uppercase;
 }
 
 /* Promotion Dialog */
@@ -447,8 +422,8 @@
 }
 
 .promotion-piece {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -493,204 +468,59 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Multiplayer Buttons */
-.multiplayer-btn {
-    background: rgba(50, 205, 50, 0.2);
-    border: 2px solid rgba(50, 205, 50, 0.3);
-    padding: 8px 15px;
-    color: white;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    min-width: 120px;
-    font-family: Impact, sans-serif;
-}
-
-.multiplayer-btn:hover:not(:disabled) {
-    background: rgba(50, 205, 50, 0.3);
-    transform: translateY(-2px);
-    box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
-}
-
-.cancel-btn {
-    background: rgba(255, 0, 0, 0.2);
-    border-color: rgba(255, 0, 0, 0.3);
-}
-
-.cancel-btn:hover {
-    background: rgba(255, 0, 0, 0.3);
-    box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
-}
-
-/* Join Game Container */
-.join-game-container {
-    margin: 10px 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-    align-items: center;
-}
-
-.join-game-container input {
-    width: 100%;
-    max-width: 180px;
-    padding: 8px;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(50, 205, 50, 0.3);
-    color: white;
-    border-radius: 4px;
-    font-family: monospace;
-    text-align: center;
-    text-transform: uppercase;
-}
-
-/* Game Code Display */
-.game-code-display {
-    margin: 10px 0;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.5);
-    border: 2px solid rgba(50, 205, 50, 0.3);
-    border-radius: 5px;
-    display: none;
-    text-align: center;
-}
-
-.game-code-display h4 {
-    color: #32CD32;
-    margin: 0 0 10px 0;
-    font-family: Impact, sans-serif;
-}
-
-.game-code {
-    font-family: monospace;
-    font-size: clamp(1.2rem, 3vw, 1.5rem);
-    color: white;
-    letter-spacing: 2px;
-    cursor: pointer;
-}
-
-.game-code:hover {
-    color: #32CD32;
-}
-
-/* Matchmaking Status */
-#matchmaking-status {
-    margin: 10px 0;
-    padding: 10px;
-    border: 1px solid rgba(50, 205, 50, 0.3);
-    border-radius: 5px;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.status-text {
-    margin-bottom: 10px;
-    color: #32CD32;
-    font-family: monospace;
-}
-
-/* Copy Notification */
-.copy-notification {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(50, 205, 50, 0.9);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    display: none;
-    z-index: 2000;
-    font-family: Impact, sans-serif;
+/* Animations */
+@keyframes pulse {
+    0% { opacity: 0.3; transform: scale(0.95); }
+    50% { opacity: 0.6; transform: scale(1); }
+    100% { opacity: 0.3; transform: scale(0.95); }
 }
 
 /* Mobile Optimizations */
 @media (max-width: 768px) {
+    nav {
+        width: 150px;
+    }
+    .main-container {
+        margin-left: 150px;
+        flex-direction: column;
+    }
     .chess-container {
-        margin-left: 0;
-        max-width: 95%;
+        padding: 10px;
     }
     #chessboard {
-        max-width: min(85vw, calc(100vh - 200px));
-        max-height: calc(100vh - 200px);
-        min-width: 400px;
-        min-height: 400px;
+        width: 300px; /* Smaller fixed size for mobile */
+        height: 300px;
     }
     .piece {
-        min-width: 50px;
-        min-height: 50px;
+        width: 12.5%;
+        height: 12.5%;
     }
-    .username-input {
-        flex-direction: column;
-    }
-    .username-input input {
-        max-width: 300px;
-    }
-    .difficulty-buttons {
-        flex-direction: column;
-    }
-    #status {
-        font-size: 1.4rem;
-    }
-    .difficulty-btn,
-    .start-btn {
-        padding: 8px 16px;
-        font-size: 1rem;
+    .right-panel {
+        width: 100%;
+        height: auto;
+        max-height: 40vh;
     }
     .leaderboard-table th,
     .leaderboard-table td {
         padding: 6px;
         font-size: 0.8rem;
     }
-    #difficulty-screen {
-        width: 90%;
-        max-width: none;
-    }
-    .multiplayer-menu {
-        width: 90%;
-        max-width: none;
-    }
-    .game-mode-selection {
-        flex-direction: column; /* Stack buttons vertically on mobile */
-        gap: 10px;
-    }
-    #difficulty-screen,
-    .multiplayer-menu {
-        margin: 10px 0; /* Reduce margin on mobile */
-    }
-}
-
-@media (max-width: 480px) {
-    #chessboard {
-        max-width: min(90vw, calc(100vh - 150px));
-        max-height: calc(100vh - 150px);
-        min-width: 350px;
-        min-height: 350px;
-    }
-    .piece {
-        min-width: 40px;
-        min-height: 40px;
+    #move-history {
+        height: 60px;
     }
 }
 
 /* Larger Screens */
 @media (min-width: 1200px) {
     #chessboard {
-        max-width: min(80vw, calc(100vh - 250px));
-        max-height: calc(100vh - 250px);
-        min-width: 600px;
-        min-height: 600px;
+        width: 500px; /* Larger fixed size */
+        height: 500px;
     }
     .piece {
-        min-width: 70px;
-        min-height: 70px;
+        width: 12.5%;
+        height: 12.5%;
     }
-    .leaderboard-table th,
-    .leaderboard-table td {
-        padding: 12px;
-        font-size: 1.1rem;
+    .right-panel {
+        width: 350px;
     }
 }
