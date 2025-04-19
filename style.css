@@ -25,12 +25,12 @@ html {
 
 /* Global link styles */
 a, a:link, a:visited {
-    color: #FF0000; /* Red for all links */
-    text-decoration: underline; /* Matches your nav style */
+    color: #FF0000;
+    text-decoration: underline;
 }
 
 a:hover, a:active {
-    color: #FFFF00; /* Yellow on hover, consistent with nav */
+    color: #FFFF00;
 }
 
 /* Navigation */
@@ -132,13 +132,13 @@ nav a:hover {
 
 /* Specific styles for #lore section */
 #lore.section {
-    width: 50%; /* Half of the default 100% */
-    max-width: 50%; /* Ensures it doesn’t exceed half the parent’s width */
+    width: 50%;
+    max-width: 50%;
 }
 
 #lore .section-image {
-    max-width: 50%; /* Half of the container’s width */
-    height: auto; /* Maintains aspect ratio */
+    max-width: 50%;
+    height: auto;
 }
 
 /* Search Container */
@@ -270,21 +270,21 @@ marquee {
     cursor: pointer;
     display: inline-block;
     margin: 5px;
-    width: clamp(80px, 20vw, 100px); /* Responsive width */
+    width: clamp(80px, 20vw, 100px);
     height: auto;
-    border: 2px solid #FF0000; /* Matches your theme */
+    border: 2px solid #FF0000;
     border-radius: 5px;
-    transition: transform 0.3s ease, border-color 0.3s ease; /* Smooth transitions */
+    transition: transform 0.3s ease, border-color 0.3s ease;
 }
 
 .gif-button:hover {
     transform: scale(1.1);
-    border-color: #FFFF00; /* Yellow hover to match nav links */
+    border-color: #FFFF00;
 }
 
 .gif-button:active {
     transform: scale(0.95);
-    border-color: #cc0000; /* Darker red on click */
+    border-color: #cc0000;
 }
 
 /* Video Section */
@@ -390,54 +390,6 @@ marquee {
     height: auto;
     border-radius: 15px;
     box-shadow: 0 0 15px rgba(50, 205, 50, 0.3);
-}
-
-/* Game Section */
-.game-section {
-    margin: 20px auto;
-    width: 100%;
-    max-width: 1200px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.game-section h2 {
-    color: #FF0000;
-    margin-bottom: 8px;
-    font-size: clamp(1.5rem, 4vw, 2rem);
-}
-
-.game-section p {
-    margin-bottom: 10px;
-    font-size: clamp(0.9rem, 2.5vw, 1rem);
-}
-
-#game-container {
-    width: 100%;
-    max-width: 800px;
-    height: clamp(300px, 80vw, 600px);
-    margin: 0 auto;
-    border: 2px solid #FF0000;
-    border-radius: 5px;
-    overflow: hidden;
-}
-
-#start-game-button {
-    display: block;
-    margin: 20px auto;
-    padding: 10px 20px;
-    font-size: 24px;
-    background-color: #FF0000;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-#start-game-button:hover {
-    background-color: #cc0000;
 }
 
 /* Mint Section */
@@ -725,6 +677,16 @@ marquee {
     margin: 0 auto !important;
 }
 
+/* Purity Finance Text */
+.purity-text {
+    color: #FF0000;
+    font-family: 'Impact', sans-serif;
+    font-size: clamp(0.8rem, 2vw, 1rem);
+    margin: 10px 0;
+    text-align: center;
+    text-transform: uppercase;
+}
+
 /* Media Queries */
 @media (max-width: 768px) {
     nav {
@@ -766,11 +728,6 @@ marquee {
     .section .twitter-tweet {
         max-width: 90% !important;
     }
-
-    .game-section {
-        margin-left: 0;
-        max-width: 95%;
-    }
 }
 
 @media (max-width: 480px) {
@@ -792,10 +749,5 @@ marquee {
 
     .section .twitter-tweet {
         max-width: 95% !important;
-    }
-
-    .game-section {
-        margin-left: 0;
-        max-width: 95%;
     }
 }
