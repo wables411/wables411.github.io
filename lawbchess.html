@@ -117,7 +117,6 @@
             font-family: Impact, sans-serif;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
-        /* Chess-specific styles */
         #chessboard {
             width: 400px;
             height: 400px;
@@ -166,6 +165,7 @@
                     <button class="multiplayer-btn" id="join-game">Join Game</button>
                     <input type="number" id="wagerAmount" placeholder="Wager amount in tDMT (0.1–1000)" min="0.1" max="1000" step="0.1">
                     <button class="multiplayer-btn" id="leave-game">Leave Game</button>
+                    <button class="multiplayer-btn" id="force-leave-game">Force Leave Game</button>
                 </div>
                 <div id="gameCodeDisplay" class="game-code-display">
                     <h4>Share this code with opponent:</h4>
@@ -189,7 +189,7 @@
                 <h2 class="leaderboard-title">🦞🦞🦞🦞</h2>
                 <div class="wallet-connection">
                     <div class="wallet-buttons"></div>
-                    <div id="wallet-address" class="wallet-address" style="display: none;"></div>
+                    <div id="walletAddress" class="wallet-address" style="display: none;"></div>
                     <button id="disconnect-wallet" class="wallet-btn" style="display: none;">Disconnect Wallet</button>
                 </div>
                 <div class="leaderboard-table">
@@ -217,7 +217,15 @@
         console.log('Starting Supabase initialization...');
         window.gameDatabase = window.supabase.createClient(
             'https://roxwocgknkiqnsgiojgz.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y'
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHdvY2drbmtpcW5zZ2lvamd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NjMxMTIsImV4cCI6MjA0NjMzOTExMn0.NbLMZom-gk7XYGdV4MtXYcgR8R1s8xthrIQ0hpQfx9Y',
+            {
+                db: { schema: 'public' },
+                auth: { autoRefreshToken: true, persistSession: true },
+                realtime: {
+                    params: { eventsPerSecond: 10, maxBufferSize: 100000 },
+                    heartbeatIntervalMs: 30000
+                }
+            }
         );
 
         async function waitForSupabase() {
@@ -235,30 +243,6 @@
             }
         }
 
-        // Wallet Connector
-        class WalletConnector {
-            async connectEVMWallet() {
-                if (!window.ethereum) {
-                    alert("Please install MetaMask!");
-                    return null;
-                }
-                try {
-                    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-                    localStorage.setItem("currentPlayer", accounts[0]);
-                    document.dispatchEvent(new CustomEvent("walletConnected", { detail: { address: accounts[0] } }));
-                    return accounts[0];
-                } catch (error) {
-                    console.error("Wallet connection failed:", error);
-                    return null;
-                }
-            }
-            disconnectWallet() {
-                localStorage.removeItem("currentPlayer");
-                document.dispatchEvent(new CustomEvent("walletDisconnected"));
-            }
-        }
-        window.walletConnector = new WalletConnector();
-
         // Import Modules
         import './leaderboard.js';
         import './multiplayer.js';
@@ -275,51 +259,90 @@
             if (typeof window.initGame === 'function') {
                 window.initGame();
             }
-            // Add Connect Wallet button
-            const walletButtons = document.querySelector('.wallet-buttons');
-            const connectBtn = document.createElement('button');
-            connectBtn.className = 'wallet-btn';
-            connectBtn.textContent = 'Connect MetaMask';
-            connectBtn.addEventListener('click', () => window.walletConnector.connectEVMWallet());
-            walletButtons.appendChild(connectBtn);
         }
 
-        document.addEventListener('DOMContentLoaded', initializeGame);
-
-        // Minimal UI Event Handlers
+        // Enhanced DOMContentLoaded with robust wallet UI initialization
         document.addEventListener('DOMContentLoaded', function() {
-            const disconnectWalletBtn = document.getElementById('disconnect-wallet');
-            if (disconnectWalletBtn) {
-                disconnectWalletBtn.addEventListener('click', () => {
-                    if (window.walletConnector) {
-                        window.walletConnector.disconnectWallet();
-                        document.getElementById('wallet-address').style.display = 'none';
-                        disconnectWalletBtn.style.display = 'none';
-                        document.querySelector('.wallet-buttons').style.display = 'flex';
-                        document.getElementById('difficulty-screen').style.display = 'none';
-                        document.getElementById('status').textContent = 'Connect to play';
-                    }
+            initializeGame();
+
+            const initializeWalletUI = (attempt = 1, maxAttempts = 10, delay = 1500) => {
+                console.log(`Wallet UI init attempt ${attempt}, document.readyState: ${document.readyState}`);
+                const elements = {
+                    disconnectWalletBtn: document.getElementById('disconnect-wallet'),
+                    addressDisplay: document.getElementById('walletAddress'),
+                    walletButtons: document.querySelector('.wallet-buttons'),
+                    difficultyScreen: document.getElementById('difficulty-screen'),
+                    statusElement: document.getElementById('status'),
+                    aiModeBtn: document.getElementById('ai-mode')
+                };
+                console.log('Wallet UI elements:', {
+                    disconnectWalletBtn: !!elements.disconnectWalletBtn,
+                    addressDisplay: !!elements.addressDisplay,
+                    walletButtons: !!elements.walletButtons
                 });
-            } else {
-                console.log('disconnectWalletBtn not found.');
-            }
-
-            document.addEventListener('walletConnected', (e) => {
-                const { address } = e.detail;
-                document.getElementById('wallet-address').textContent = address;
-                document.getElementById('wallet-address').style.display = 'block';
-                document.querySelector('.wallet-buttons').style.display = 'none';
-                document.getElementById('disconnect-wallet').style.display = 'block';
-                if (document.getElementById('ai-mode').classList.contains('selected')) {
-                    document.getElementById('difficulty-screen').style.display = 'flex';
+                if (!elements.addressDisplay || !elements.walletButtons) {
+                    if (attempt <= maxAttempts) {
+                        console.warn(`Critical wallet UI elements not found, retrying in ${delay}ms (attempt ${attempt}/${maxAttempts})`);
+                        setTimeout(() => initializeWalletUI(attempt + 1, maxAttempts, delay), delay);
+                        return;
+                    } else {
+                        console.error('Critical wallet UI elements not found after max attempts.');
+                        return;
+                    }
                 }
-            });
+                console.log('Wallet UI elements found, setting up event listeners');
+                if (elements.disconnectWalletBtn) {
+                    elements.disconnectWalletBtn.style.display = localStorage.getItem('currentPlayer') ? 'block' : 'none';
+                    elements.disconnectWalletBtn.addEventListener('click', () => {
+                        if (window.walletConnector) {
+                            window.walletConnector.disconnectWallet();
+                            elements.addressDisplay.style.display = 'none';
+                            elements.disconnectWalletBtn.style.display = 'none';
+                            elements.walletButtons.style.display = 'flex';
+                            elements.difficultyScreen.style.display = 'none';
+                            elements.statusElement.textContent = 'Connect to play';
+                        }
+                    });
+                }
+                if (elements.aiModeBtn) {
+                    elements.aiModeBtn.addEventListener('click', () => {
+                        window.location.href = '/';
+                    });
+                }
+                document.addEventListener('walletConnected', (event) => {
+                    const { address } = event.detail;
+                    elements.addressDisplay.textContent = `Connected [DMT]: ${address.slice(0, 4)}...${address.slice(-4)}`;
+                    elements.addressDisplay.style.display = 'block';
+                    elements.walletButtons.style.display = 'none';
+                    if (elements.disconnectWalletBtn) {
+                        elements.disconnectWalletBtn.style.display = 'block';
+                    }
+                    if (elements.aiModeBtn?.classList.contains('selected')) {
+                        elements.difficultyScreen.style.display = 'flex';
+                    }
+                    elements.statusElement.textContent = 'Connected. Checking for active game...';
+                });
+                document.addEventListener('walletDisconnected', () => {
+                    elements.addressDisplay.style.display = 'none';
+                    elements.difficultyScreen.style.display = 'none';
+                    const multiplayerMenu = document.querySelector('.multiplayer-menu');
+                    if (multiplayerMenu) multiplayerMenu.style.display = 'none';
+                    const chessGame = document.getElementById('chess-game');
+                    if (chessGame) chessGame.style.display = 'none';
+                    elements.statusElement.textContent = 'Connect to play';
+                    if (elements.disconnectWalletBtn) {
+                        elements.disconnectWalletBtn.style.display = 'none';
+                    }
+                    elements.walletButtons.style.display = 'flex';
+                });
+                console.log('Wallet UI initialization complete');
+            };
 
-            document.addEventListener('walletDisconnected', () => {
-                document.getElementById('difficulty-screen').style.display = 'none';
-                document.querySelector('.multiplayer-menu').style.display = 'none';
-                document.getElementById('chess-game').style.display = 'none';
-            });
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                initializeWalletUI();
+            } else {
+                document.addEventListener('DOMContentLoaded', initializeWalletUI);
+            }
         });
     </script>
 </body>

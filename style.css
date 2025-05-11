@@ -751,3 +751,52 @@ marquee {
         max-width: 95% !important;
     }
 }
+
+.multiplayer-menu {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+}
+
+.multiplayer-menu.show {
+    display: flex !important;
+}
+
+#difficulty-screen,
+#chess-game,
+#wallet-connection {
+    display: none;
+}
+
+#difficulty-screen.show,
+#chess-game.show,
+#wallet-connection.show {
+    display: flex;
+}
+
+.multiplayer-menu {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+}
+
+.multiplayer-menu.show {
+    display: flex !important;
+    visibility: visible !important;
+}

@@ -1,3 +1,4 @@
+// chess.js
 // Game modes and state
 const GameMode = {
     AI: 'ai',
@@ -37,7 +38,7 @@ window.initialBoard = initialBoard;
 window.board = JSON.parse(JSON.stringify(initialBoard));
 window.currentPlayer = 'blue';
 window.isMultiplayerMode = false;
-window.playerColor = null;
+window.playerColor = 'blue'; // Changed: Default to 'blue' for single-player
 
 // Piece movement tracking
 const pieceState = {
@@ -88,12 +89,14 @@ function debug(message) {
 }
 
 function updateStatusDisplay(message) {
+    if (message === "It's-not-your-turn!" && currentGameMode === "ai") {
+        debug(`updateStatusDisplay: Blocking 'It's-not-your-turn!' in AI mode, currentGameMode=${currentGameMode}`);
+        return;
+    }
+    debug(`updateStatusDisplay: Setting status to '${message}'`);
     const statusElement = document.getElementById('status');
     if (statusElement) {
         statusElement.textContent = message;
-        debug(`Status updated: ${message}`);
-    } else {
-        debug('Status element not found');
     }
 }
 
@@ -231,6 +234,31 @@ function highlightSquare(row, col, isCapture = false) {
     document.getElementById('chessboard').appendChild(square);
 }
 
+window.getLegalMoves = function(row, col) {
+    const piece = window.board[row][col];
+    if (!piece) return [];
+    const color = getPieceColor(piece);
+    const legalMoves = [];
+    for (let endRow = 0; endRow < BOARD_SIZE; endRow++) {
+        for (let endCol = 0; endCol < BOARD_SIZE; endCol++) {
+            if (canPieceMove(piece, row, col, endRow, endCol)) {
+                legalMoves.push({ row: endRow, col: endCol });
+            }
+        }
+    }
+    return legalMoves;
+};
+
+window.showLegalMoves = function(row, col) {
+    debug(`Showing legal moves for piece at [${row},${col}]`);
+    removeHighlights();
+    const legalMoves = getLegalMoves(row, col);
+    legalMoves.forEach(move => {
+        const isCapture = !!window.board[move.row][move.col];
+        highlightSquare(move.row, move.col, isCapture);
+    });
+};
+
 function removeHighlights() {
     const highlights = document.querySelectorAll('.highlight');
     highlights.forEach(highlight => highlight.remove());
@@ -258,30 +286,63 @@ function canMakeMove(startRow, startCol, endRow, endCol) {
     return canPieceMove(piece, startRow, startCol, endRow, endCol);
 }
 
-function canPieceMove(piece, startRow, startCol, endRow, endCol, checkForCheck = true) {
-    if (!piece) return false;
+function canPieceMove(piece, startRow, startCol, endRow, endCol, checkForCheck = true, playerColor = getPieceColor(piece)) {
+    debug(`canPieceMove: Checking move for ${piece} from [${startRow},${startCol}] to [${endRow},${endCol}] for playerColor=${playerColor}`);
+    
+    if (!piece) {
+        debug(`canPieceMove: No piece at [${startRow},${startCol}]`);
+        return false;
+    }
     
     const pieceType = piece.toLowerCase();
     const color = getPieceColor(piece);
     
-    if (!isWithinBoard(endRow, endCol) || (startRow === endRow && startCol === endCol)) return false;
+    if (color !== playerColor) {
+        debug(`canPieceMove: Piece color ${color} does not match playerColor ${playerColor}`);
+        return false;
+    }
+    
+    if (!isWithinBoard(endRow, endCol) || (startRow === endRow && startCol === endCol)) {
+        debug(`canPieceMove: Invalid destination [${endRow},${endCol}] or same square`);
+        return false;
+    }
     
     const targetPiece = window.board[endRow][endCol];
-    if (targetPiece && getPieceColor(targetPiece) === color) return false;
+    if (targetPiece && getPieceColor(targetPiece) === playerColor) {
+        debug(`canPieceMove: Cannot capture own piece ${targetPiece} at [${endRow},${endCol}]`);
+        return false;
+    }
 
     let isValid = false;
     switch (pieceType) {
-        case 'p': isValid = isValidPawnMove(color, startRow, startCol, endRow, endCol); break;
+        case 'p': 
+            isValid = isValidPawnMove(playerColor, startRow, startCol, endRow, endCol);
+            if (isValid && targetPiece) {
+                debug(`canPieceMove: Pawn capture valid to ${targetPiece} at [${endRow},${endCol}]`);
+            }
+            break;
         case 'r': isValid = isValidRookMove(startRow, startCol, endRow, endCol); break;
-        case 'n': isValid = isValidKnightMove(startRow, startCol, endRow, endCol); break;
+        case 'n': 
+            isValid = isValidKnightMove(startRow, startCol, endRow, endCol);
+            if (isValid && targetPiece) {
+                debug(`canPieceMove: Knight capture valid to ${targetPiece} at [${endRow},${endCol}]`);
+            }
+            break;
         case 'b': isValid = isValidBishopMove(startRow, startCol, endRow, endCol); break;
         case 'q': isValid = isValidQueenMove(startRow, startCol, endRow, endCol); break;
-        case 'k': isValid = isValidKingMove(color, startRow, startCol, endRow, endCol); break;
+        case 'k': isValid = isValidKingMove(playerColor, startRow, startCol, endRow, endCol); break;
     }
 
-    if (!isValid) return false;
-    if (checkForCheck && wouldMoveExposeCheck(startRow, startCol, endRow, endCol, color)) return false;
+    debug(`canPieceMove: Piece ${piece} from [${startRow},${startCol}] to [${endRow},${endCol}] isValid=${isValid}`);
 
+    if (!isValid) return false;
+    
+    if (checkForCheck && wouldMoveExposeCheck(startRow, startCol, endRow, endCol, playerColor)) {
+        debug(`canPieceMove: Move [${startRow},${startCol}] to [${endRow},${endCol}] exposes check for ${playerColor}`);
+        return false;
+    }
+
+    debug(`canPieceMove: Move [${startRow},${startCol}] to [${endRow},${endCol}] allowed for ${playerColor}`);
     return true;
 }
 
@@ -506,12 +567,15 @@ function getAllLegalMoves(color) {
 
 // AI Move Selection
 function makeAIMove() {
-    debug('Making AI move...');
-    if (currentGameMode !== GameMode.AI || window.currentPlayer !== 'red' || window.isMultiplayerMode) {
+    if (window.isMultiplayerMode) {
+        debug('AI move skipped in multiplayer mode');
+        return;
+    }
+    if (currentGameMode !== GameMode.AI || window.currentPlayer !== 'red') {
         debug('Conditions not met for AI move');
         return;
     }
-
+    debug('Making AI move...');
     const inCheck = isKingInCheck('red');
     debug(`AI thinking... (in check: ${inCheck}, difficulty: ${gameDifficulty})`);
 
@@ -554,22 +618,77 @@ window.makeAIMove = makeAIMove;
 
 // UI Event Handlers
 function onPieceClick(event) {
-    if (!checkGameAccess()) return;
-    if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') return;
-    if (gameState !== 'active' && gameState !== 'check') return;
+    debug(`onPieceClick: Piece clicked, isMultiplayerMode: ${window.isMultiplayerMode}, playerColor: ${window.playerColor}, currentPlayer: ${window.currentPlayer}, gameMode: ${currentGameMode}`);
+    
+    if (!checkGameAccess()) {
+        debug('onPieceClick: Game access denied');
+        return;
+    }
+    
+    if (window.isMultiplayerMode) {
+        // Multiplayer mode: Check turn and delegate to MultiplayerManager
+        debug(`onPieceClick: Multiplayer mode, checking turn for playerColor=${window.playerColor}`);
+        if (window.playerColor !== window.currentPlayer) {
+            debug(`onPieceClick: Not your turn, currentPlayer=${window.currentPlayer}`);
+            updateStatusDisplay("It's not your turn!");
+            return;
+        }
+    } else {
+        // Single-player mode: Player is blue, allow moves when currentPlayer is blue
+        debug(`onPieceClick: Non-multiplayer mode, gameMode=${currentGameMode}, currentPlayer=${window.currentPlayer}`);
+        if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') {
+            debug('onPieceClick: AI mode, not Blue’s turn');
+            updateStatusDisplay("It's the AI's turn!");
+            return;
+        }
+    }
+    
+    if (gameState !== 'active' && gameState !== 'check') {
+        debug('onPieceClick: Game not active or in check');
+        updateStatusDisplay("Game is not active!");
+        return;
+    }
 
     const clickedPiece = event.target;
     const row = parseInt(clickedPiece.getAttribute('data-row'));
     const col = parseInt(clickedPiece.getAttribute('data-col'));
     const piece = window.board[row][col];
     const pieceColor = getPieceColor(piece);
-
-    if (selectedPiece && pieceColor !== window.currentPlayer) {
+    
+    debug(`onPieceClick: Clicked piece ${piece} at [${row},${col}], pieceColor=${pieceColor}`);
+    
+    // In single-player mode, default playerColor to 'blue' if null
+    const effectivePlayerColor = window.isMultiplayerMode ? window.playerColor : (window.playerColor || 'blue');
+    
+    if (selectedPiece && pieceColor !== effectivePlayerColor) {
         const startRow = parseInt(selectedPiece.getAttribute('data-row'));
         const startCol = parseInt(selectedPiece.getAttribute('data-col'));
-        if (canPieceMove(window.board[startRow][startCol], startRow, startCol, row, col)) {
-            executeMove(startRow, startCol, row, col);
+        const startPiece = window.board[startRow][startCol];
+        debug(`onPieceClick: Attempting move from [${startRow},${startCol}] (${startPiece}) to [${row},${col}] (${piece})`);
+        
+        if (canPieceMove(startPiece, startRow, startCol, row, col, true, effectivePlayerColor)) {
+            debug(`onPieceClick: Move valid, calling ${window.isMultiplayerMode ? 'multiplayerManager.handleMove' : 'executeMove'}`);
+            if (window.isMultiplayerMode) {
+                if (startPiece.toLowerCase() === 'p' && (row === 0 || row === 7)) {
+                    promptPawnPromotion(startRow, startCol, row, col);
+                } else {
+                    debug(`onPieceClick: Calling multiplayerManager.handleMove, typeof: ${typeof window.multiplayerManager?.handleMove}`);
+                    if (typeof window.multiplayerManager?.handleMove === 'function') {
+                        window.multiplayerManager.handleMove({ startRow, startCol, endRow: row, endCol: col });
+                    } else {
+                        debug('onPieceClick: multiplayerManager.handleMove not available');
+                        updateStatusDisplay('Error: Multiplayer move handler not available');
+                    }
+                }
+            } else if (startPiece.toLowerCase() === 'p' && (row === 0 || row === 7)) {
+                promptPawnPromotion(startRow, startCol, row, col);
+            } else {
+                executeMove(startRow, startCol, row, col);
+            }
+        } else {
+            debug(`onPieceClick: Move invalid from [${startRow},${startCol}] to [${row},${col}]`);
         }
+        
         selectedPiece.style.opacity = '1';
         selectedPiece = null;
         removeHighlights();
@@ -581,48 +700,122 @@ function onPieceClick(event) {
         removeHighlights();
     }
     
-    if (pieceColor === window.currentPlayer) {
+    if (pieceColor === effectivePlayerColor) {
         if (selectedPiece === clickedPiece) {
+            debug(`onPieceClick: Deselecting piece ${piece} at [${row},${col}]`);
             selectedPiece = null;
         } else {
+            debug(`onPieceClick: Selecting piece ${piece} at [${row},${col}]`);
             selectedPiece = clickedPiece;
             clickedPiece.style.opacity = '0.7';
             const validMoves = getAllLegalMoves(pieceColor).filter(m => m.startRow === row && m.startCol === col);
             validMoves.forEach(move => highlightSquare(move.endRow, move.endCol, move.isCapture));
         }
+    } else {
+        debug(`onPieceClick: Cannot select piece ${piece} at [${row},${col}], wrong color`);
+        updateStatusDisplay("Select your own pieces!");
     }
 }
 
 function onSquareClick(row, col) {
-    if (!checkGameAccess()) return;
-    if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') return;
-    if (gameState !== 'active' && gameState !== 'check') return;
+    debug(`onSquareClick: Square [${row},${col}] clicked, isMultiplayerMode: ${window.isMultiplayerMode}, playerColor: ${window.playerColor}, currentPlayer: ${window.currentPlayer}, gameMode: ${currentGameMode}`);
+    debug(`onSquareClick: GameMode.AI=${GameMode.AI}, GameMode.ONLINE=${GameMode.ONLINE}, board[${row}][${col}]=${window.board[row][col]}`);
+    
+    if (!checkGameAccess()) {
+        debug('onSquareClick: Game access denied');
+        return;
+    }
+    
+    if (window.isMultiplayerMode) {
+        // Multiplayer mode: Check turn
+        debug(`onSquareClick: Multiplayer mode, checking turn for playerColor=${window.playerColor}`);
+        if (window.playerColor !== window.currentPlayer) {
+            debug(`onSquareClick: Not your turn, currentPlayer=${window.currentPlayer}`);
+            updateStatusDisplay("It's not your turn!");
+            return;
+        }
+    } else {
+        // Single-player mode: Allow moves when currentPlayer is blue
+        debug(`onSquareClick: Non-multiplayer mode, gameMode=${currentGameMode}, currentPlayer=${window.currentPlayer}`);
+        if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') {
+            debug('onSquareClick: AI mode, not Blue’s turn');
+            updateStatusDisplay("It's the AI's turn!");
+            return;
+        }
+    }
+    
+    if (gameState !== 'active' && gameState !== 'check') {
+        debug('onSquareClick: Game not active or in check');
+        updateStatusDisplay("Game is not active!");
+        return;
+    }
     
     if (selectedPiece) {
         const startRow = parseInt(selectedPiece.getAttribute('data-row'));
         const startCol = parseInt(selectedPiece.getAttribute('data-col'));
         const piece = window.board[startRow][startCol];
+        const targetPiece = window.board[row][col];
         
-        if (canPieceMove(piece, startRow, startCol, row, col)) {
-            if (piece.toLowerCase() === 'p' && (row === 0 || row === 7)) {
+        debug(`onSquareClick: Attempting move from [${startRow},${startCol}] (${piece}) to [${row},${col}] (${targetPiece})`);
+        
+        // Use effectivePlayerColor for single-player mode
+        const effectivePlayerColor = window.isMultiplayerMode ? window.playerColor : (window.playerColor || 'blue');
+        
+        if (canPieceMove(piece, startRow, startCol, row, col, true, effectivePlayerColor)) {
+            debug(`onSquareClick: Move valid, calling ${window.isMultiplayerMode ? 'multiplayerManager.handleMove' : 'executeMove'}`);
+            if (window.isMultiplayerMode) {
+                if (piece.toLowerCase() === 'p' && (row === 0 || row === 7)) {
+                    promptPawnPromotion(startRow, startCol, row, col);
+                } else {
+                    debug(`onSquareClick: Calling multiplayerManager.handleMove, typeof: ${typeof window.multiplayerManager?.handleMove}`);
+                    if (typeof window.multiplayerManager?.handleMove === 'function') {
+                        window.multiplayerManager.handleMove({ startRow, startCol, endRow: row, endCol: col });
+                    } else {
+                        debug('onSquareClick: multiplayerManager.handleMove not available');
+                        updateStatusDisplay('Error: Multiplayer move handler not available');
+                    }
+                }
+            } else if (piece.toLowerCase() === 'p' && (row === 0 || row === 7)) {
                 promptPawnPromotion(startRow, startCol, row, col);
             } else {
                 executeMove(startRow, startCol, row, col);
             }
+        } else {
+            debug(`onSquareClick: Move invalid from [${startRow},${startCol}] to [${row},${col}]`);
         }
         
         selectedPiece.style.opacity = '1';
         selectedPiece = null;
         removeHighlights();
+    } else {
+        const piece = window.board[row][col];
+        const effectivePlayerColor = window.isMultiplayerMode ? window.playerColor : (window.playerColor || 'blue');
+        if (piece && getPieceColor(piece) === effectivePlayerColor) {
+            debug(`onSquareClick: Selecting piece ${piece} at [${row},${col}]`);
+            selectedPiece = document.querySelector(`.piece[data-row="${row}"][data-col="${col}"]`);
+            if (selectedPiece) {
+                selectedPiece.style.opacity = '0.7';
+                showLegalMoves(row, col);
+            }
+        } else {
+            debug(`onSquareClick: No selectable piece at [${row},${col}]`);
+        }
     }
 }
 
 function promptPawnPromotion(startRow, startCol, endRow, endCol) {
+    debug(`promptPawnPromotion: Showing promotion dialog for move from [${startRow},${startCol}] to [${endRow},${endCol}]`);
+    
+    // Remove any existing promotion dialogs to prevent stacking
+    const existingDialogs = document.querySelectorAll('.promotion-dialog');
+    existingDialogs.forEach(dialog => dialog.remove());
+    
     const dialog = document.createElement('div');
     dialog.className = 'promotion-dialog';
     dialog.style.position = 'absolute';
     dialog.style.top = `${endRow * 12.5}%`;
     dialog.style.left = `${endCol * 12.5}%`;
+    dialog.style.zIndex = '1000'; // Ensure dialog is on top
     
     const pieces = ['q', 'r', 'n', 'b'];
     const currentColor = window.currentPlayer;
@@ -633,8 +826,31 @@ function promptPawnPromotion(startRow, startCol, endRow, endCol) {
         const promotedPiece = currentColor === 'blue' ? piece : piece.toUpperCase();
         pieceButton.style.backgroundImage = `url('${pieceImages[promotedPiece]}')`;
         pieceButton.onclick = () => {
-            executeMove(startRow, startCol, endRow, endCol, promotedPiece);
-            dialog.remove();
+            debug(`promptPawnPromotion: Promoting to ${promotedPiece} in ${window.isMultiplayerMode ? 'multiplayer' : 'AI'} mode`);
+            try {
+                if (window.isMultiplayerMode) {
+                    if (typeof window.multiplayerManager?.handleMove === 'function') {
+                        window.multiplayerManager.handleMove({ 
+                            startRow, 
+                            startCol, 
+                            endRow, 
+                            endCol, 
+                            promotionPiece: promotedPiece 
+                        });
+                    } else {
+                        debug('promptPawnPromotion: multiplayerManager.handleMove not available');
+                        updateStatusDisplay('Error: Multiplayer move handler not available');
+                    }
+                } else {
+                    executeMove(startRow, startCol, endRow, endCol, promotedPiece);
+                }
+            } catch (error) {
+                debug(`promptPawnPromotion: Error during promotion: ${error.message}`);
+            } finally {
+                // Ensure dialog is removed even if an error occurs
+                debug('promptPawnPromotion: Removing promotion dialog');
+                dialog.remove();
+            }
         };
         dialog.appendChild(pieceButton);
     });
@@ -696,13 +912,35 @@ function updateMoveHistory() {
     debug(`Move history updated with ${moveHistory.length} moves: ${historyText}`);
 }
 
-function executeMove(startRow, startCol, endRow, endCol, promotionPiece = null) {
-    if (!canMakeMove(startRow, startCol, endRow, endCol)) return false;
+async function executeMove(startRow, startCol, endRow, endCol, promotionPiece = null) {
+    if (!canMakeMove(startRow, startCol, endRow, endCol)) {
+        debug(`Invalid move: [${startRow},${startCol}] to [${endRow},${endCol}]`);
+        return false;
+    }
+
+    debug(`Executing move: [${startRow},${startCol}] to [${endRow},${endCol}], promotion: ${promotionPiece}, isMultiplayerMode: ${window.isMultiplayerMode}, currentGameMode: ${currentGameMode}`);
+
+    if (window.isMultiplayerMode && window.multiplayerManager) {
+        debug("Delegating move to MultiplayerManager");
+        const success = await window.multiplayerManager.handleMove({
+            startRow,
+            startCol,
+            endRow,
+            endCol,
+            promotionPiece
+        });
+        if (!success) {
+            debug("Multiplayer move failed");
+            updateStatusDisplay("Failed to process move. Please try again.");
+            return false;
+        }
+        return true;
+    }
 
     const piece = window.board[startRow][startCol];
     const color = getPieceColor(piece);
     const capturedPiece = window.board[endRow][endCol];
-    
+
     if (promotionPiece) {
         window.board[endRow][endCol] = promotionPiece;
     } else {
@@ -735,28 +973,57 @@ function executeMove(startRow, startCol, endRow, endCol, promotionPiece = null) 
         }
     }
 
+    if (piece.toLowerCase() === 'p' && Math.abs(startRow - endRow) === 2) {
+        pieceState.lastPawnDoubleMove = { row: endRow, col: endCol };
+    } else {
+        pieceState.lastPawnDoubleMove = null;
+    }
+
     addMoveToHistory(piece, startRow, startCol, endRow, endCol, capturedPiece);
     updateMoveHistory();
-    
+
     requestAnimationFrame(() => {
         window.placePieces();
         window.currentPlayer = window.currentPlayer === 'blue' ? 'red' : 'blue';
-        
+        debug(`executeMove: After player switch, currentPlayer=${window.currentPlayer}, currentGameMode=${currentGameMode}, isMultiplayerMode=${window.isMultiplayerMode}`);
+
         if (isCheckmate(window.currentPlayer)) {
+            debug("executeMove: Checkmate detected");
             endGame(color);
         } else if (isStalemate(window.currentPlayer)) {
+            debug("executeMove: Stalemate detected");
             endGame('draw');
         } else if (isKingInCheck(window.currentPlayer)) {
+            debug("executeMove: King in check");
             gameState = 'check';
             updateStatusDisplay(`${window.currentPlayer.charAt(0).toUpperCase() + window.currentPlayer.slice(1)} is in check!`);
-            if (currentGameMode === GameMode.AI && window.currentPlayer === 'red') {
+            if (currentGameMode === "ai" && window.currentPlayer === 'red') {
+                debug("executeMove: Triggering AI move in check");
                 setTimeout(makeAIMove, 500);
             }
         } else {
+            debug("executeMove: Game active, setting status");
             gameState = 'active';
-            updateStatusDisplay(`${window.currentPlayer.charAt(0).toUpperCase() + window.currentPlayer.slice(1)}'s turn`);
-            if (currentGameMode === GameMode.AI && window.currentPlayer === 'red') {
-                setTimeout(makeAIMove, 500);
+            if (currentGameMode === "ai") {
+                if (window.currentPlayer === 'red') {
+                    debug("executeMove: AI mode, red's turn, setting 'It's the AI's turn!'");
+                    updateStatusDisplay("It's the AI's turn!");
+                    setTimeout(makeAIMove, 500);
+                } else {
+                    debug("executeMove: AI mode, blue's turn, setting 'Blue's turn'");
+                    updateStatusDisplay("Blue's turn");
+                }
+            } else if (window.isMultiplayerMode) {
+                if (window.currentPlayer !== window.playerColor) {
+                    debug("executeMove: Multiplayer mode, not player's turn, setting 'It's not your turn!'");
+                    updateStatusDisplay("It's not your turn!");
+                } else {
+                    debug("executeMove: Multiplayer mode, player's turn, setting player's turn");
+                    updateStatusDisplay(`${window.currentPlayer.charAt(0).toUpperCase() + window.currentPlayer.slice(1)}'s turn`);
+                }
+            } else {
+                debug("executeMove: Default case, setting generic turn status");
+                updateStatusDisplay(`${window.currentPlayer.charAt(0).toUpperCase() + window.currentPlayer.slice(1)}'s turn`);
             }
         }
     });
@@ -777,6 +1044,13 @@ function endGame(winner) {
             player: window.currentPlayer === 'blue' ? 'red' : 'blue',
             mode: currentGameMode,
             difficulty: gameDifficulty
+        });
+    }
+
+    // Notify MultiplayerManager of game end
+    if (window.isMultiplayerMode && window.multiplayerManager) {
+        window.multiplayerManager.handleGameEnd({
+            winner: winner === 'blue' ? window.currentGameState?.blue_player : winner === 'red' ? window.currentGameState?.red_player : null
         });
     }
 }
@@ -832,40 +1106,86 @@ function setupDifficultyButtons() {
 }
 
 function setupModeButtons() {
-    debug('Setting up mode buttons...');
-    const { buttons } = initializeElements();
-    const { aiModeBtn, multiplayerModeBtn } = buttons;
-    
-    if (aiModeBtn && multiplayerModeBtn) {
-        aiModeBtn.onclick = () => {
-            currentGameMode = GameMode.AI;
-            window.isMultiplayerMode = false;
-            aiModeBtn.classList.add('selected');
-            multiplayerModeBtn.classList.remove('selected');
-            resetGame();
-            setupDifficultyButtons();
-            debug('Switched to AI mode');
-        };
-        multiplayerModeBtn.onclick = () => {
-            currentGameMode = GameMode.ONLINE;
-            window.isMultiplayerMode = true;
-            multiplayerModeBtn.classList.add('selected');
-            aiModeBtn.classList.remove('selected');
-            resetGame();
-            debug('Switched to multiplayer mode');
-        };
-        debug('Mode buttons setup complete');
-    } else {
-        debug('Error: Could not find mode buttons');
+    const multiplayerModeBtn = document.getElementById('multiplayer-mode');
+    const aiModeBtn = document.getElementById('ai-mode');
+
+    if (!multiplayerModeBtn || !aiModeBtn) {
+        debug('Mode buttons not found');
+        return;
     }
+
+    multiplayerModeBtn.onclick = () => {
+        currentGameMode = GameMode.ONLINE;
+        window.isMultiplayerMode = true;
+        isMultiplayerMode = true;
+        multiplayerModeBtn.classList.add('selected');
+        aiModeBtn.classList.remove('selected');
+        
+        debug('Switched to multiplayer mode, isMultiplayerMode: ' + window.isMultiplayerMode);
+        
+        // Show multiplayer menu
+        const multiplayerMenu = document.querySelector('.multiplayer-menu');
+        const difficultyScreen = document.getElementById('difficulty-screen');
+        const chessGame = document.getElementById('chess-game');
+        if (multiplayerMenu && difficultyScreen && chessGame) {
+            multiplayerMenu.classList.add('show');
+            multiplayerMenu.style.display = 'flex';
+            difficultyScreen.style.display = 'none';
+            chessGame.style.display = 'none';
+            updateStatusDisplay('Select an option to start a multiplayer game');
+        } else {
+            debug('Error: Multiplayer menu or other elements not found');
+        }
+        
+        // Check for active game
+        if (window.multiplayerManager) {
+            window.multiplayerManager.checkPlayerGameState().catch(err => debug(`Failed to check game state: ${err.message}`));
+        }
+    };
+
+    aiModeBtn.onclick = () => {
+        currentGameMode = GameMode.AI;
+        window.isMultiplayerMode = false;
+        isMultiplayerMode = false;
+        window.playerColor = 'blue'; // Changed: Set playerColor to 'blue' for AI mode
+        aiModeBtn.classList.add('selected');
+        multiplayerModeBtn.classList.remove('selected');
+        
+        debug('Switched to AI mode, isMultiplayerMode: ' + window.isMultiplayerMode + ', playerColor: ' + window.playerColor);
+        
+        // Show difficulty screen
+        const multiplayerMenu = document.querySelector('.multiplayer-menu');
+        const difficultyScreen = document.getElementById('difficulty-screen');
+        const chessGame = document.getElementById('chess-game');
+        if (multiplayerMenu && difficultyScreen && chessGame) {
+            multiplayerMenu.classList.remove('show');
+            multiplayerMenu.style.display = 'none';
+            difficultyScreen.style.display = 'flex';
+            chessGame.style.display = 'none';
+            updateStatusDisplay('Select AI difficulty');
+        } else {
+            debug('Error: Difficulty screen or other elements not found');
+        }
+        
+        resetGame();
+    };
 }
 
 function startGame() {
     debug("\n----- Starting new game -----");
     if (!checkGameAccess()) return;
+    if (window.isMultiplayerMode) {
+        debug('Skipping startGame in multiplayer mode');
+        return;
+    }
     
+    // Changed: Explicitly set single-player state
     window.board = JSON.parse(JSON.stringify(initialBoard));
     window.currentPlayer = 'blue';
+    window.playerColor = 'blue';
+    window.isMultiplayerMode = false;
+    currentGameMode = GameMode.AI;
+    isMultiplayerMode = false;
     selectedPiece = null;
     moveHistory = [];
     gameState = 'active';
@@ -899,9 +1219,18 @@ function startGame() {
 
 function resetGame() {
     debug('\n----- Game Reset -----');
+    if (window.isMultiplayerMode) {
+        debug('Skipping resetGame in multiplayer mode');
+        return;
+    }
     
+    // Changed: Ensure single-player state
     window.board = JSON.parse(JSON.stringify(initialBoard));
     window.currentPlayer = 'blue';
+    window.playerColor = 'blue';
+    window.isMultiplayerMode = false;
+    currentGameMode = GameMode.AI;
+    isMultiplayerMode = false;
     selectedPiece = null;
     moveHistory = [];
     gameState = 'active';
@@ -940,6 +1269,13 @@ function initGame() {
     hasInitialized = true;
     
     debug('\n----- Game Initialization -----');
+    // Changed: Set initial single-player state
+    window.currentPlayer = 'blue';
+    window.playerColor = 'blue';
+    window.isMultiplayerMode = false;
+    currentGameMode = GameMode.AI;
+    isMultiplayerMode = false;
+    
     createBoard();
     window.placePieces();
     
@@ -962,12 +1298,40 @@ function initGame() {
         };
     }
     
+    // Changed: Only check multiplayer game state if explicitly in multiplayer mode
+    if (window.multiplayerManager && isWalletConnected() && currentGameMode === GameMode.ONLINE) {
+        window.multiplayerManager.checkPlayerGameState().catch(err => debug(`Failed to check game state on init: ${err.message}`));
+    }
+    
     debug('Game initialization completed successfully');
 }
 
 window.startGame = startGame;
 window.initGame = initGame;
 window.resetGame = resetGame;
+
+// Chess.js-specific state management
+window.pieceState = pieceState;
+window.moveHistory = moveHistory;
+window.lastMove = lastMove;
+
+window.promptPawnPromotion = promptPawnPromotion;
+
+window.loadGameState = function(state) {
+    debug('Loading game state: ' + JSON.stringify(state, null, 2));
+    window.board = JSON.parse(JSON.stringify(state.board));
+    window.currentPlayer = state.currentPlayer;
+    window.pieceState = JSON.parse(JSON.stringify(state.pieceState || pieceState));
+    window.lastMove = state.lastMove || null;
+    window.playerColor = state.playerColor;
+    window.isMultiplayerMode = true;
+    isMultiplayerMode = true;
+    currentGameMode = GameMode.ONLINE;
+    gameState = 'active';
+    moveHistory = [];
+    window.placePieces();
+    updateStatusDisplay(`${window.currentPlayer.charAt(0).toUpperCase() + window.currentPlayer.slice(1)}'s turn`);
+};
 
 // Initialization
 document.addEventListener('DOMContentLoaded', () => {
