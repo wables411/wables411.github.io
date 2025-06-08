@@ -98,10 +98,6 @@
             font-size: clamp(1rem, 2vw, 1.2rem);
             color: white;
             letter-spacing: 1px;
-            cursor: pointer;
-        }
-        .game-code:hover {
-            color: #32CD32;
         }
         .copy-notification {
             position: fixed;
@@ -117,11 +113,67 @@
             font-family: Impact, sans-serif;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
-        #chessboard {
-            width: 400px;
-            height: 400px;
-            position: relative;
-            margin: 0 auto;
+        #active-games-list {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(50, 205, 50, 0.3);
+            background: rgba(0, 0, 0, 0.7);
+            width: 100%;
+            max-width: 400px;
+            display: none;
+        }
+        .game-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border: 1px solid rgba(50, 205, 50, 0.3);
+            background: rgba(50, 205, 50, 0.1);
+            font-family: monospace;
+            font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+            color: white;
+        }
+        .game-item button {
+            background: rgba(50, 205, 50, 0.2);
+            border: 2px solid rgba(50, 205, 50, 0.3);
+            padding: 6px 12px;
+            color: white;
+            border-radius: 8px;
+            font-family: Impact, sans-serif;
+            font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .game-item button:hover:not(:disabled) {
+            background: rgba(50, 205, 50, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 0 10px rgba(50, 205, 50, 0.3);
+        }
+        .game-item button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #resync-game {
+            margin-top: 10px;
+        }
+        @media (max-width: 768px) {
+            #active-games-list {
+                max-width: 100%;
+                padding: 8px;
+            }
+            .game-item {
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+            .game-item button {
+                width: 100%;
+                padding: 8px;
+            }
         }
     </style>
 </head>
@@ -137,14 +189,13 @@
             <li><a href="$lawb.html">$LAWB</a></li>
             <li><a href="nexus.html">Nexus</a></li>
             <li><a href="halloween.html">Halloween</a></li>
-            <li><a href="https://lawb.shop">Shop</a></li>
             <li><a href="https://boards.miladychan.org/milady/33793">Chat</a></li>
         </ul>
     </nav>
 
     <div class="main-container">
         <div class="chess-container">
-            <h2>LAWB CHESS</h2>
+            <h2>LAWB CHESS *beta</h2>
             <div class="game-mode-selection">
                 <button id="ai-mode" class="mode-btn selected">Single Player</button>
                 <button id="multiplayer-mode" class="mode-btn">Multiplayer</button>
@@ -166,8 +217,10 @@
                     <input type="number" id="wagerAmount" placeholder="Wager amount in tDMT (0.1–1000)" min="0.1" max="1000" step="0.1">
                     <button class="multiplayer-btn" id="leave-game">Leave Game</button>
                     <button class="multiplayer-btn" id="force-leave-game">Force Leave Game</button>
+                    <button class="multiplayer-btn" id="resync-game-menu">Resync Game</button>
+                    <button class="multiplayer-btn" id="back-to-single-player">Back to Single Player</button>
                 </div>
-                <div id="gameCodeDisplay" class="game-code-display">
+                <div id="gameCodeDisplay" class="game-code-display" style="display: none;">
                     <h4>Share this code with opponent:</h4>
                     <div class="game-code" id="gameCode"></div>
                 </div>
@@ -175,12 +228,17 @@
                     <p class="status-text">Finding opponent...</p>
                     <button class="multiplayer-btn cancel-btn" id="cancel-matchmaking">Cancel</button>
                 </div>
+                <div id="active-games-list">
+                    <h2 class="multiplayer-menu h2">Available Games</h2>
+                    <div id="games-container"></div>
+                </div>
             </div>
             <div id="chess-game" style="display: none;">
                 <div id="chessboard"></div>
                 <div id="status">Connect to play</div>
                 <div id="move-history"></div>
                 <button id="restart-game" class="difficulty-btn">Restart Game</button>
+                <button id="resync-game" class="multiplayer-btn">Resync Game</button>
             </div>
         </div>
 
@@ -261,8 +319,9 @@
             }
         }
 
-        // Enhanced DOMContentLoaded with robust wallet UI initialization
-        document.addEventListener('DOMContentLoaded', function() {
+        // Simplified DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM fully loaded');
             initializeGame();
 
             const initializeWalletUI = (attempt = 1, maxAttempts = 10, delay = 1500) => {
@@ -273,12 +332,15 @@
                     walletButtons: document.querySelector('.wallet-buttons'),
                     difficultyScreen: document.getElementById('difficulty-screen'),
                     statusElement: document.getElementById('status'),
-                    aiModeBtn: document.getElementById('ai-mode')
+                    aiModeBtn: document.getElementById('ai-mode'),
+                    multiplayerModeBtn: document.getElementById('multiplayer-mode'),
+                    backToSinglePlayerBtn: document.getElementById('back-to-single-player')
                 };
                 console.log('Wallet UI elements:', {
                     disconnectWalletBtn: !!elements.disconnectWalletBtn,
                     addressDisplay: !!elements.addressDisplay,
-                    walletButtons: !!elements.walletButtons
+                    walletButtons: !!elements.walletButtons,
+                    backToSinglePlayerBtn: !!elements.backToSinglePlayerBtn
                 });
                 if (!elements.addressDisplay || !elements.walletButtons) {
                     if (attempt <= maxAttempts) {
@@ -306,7 +368,29 @@
                 }
                 if (elements.aiModeBtn) {
                     elements.aiModeBtn.addEventListener('click', () => {
-                        window.location.href = '/';
+                        elements.aiModeBtn.classList.add('selected');
+                        elements.multiplayerModeBtn.classList.remove('selected');
+                        elements.difficultyScreen.style.display = 'flex';
+                        const multiplayerMenu = document.querySelector('.multiplayer-menu');
+                        if (multiplayerMenu) multiplayerMenu.style.display = 'none';
+                    });
+                }
+                if (elements.multiplayerModeBtn) {
+                    elements.multiplayerModeBtn.addEventListener('click', () => {
+                        elements.multiplayerModeBtn.classList.add('selected');
+                        elements.aiModeBtn.classList.remove('selected');
+                        elements.difficultyScreen.style.display = 'none';
+                        const multiplayerMenu = document.querySelector('.multiplayer-menu');
+                        if (multiplayerMenu) multiplayerMenu.style.display = 'block';
+                    });
+                }
+                if (elements.backToSinglePlayerBtn) {
+                    elements.backToSinglePlayerBtn.addEventListener('click', () => {
+                        elements.aiModeBtn.classList.add('selected');
+                        elements.multiplayerModeBtn.classList.remove('selected');
+                        elements.difficultyScreen.style.display = 'flex';
+                        const multiplayerMenu = document.querySelector('.multiplayer-menu');
+                        if (multiplayerMenu) multiplayerMenu.style.display = 'none';
                     });
                 }
                 document.addEventListener('walletConnected', (event) => {
@@ -338,11 +422,7 @@
                 console.log('Wallet UI initialization complete');
             };
 
-            if (document.readyState === 'complete' || document.readyState === 'interactive') {
-                initializeWalletUI();
-            } else {
-                document.addEventListener('DOMContentLoaded', initializeWalletUI);
-            }
+            initializeWalletUI();
         });
     </script>
 </body>

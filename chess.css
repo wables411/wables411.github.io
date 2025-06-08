@@ -89,8 +89,9 @@ nav ul li a {
 /* Chessboard */
 #chessboard {
     position: relative;
-    width: 400px; /* Fixed size for consistent piece positioning */
+    width: 400px;
     height: 400px;
+    background-image: url('images/chessboard1.png'); /* Added */
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -490,6 +491,7 @@ nav ul li a {
     #chessboard {
         width: 300px; /* Smaller fixed size for mobile */
         height: 300px;
+        background-image: url('images/chessboard1.png'); /* Added */
     }
     .piece {
         width: 12.5%;
@@ -515,6 +517,7 @@ nav ul li a {
     #chessboard {
         width: 500px; /* Larger fixed size */
         height: 500px;
+        background-image: url('images/chessboard1.png');
     }
     .piece {
         width: 12.5%;

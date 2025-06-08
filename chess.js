@@ -726,15 +726,14 @@ function onSquareClick(row, col) {
         return;
     }
     
-    if (window.isMultiplayerMode) {
-        // Multiplayer mode: Check turn
+        if (window.isMultiplayerMode) {
         debug(`onSquareClick: Multiplayer mode, checking turn for playerColor=${window.playerColor}`);
-        if (window.playerColor !== window.currentPlayer) {
-            debug(`onSquareClick: Not your turn, currentPlayer=${window.currentPlayer}`);
-            updateStatusDisplay("It's not your turn!");
+        if (window.playerColor !== window.currentPlayer || window.multiplayerManager.isProcessingMove) {
+            debug(`onSquareClick: Not your turn or processing move, currentPlayer=${window.currentPlayer}, isProcessingMove=${window.multiplayerManager.isProcessingMove}`);
+            updateStatusDisplay("Waiting for opponent's move");
             return;
         }
-    } else {
+        }   else {
         // Single-player mode: Allow moves when currentPlayer is blue
         debug(`onSquareClick: Non-multiplayer mode, gameMode=${currentGameMode}, currentPlayer=${window.currentPlayer}`);
         if (currentGameMode === GameMode.AI && window.currentPlayer !== 'blue') {
@@ -911,6 +910,8 @@ function updateMoveHistory() {
     moveHistoryElement.scrollTop = moveHistoryElement.scrollHeight;
     debug(`Move history updated with ${moveHistory.length} moves: ${historyText}`);
 }
+
+window.updateMoveLog = updateMoveHistory;
 
 async function executeMove(startRow, startCol, endRow, endCol, promotionPiece = null) {
     if (!canMakeMove(startRow, startCol, endRow, endCol)) {
@@ -1123,19 +1124,7 @@ function setupModeButtons() {
         
         debug('Switched to multiplayer mode, isMultiplayerMode: ' + window.isMultiplayerMode);
         
-        // Show multiplayer menu
-        const multiplayerMenu = document.querySelector('.multiplayer-menu');
-        const difficultyScreen = document.getElementById('difficulty-screen');
-        const chessGame = document.getElementById('chess-game');
-        if (multiplayerMenu && difficultyScreen && chessGame) {
-            multiplayerMenu.classList.add('show');
-            multiplayerMenu.style.display = 'flex';
-            difficultyScreen.style.display = 'none';
-            chessGame.style.display = 'none';
-            updateStatusDisplay('Select an option to start a multiplayer game');
-        } else {
-            debug('Error: Multiplayer menu or other elements not found');
-        }
+        updateMultiplayerMenu();
         
         // Check for active game
         if (window.multiplayerManager) {
@@ -1147,26 +1136,13 @@ function setupModeButtons() {
         currentGameMode = GameMode.AI;
         window.isMultiplayerMode = false;
         isMultiplayerMode = false;
-        window.playerColor = 'blue'; // Changed: Set playerColor to 'blue' for AI mode
+        window.playerColor = 'blue';
         aiModeBtn.classList.add('selected');
         multiplayerModeBtn.classList.remove('selected');
         
         debug('Switched to AI mode, isMultiplayerMode: ' + window.isMultiplayerMode + ', playerColor: ' + window.playerColor);
         
-        // Show difficulty screen
-        const multiplayerMenu = document.querySelector('.multiplayer-menu');
-        const difficultyScreen = document.getElementById('difficulty-screen');
-        const chessGame = document.getElementById('chess-game');
-        if (multiplayerMenu && difficultyScreen && chessGame) {
-            multiplayerMenu.classList.remove('show');
-            multiplayerMenu.style.display = 'none';
-            difficultyScreen.style.display = 'flex';
-            chessGame.style.display = 'none';
-            updateStatusDisplay('Select AI difficulty');
-        } else {
-            debug('Error: Difficulty screen or other elements not found');
-        }
-        
+        updateMultiplayerMenu();
         resetGame();
     };
 }
@@ -1309,6 +1285,35 @@ function initGame() {
 window.startGame = startGame;
 window.initGame = initGame;
 window.resetGame = resetGame;
+
+function updateMultiplayerMenu() {
+    const multiplayerMenu = document.querySelector('.multiplayer-menu');
+    const chessGame = document.getElementById('chess-game');
+    multiplayerMenu.style.display = window.isMultiplayerMode ? 'block' : 'none';
+    chessGame.style.display = window.isMultiplayerMode ? 'none' : 'block';
+    if (window.isMultiplayerMode && window.multiplayerManager) {
+        window.multiplayerManager.updateMultiplayerMenu(null);
+        window.multiplayerManager.fetchActiveGames();
+    }
+}
+
+window.updateMultiplayerMenu = updateMultiplayerMenu;
+
+window.setGameMode = function(mode) {
+    if (mode !== GameMode.AI && mode !== GameMode.ONLINE) {
+        debug(`setGameMode: Invalid mode ${mode}, must be ${GameMode.AI} or ${GameMode.ONLINE}`);
+        return;
+    }
+    debug(`setGameMode: Changing gameMode from ${currentGameMode} to ${mode}`);
+    currentGameMode = mode;
+    window.isMultiplayerMode = mode === GameMode.ONLINE;
+    isMultiplayerMode = mode === GameMode.ONLINE;
+    if (mode === GameMode.AI) {
+        window.playerColor = 'blue'; // Ensure single-player default
+        window.currentPlayer = 'blue';
+    }
+    debug(`setGameMode: gameMode set to ${currentGameMode}, isMultiplayerMode=${window.isMultiplayerMode}, playerColor=${window.playerColor}`);
+};
 
 // Chess.js-specific state management
 window.pieceState = pieceState;
