@@ -363,34 +363,79 @@
                             elements.walletButtons.style.display = 'flex';
                             elements.difficultyScreen.style.display = 'none';
                             elements.statusElement.textContent = 'Connect to play';
+                            const multiplayerMenu = document.querySelector('.multiplayer-menu');
+                            if (multiplayerMenu) {
+                                multiplayerMenu.classList.add('hidden');
+                                multiplayerMenu.style.display = 'none';
+                            }
                         }
                     });
                 }
                 if (elements.aiModeBtn) {
                     elements.aiModeBtn.addEventListener('click', () => {
+                        console.log('AI mode button clicked');
                         elements.aiModeBtn.classList.add('selected');
                         elements.multiplayerModeBtn.classList.remove('selected');
                         elements.difficultyScreen.style.display = 'flex';
                         const multiplayerMenu = document.querySelector('.multiplayer-menu');
-                        if (multiplayerMenu) multiplayerMenu.style.display = 'none';
+                        if (multiplayerMenu) {
+                            console.log('Hiding multiplayer menu');
+                            multiplayerMenu.classList.add('hidden');
+                            multiplayerMenu.style.display = 'none';
+                        }
+                        // Explicitly set single-player mode
+                        if (window.chessGame) {
+                            window.chessGame.isMultiplayerMode = false;
+                            window.chessGame.updateStatusDisplay('Select a difficulty to start a single-player game');
+                        }
+                        // Stop multiplayer checks
+                        if (window.multiplayerManager) {
+                            window.multiplayerManager.stopGameStateChecks();
+                        }
                     });
                 }
                 if (elements.multiplayerModeBtn) {
                     elements.multiplayerModeBtn.addEventListener('click', () => {
+                        console.log('Multiplayer mode button clicked');
                         elements.multiplayerModeBtn.classList.add('selected');
                         elements.aiModeBtn.classList.remove('selected');
                         elements.difficultyScreen.style.display = 'none';
                         const multiplayerMenu = document.querySelector('.multiplayer-menu');
-                        if (multiplayerMenu) multiplayerMenu.style.display = 'block';
+                        if (multiplayerMenu) {
+                            console.log('Showing multiplayer menu');
+                            multiplayerMenu.classList.remove('hidden');
+                            multiplayerMenu.style.display = 'block';
+                        }
+                        // Explicitly set multiplayer mode
+                        if (window.chessGame) {
+                            window.chessGame.isMultiplayerMode = true;
+                            window.chessGame.updateStatusDisplay('Select an option to start a multiplayer game');
+                        }
                     });
                 }
                 if (elements.backToSinglePlayerBtn) {
                     elements.backToSinglePlayerBtn.addEventListener('click', () => {
+                        console.log('Back to Single Player button clicked');
                         elements.aiModeBtn.classList.add('selected');
                         elements.multiplayerModeBtn.classList.remove('selected');
                         elements.difficultyScreen.style.display = 'flex';
                         const multiplayerMenu = document.querySelector('.multiplayer-menu');
-                        if (multiplayerMenu) multiplayerMenu.style.display = 'none';
+                        if (multiplayerMenu) {
+                            console.log('Hiding multiplayer menu');
+                            multiplayerMenu.classList.add('hidden');
+                            multiplayerMenu.style.display = 'none';
+                        } else {
+                            console.error('Multiplayer menu not found');
+                        }
+                        // Explicitly set single-player mode
+                        if (window.chessGame) {
+                            window.chessGame.isMultiplayerMode = false;
+                            window.chessGame.updateStatusDisplay('Select a difficulty to start a single-player game');
+                        }
+                        // Stop multiplayer checks
+                        if (window.multiplayerManager) {
+                            window.multiplayerManager.stopGameStateChecks();
+                        }
                     });
                 }
                 document.addEventListener('walletConnected', (event) => {
@@ -403,6 +448,11 @@
                     }
                     if (elements.aiModeBtn?.classList.contains('selected')) {
                         elements.difficultyScreen.style.display = 'flex';
+                        const multiplayerMenu = document.querySelector('.multiplayer-menu');
+                        if (multiplayerMenu) {
+                            multiplayerMenu.classList.add('hidden');
+                            multiplayerMenu.style.display = 'none';
+                        }
                     }
                     elements.statusElement.textContent = 'Connected. Checking for active game...';
                 });
@@ -410,7 +460,10 @@
                     elements.addressDisplay.style.display = 'none';
                     elements.difficultyScreen.style.display = 'none';
                     const multiplayerMenu = document.querySelector('.multiplayer-menu');
-                    if (multiplayerMenu) multiplayerMenu.style.display = 'none';
+                    if (multiplayerMenu) {
+                        multiplayerMenu.classList.add('hidden');
+                        multiplayerMenu.style.display = 'none';
+                    }
                     const chessGame = document.getElementById('chess-game');
                     if (chessGame) chessGame.style.display = 'none';
                     elements.statusElement.textContent = 'Connect to play';
