@@ -1,15 +1,30 @@
 {
   "name": "wables411.github.io",
   "version": "1.0.0",
-  "description": "LAWB Chess Game on Sanko Chain",
+  "description": "LAWB Chess Game on Sanko Chain and Pixelawbs NFT Mint Page",
   "main": "aiWorker.js",
   "scripts": {
+    "dev": "vite",
+    "build": "NODE_ENV=production vite build",
+    "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "ethers": "^5.7.2"
+    "@reown/appkit": "^1.7.9",
+    "@reown/appkit-adapter-wagmi": "^1.7.9",
+    "@reown/appkit-wagmi": "^1.0.7",
+    "@supabase/supabase-js": "^2.50.0",
+    "@tanstack/react-query": "^5.80.7",
+    "@wagmi/connectors": "^5.1.0",
+    "@walletconnect/modal": "^2.6.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.6.2",
+    "viem": "^2.31.2",
+    "wagmi": "^2.15.6"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.5.2",
+    "vite": "^5.4.19"
   }
 }
