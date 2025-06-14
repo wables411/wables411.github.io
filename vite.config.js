@@ -1,4 +1,3 @@
-// /Users/wables/wables411.github.io/vite.config.js
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
@@ -24,6 +23,10 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
+        loadImages: resolve(__dirname, 'src/loadImages.js'),
+        loadImages2: resolve(__dirname, 'src/loadImages2.js'),
+        loadImages3: resolve(__dirname, 'src/loadImages3.js'),
+        memeGenerator: resolve(__dirname, 'src/meme-generator.js'),
       },
     },
   },

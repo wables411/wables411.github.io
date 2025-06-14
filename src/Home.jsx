@@ -35,22 +35,27 @@ function Home() {
     };
 
     async function loadGameScripts() {
-      try {
-        const scripts = ['/loadImages.js', '/loadImages2.js', '/loadImages3.js', '/meme-generator.js'];
-        for (const src of scripts) {
-          await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = src;
-            script.onload = resolve;
-            script.onerror = () => reject(new Error(`Failed to load ${src}`));
-            document.body.appendChild(script);
-          });
-        }
-        setupEventListeners();
-      } catch (error) {
-        console.error('Error in loadGameScripts:', error);
-      }
+  try {
+    const scripts = [
+      '/assets/loadImages.js',
+      '/assets/loadImages2.js',
+      '/assets/loadImages3.js',
+      '/assets/meme-generator.js'
+    ];
+    for (const src of scripts) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error(`Failed to load ${src}`));
+        document.body.appendChild(script);
+      });
     }
+    setupEventListeners();
+  } catch (error) {
+    console.error('Error in loadGameScripts:', error);
+  }
+}
 
     function setupEventListeners() {
       const videoContainer = document.querySelector('#station .video-container');
