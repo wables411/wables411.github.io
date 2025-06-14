@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "homepage": "https://lawb.xyz",
   "dependencies": {
     "@reown/appkit": "^1.7.9",
     "@reown/appkit-adapter-wagmi": "^1.7.9",
