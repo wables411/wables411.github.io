@@ -37,21 +37,23 @@ function Home() {
     async function loadGameScripts() {
   try {
     const scripts = [
-      '/assets/loadImages.js',
-      '/assets/loadImages2.js',
-      '/assets/loadImages3.js',
-      '/assets/meme-generator.js'
+      '/assets/loadImages-fTm9cFM8.js',
+      '/assets/loadImages2-CbGWNmap.js',
+      '/assets/loadImages3-0Gofh18A.js',
+      '/assets/memeGenerator-CU4yIeF2.js'
     ];
     for (const src of scripts) {
       await new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = src;
+        script.async = true; // Ensure async loading
         script.onload = resolve;
         script.onerror = () => reject(new Error(`Failed to load ${src}`));
         document.body.appendChild(script);
       });
     }
-    setupEventListeners();
+    console.log('All scripts loaded, calling loadCollections');
+    loadCollections(); // Call directly after loading
   } catch (error) {
     console.error('Error in loadGameScripts:', error);
   }
