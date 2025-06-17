@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' https://unpkg.com https://cdn.jsdelivr.net; connect-src 'self' https://roxwocgknkiqnsgiojgz.supabase.co wss://roxwocgknkiqnsgiojgz.supabase.co; worker-src blob: 'self' https://lawb.xyz; default-src 'self'; img-src 'self' https://lawb.xyz /images/*; style-src 'self' https://lawb.xyz;">
     <title>Lawb Chess</title>
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" charset="utf-8"></script>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="chess.css">
+    <link rel="stylesheet" href="/assets/style.css">
+    <link rel="stylesheet" href="/assets/chess.css">
     <style>
         .wallet-connection {
             margin: 10px 0;
@@ -180,16 +181,16 @@
 <body>
     <nav>
         <ul>
-            <li><a href="index.html">Home</a></li>
-            <li><a href="/mint" target="_blank">Mint Pixelawbs</a></li>
-            <li><a href="lawbstation.html">LawbStation</a></li>
-            <li><a href="lawbsters.html">Lawbsters</a></li>
-            <li><a href="lawbstarz.html">LawbStarz</a></li>
-            <li><a href="ascii_lawbsters.html">ASCII</a></li>
+            <li><a href="/index.html">Home</a></li>
+            <li><a href="/#mint" target="_blank">Mint Pixelawbs</a></li>
+            <li><a href="/lawbstation.html">LawbStation</a></li>
+            <li><a href="/lawbsters.html">Lawbsters</a></li>
+            <li><a href="/lawbstarz.html">LawbStarz</a></li>
+            <li><a href="/ascii_lawbsters.html">ASCII</a></li>
             <li><a href="https://app.manifold.xyz/phy/lawbster-plushy">Burn</a></li>
-            <li><a href="$lawb.html">$LAWB</a></li>
-            <li><a href="nexus.html">Nexus</a></li>
-            <li><a href="halloween.html">Halloween</a></li>
+            <li><a href="/$lawb.html">$LAWB</a></li>
+            <li><a href="/nexus.html">Nexus</a></li>
+            <li><a href="/halloween.html">Halloween</a></li>
             <li><a href="https://boards.miladychan.org/milady/33793">Chat</a></li>
         </ul>
     </nav>
@@ -303,9 +304,9 @@
         }
 
         // Import Modules
-        import './leaderboard.js';
-        import './multiplayer.js';
-        import './chess.js';
+        import '/assets/leaderboard.js';
+        import '/assets/multiplayer.js';
+        import '/assets/chess.js';
 
         async function initializeGame() {
             await waitForSupabase();

@@ -1,4 +1,4 @@
-import{$ as C}from"./main.js";const l=C`<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+import{$ as C}from"./main.js";import"./style.js";const l=C`<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
   <path 
     fill-rule="evenodd" 
     clip-rule="evenodd" 

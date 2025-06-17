@@ -579,7 +579,7 @@ function makeAIMove() {
     const inCheck = isKingInCheck('red');
     debug(`AI thinking... (in check: ${inCheck}, difficulty: ${gameDifficulty})`);
 
-    const worker = new Worker('aiWorker.js');
+    const worker = new Worker('/assets/aiWorker.js');
     worker.postMessage({
         board: JSON.parse(JSON.stringify(window.board)),
         difficulty: gameDifficulty,

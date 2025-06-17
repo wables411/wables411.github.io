@@ -1,4 +1,4 @@
-import{$ as C}from"./main.js";const e=C`<svg
+import{$ as C}from"./main.js";import"./style.js";const e=C`<svg
   fill="none"
   viewBox="0 0 21 20"
 >

@@ -1,4 +1,4 @@
-import{$ as C}from"./main.js";const e=C`<svg
+import{$ as C}from"./main.js";import"./style.js";const l=C`<svg
   width="14"
   height="14"
   viewBox="0 0 14 14"
@@ -13,4 +13,4 @@ import{$ as C}from"./main.js";const e=C`<svg
   />
 </svg>
 
-`;export{e as swapHorizontalMediumSvg};
+`;export{l as swapHorizontalMediumSvg};

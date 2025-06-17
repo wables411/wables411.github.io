@@ -111,6 +111,7 @@ function Home() {
       <nav>
         <ul>
           <li><a href="#welcome">Welcome</a></li>
+          <li><a href="https://lawb.xyz/mint" target="_blank" rel="noopener noreferrer">Mint Pixelawbs</a></li>
           <li><a href="#lawb-token">$LAWB</a></li>
           <li><a href="#nexus">LawbNexus</a></li>
           <li><a href="https://webring.ai/explore/agent/60eb37b2-1ab1-4c57-b541-7b95be809349" target="_blank" rel="noopener noreferrer">LawbNexus Responder</a></li>

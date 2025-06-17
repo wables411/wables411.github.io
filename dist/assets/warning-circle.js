@@ -1,4 +1,4 @@
-import{$ as l}from"./main.js";const e=l`<svg fill="none" viewBox="0 0 20 20">
+import{$ as l}from"./main.js";import"./style.js";const e=l`<svg fill="none" viewBox="0 0 20 20">
   <path
     fill="currentColor"
     d="M11 6.67a1 1 0 1 0-2 0v2.66a1 1 0 0 0 2 0V6.67ZM10 14.5a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5Z"

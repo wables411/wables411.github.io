@@ -1,4 +1,4 @@
-import{$ as l}from"./main.js";const a=l`<svg fill="none" viewBox="0 0 41 40">
+import{$ as o}from"./main.js";import"./style.js";const i=o`<svg fill="none" viewBox="0 0 41 40">
   <path
     style="fill: var(--wui-color-fg-100);"
     fill-opacity=".05"
@@ -8,4 +8,4 @@ import{$ as l}from"./main.js";const a=l`<svg fill="none" viewBox="0 0 41 40">
     fill="#949E9E"
     d="M15.6 20.31a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0ZM23.1 20.31a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0ZM28.1 22.81a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"
   />
-</svg>`;export{a as moreSvg};
+</svg>`;export{i as moreSvg};

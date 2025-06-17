@@ -1,4 +1,4 @@
-import{$ as l}from"./main.js";const e=l`<svg fill="none" viewBox="0 0 14 15">
+import{$ as l}from"./main.js";import"./style.js";const e=l`<svg fill="none" viewBox="0 0 14 15">
   <path
     fill="currentColor"
     fill-rule="evenodd"

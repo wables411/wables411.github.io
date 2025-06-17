@@ -1,4 +1,4 @@
-import{$ as a}from"./main.js";const t=a` <svg
+import{$ as a}from"./main.js";import"./style.js";const f=a` <svg
   width="36"
   height="36"
   fill="none"
@@ -29,4 +29,4 @@ import{$ as a}from"./main.js";const t=a` <svg
     stroke="#fff"
     stroke-opacity=".05"
   />
-</svg>`;export{t as playStoreSvg};
+</svg>`;export{f as playStoreSvg};

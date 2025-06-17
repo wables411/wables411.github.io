@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' https://unpkg.com https://cdn.jsdelivr.net; connect-src 'self' https://roxwocgknkiqnsgiojgz.supabase.co wss://roxwocgknkiqnsgiojgz.supabase.co; worker-src blob: 'self' https://lawb.xyz; default-src 'self'; img-src 'self' https://lawb.xyz /images/*; style-src 'self' https://lawb.xyz;">
+    <title>Lawb Chess</title>
+    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" charset="utf-8"></script>
+    <style>
+        .wallet-connection {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            border: 1px solid rgba(50, 205, 50, 0.3);
+            width: 100%;
+        }
+        .wallet-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .wallet-btn {
+            background: rgba(255, 69, 0, 0.2);
+            border: 2px solid rgba(255, 69, 0, 0.5);
+            padding: 8px 15px;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: Impact, sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-width: 120px;
+        }
+        .wallet-btn:hover:not(:disabled) {
+            background: rgba(255, 69, 0, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 0 10px rgba(255, 69, 0, 0.3);
+        }
+        .multiplayer-btn {
+            background: rgba(50, 205, 50, 0.2);
+            border: 2px solid rgba(50, 205, 50, 0.3);
+            padding: 8px 15px;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: Impact, sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-width: 120px;
+        }
+        .multiplayer-btn:hover:not(:disabled) {
+            background: rgba(50, 205, 50, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 0 10px rgba(50, 205, 50, 0.3);
+        }
+        .cancel-btn {
+            background: rgba(255, 0, 0, 0.2);
+            border-color: rgba(255, 0, 0, 0.3);
+        }
+        .cancel-btn:hover {
+            background: rgba(255, 0, 0, 0.3);
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+        }
+        #matchmaking-status {
+            margin: 5px 0;
+            padding: 8px;
+            border: 1px solid rgba(50, 205, 50, 0.3);
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .status-text {
+            margin-bottom: 5px;
+            color: #32CD32;
+            font-family: monospace;
+        }
+        .game-code-display {
+            margin: 5px 0;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(50, 205, 50, 0.3);
+            border-radius: 5px;
+            display: none;
+        }
+        .game-code-display h4 {
+            color: #32CD32;
+            margin: 0 0 5px 0;
+        }
+        .game-code {
+            font-family: monospace;
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            color: white;
+            letter-spacing: 1px;
+        }
+        .copy-notification {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(50, 205, 50, 0.9);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            display: none;
+            z-index: 1000;
+            font-family: Impact, sans-serif;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        #active-games-list {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(50, 205, 50, 0.3);
+            background: rgba(0, 0, 0, 0.7);
+            width: 100%;
+            max-width: 400px;
+            display: none;
+        }
+        .game-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border: 1px solid rgba(50, 205, 50, 0.3);
+            background: rgba(50, 205, 50, 0.1);
+            font-family: monospace;
+            font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+            color: white;
+        }
+        .game-item button {
+            background: rgba(50, 205, 50, 0.2);
+            border: 2px solid rgba(50, 205, 50, 0.3);
+            padding: 6px 12px;
+            color: white;
+            border-radius: 8px;
+            font-family: Impact, sans-serif;
+            font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .game-item button:hover:not(:disabled) {
+            background: rgba(50, 205, 50, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 0 10px rgba(50, 205, 50, 0.3);
+        }
+        .game-item button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #resync-game {
+            margin-top: 10px;
+        }
+        @media (max-width: 768px) {
+            #active-games-list {
+                max-width: 100%;
+                padding: 8px;
+            }
+            .game-item {
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+            .game-item button {
+                width: 100%;
+                padding: 8px;
+            }
+        }
+    </style>
+  <script type="module" crossorigin src="/assets/lawbchess.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/style.js">
+  <link rel="modulepreload" crossorigin href="/assets/leaderboard.js">
+  <link rel="modulepreload" crossorigin href="/assets/multiplayer.js">
+  <link rel="modulepreload" crossorigin href="/assets/chess.js">
+  <link rel="stylesheet" crossorigin href="/assets/style.css">
+  <link rel="stylesheet" crossorigin href="/assets/lawbchess.css">
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="/index.html">Home</a></li>
+            <li><a href="/#mint" target="_blank">Mint Pixelawbs</a></li>
+            <li><a href="/lawbstation.html">LawbStation</a></li>
+            <li><a href="/lawbsters.html">Lawbsters</a></li>
+            <li><a href="/lawbstarz.html">LawbStarz</a></li>
+            <li><a href="/ascii_lawbsters.html">ASCII</a></li>
+            <li><a href="https://app.manifold.xyz/phy/lawbster-plushy">Burn</a></li>
+            <li><a href="/$lawb.html">$LAWB</a></li>
+            <li><a href="/nexus.html">Nexus</a></li>
+            <li><a href="/halloween.html">Halloween</a></li>
+            <li><a href="https://boards.miladychan.org/milady/33793">Chat</a></li>
+        </ul>
+    </nav>
+
+    <div class="main-container">
+        <div class="chess-container">
+            <h2>LAWB CHESS *beta</h2>
+            <div class="game-mode-selection">
+                <button id="ai-mode" class="mode-btn selected">Single Player</button>
+                <button id="multiplayer-mode" class="mode-btn">Multiplayer</button>
+            </div>
+            <div id="difficulty-screen" style="display: none;">
+                <h2>Select Difficulty</h2>
+                <div class="difficulty-buttons">
+                    <button id="easy-mode" class="difficulty-btn">Easy Mode</button>
+                    <button id="hard-mode" class="difficulty-btn">Harder Mode</button>
+                </div>
+                <button id="start-game" class="start-btn" disabled>Start Game</button>
+            </div>
+            <div class="multiplayer-menu" style="display: none;">
+                <h2>PvP</h2>
+                <div class="join-game-container">
+                    <button class="multiplayer-btn" id="create-game">Create Game</button>
+                    <input type="text" id="game-code-input" placeholder="Enter game code" maxlength="6" autocomplete="off">
+                    <button class="multiplayer-btn" id="join-game">Join Game</button>
+                    <input type="number" id="wagerAmount" placeholder="Wager amount in tDMT (0.1–1000)" min="0.1" max="1000" step="0.1">
+                    <button class="multiplayer-btn" id="leave-game">Leave Game</button>
+                    <button class="multiplayer-btn" id="force-leave-game">Force Leave Game</button>
+                    <button class="multiplayer-btn" id="resync-game-menu">Resync Game</button>
+                    <button class="multiplayer-btn" id="back-to-single-player">Back to Single Player</button>
+                </div>
+                <div id="gameCodeDisplay" class="game-code-display" style="display: none;">
+                    <h4>Share this code with opponent:</h4>
+                    <div class="game-code" id="gameCode"></div>
+                </div>
+                <div id="matchmaking-status" style="display: none;">
+                    <p class="status-text">Finding opponent...</p>
+                    <button class="multiplayer-btn cancel-btn" id="cancel-matchmaking">Cancel</button>
+                </div>
+                <div id="active-games-list">
+                    <h2 class="multiplayer-menu h2">Available Games</h2>
+                    <div id="games-container"></div>
+                </div>
+            </div>
+            <div id="chess-game" style="display: none;">
+                <div id="chessboard"></div>
+                <div id="status">Connect to play</div>
+                <div id="move-history"></div>
+                <button id="restart-game" class="difficulty-btn">Restart Game</button>
+                <button id="resync-game" class="multiplayer-btn">Resync Game</button>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="leaderboard-section">
+                <h2 class="leaderboard-title">🦞🦞🦞🦞</h2>
+                <div class="wallet-connection">
+                    <div class="wallet-buttons"></div>
+                    <div id="walletAddress" class="wallet-address" style="display: none;"></div>
+                    <button id="disconnect-wallet" class="wallet-btn" style="display: none;">Disconnect Wallet</button>
+                </div>
+                <div class="leaderboard-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Player</th>
+                                <th>Points</th>
+                                <th>W/L/D</th>
+                                <th>Games</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="copyNotification" class="copy-notification">Code copied to clipboard!</div>
+
+</body>
+</html>
