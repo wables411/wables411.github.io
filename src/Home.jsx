@@ -37,10 +37,10 @@ function Home() {
     async function loadGameScripts() {
   try {
     const scripts = [
-      '/assets/loadImages-fTm9cFM8.js',
-      '/assets/loadImages2-CbGWNmap.js',
-      '/assets/loadImages3-0Gofh18A.js',
-      '/assets/memeGenerator-CU4yIeF2.js'
+      '/assets/loadImages.js',
+      '/assets/loadImages2.js',
+      '/assets/loadImages3.js',
+      '/assets/memeGenerator.js'
     ];
     for (const src of scripts) {
       await new Promise((resolve, reject) => {
