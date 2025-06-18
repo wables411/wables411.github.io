@@ -34,40 +34,40 @@ function Home() {
       }
     };
 
-  async function loadGameScripts() {
-  try {
-    const scripts = [
-      '/assets/loadImages.js',
-      '/assets/loadImages2.js',
-      '/assets/loadImages3.js',
-      '/assets/memeGenerator.js',
-    ];
-    // Wait for DOM to be ready
-    await new Promise(resolve => {
-      if (document.getElementById('meme-generator')) resolve();
-      else setTimeout(() => resolve(), 100);
-    });
-    for (const src of scripts) {
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.async = true;
-        script.onload = () => {
-          console.log(`Loaded: ${src}`);
-          resolve();
-        };
-        script.onerror = () => {
-          console.error(`Failed to load: ${src}`);
-          reject(new Error(`Failed to load ${src}`));
-        };
-        document.body.appendChild(script);
+    async function loadGameScripts() {
+    try {
+      const scripts = [
+        '/assets/loadImages-fTm9cFM8.js',
+        '/assets/loadImages2-CbGWNmap.js',
+        '/assets/loadImages3-0Gofh18A.js',
+        '/assets/memeGenerator.js',
+      ];
+      await new Promise(resolve => {
+        if (document.getElementById('meme-generator')) resolve();
+        else setTimeout(() => resolve(), 100);
       });
+      for (const src of scripts) {
+        console.log(`Attempting to load: ${src}`);
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = src;
+          script.async = true;
+          script.onload = () => {
+            console.log(`Loaded: ${src}`);
+            resolve();
+          };
+          script.onerror = () => {
+            console.error(`Failed to load: ${src}`);
+            reject(new Error(`Failed to load ${src}`));
+          };
+          document.body.appendChild(script);
+        });
+      }
+      console.log('All scripts loaded, calling loadCollections');
+      loadCollections();
+    } catch (error) {
+      console.error('Error in loadGameScripts:', error);
     }
-    console.log('All scripts loaded, calling loadCollections');
-    loadCollections();
-  } catch (error) {
-    console.error('Error in loadGameScripts:', error);
-  }
 }
 
     function setupEventListeners() {
