@@ -1,10 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
   console.log('meme-generator.js running');
   const collections = [
-    { name: 'Lawbsters', path: '/collections/Lawbsters/Lawbsters', count: 100 },
-    { name: 'LawbStation', path: '/collections/LawbStation/LawbStation', count: 100 },
-    { name: 'Halloween', path: '/collections/Halloween/Halloween', count: 99 },
-    { name: 'Lawbstarz', path: '/collections/Lawbstarz/Lawbstarz', count: 100 }
+    { name: 'Lawbsters', path: '/images/collections/Lawbsters/Lawbsters', count: 100 },
+    { name: 'LawbStation', path: '/images/collections/LawbStation/LawbStation', count: 100 },
+    { name: 'Halloween', path: '/images/collections/Halloween/Halloween', count: 99 },
+    { name: 'Lawbstarz', path: '/images/collections/Lawbstarz/Lawbstarz', count: 100 }
   ];
 
   const selector = document.getElementById('collectionSelector');
