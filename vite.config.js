@@ -30,8 +30,11 @@ export default defineConfig({
         aiWorker: resolve(__dirname, 'src/aiWorker.js'),
       },
       output: {
-        entryFileNames: 'assets/[name].js',
-        chunkFileNames: 'assets/[name].js',
+        entryFileNames: ({ name }) => {
+          if (name === 'memeGenerator') return 'assets/memeGenerator.js';
+          return 'assets/[name]-[hash].js'; // Other JS files keep hash
+        },
+        chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: ({ name }) => {
           if (/\.(gif|png|jpg|ico)$/.test(name)) {
             return 'images/[name].[ext]'; // Images to /dist/images/
