@@ -24,7 +24,6 @@ function Home() {
         );
         const { data, error } = await window.gameDatabase.from('leaderboard').select('count').single();
         if (error) throw error;
-        await loadGameScripts();
       } catch (error) {
         console.error('Supabase initialization failed:', error);
         if (databaseInitAttempts < 5) {
@@ -33,42 +32,6 @@ function Home() {
         }
       }
     };
-
-    async function loadGameScripts() {
-    try {
-      const scripts = [
-        '/assets/loadImages-fTm9cFM8.js',
-        '/assets/loadImages2-CbGWNmap.js',
-        '/assets/loadImages3-0Gofh18A.js',
-        '/assets/memeGenerator.js',
-      ];
-      await new Promise(resolve => {
-        if (document.getElementById('meme-generator')) resolve();
-        else setTimeout(() => resolve(), 100);
-      });
-      for (const src of scripts) {
-        console.log(`Attempting to load: ${src}`);
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = src;
-          script.async = true;
-          script.onload = () => {
-            console.log(`Loaded: ${src}`);
-            resolve();
-          };
-          script.onerror = () => {
-            console.error(`Failed to load: ${src}`);
-            reject(new Error(`Failed to load ${src}`));
-          };
-          document.body.appendChild(script);
-        });
-      }
-      console.log('All scripts loaded, calling loadCollections');
-      loadCollections();
-    } catch (error) {
-      console.error('Error in loadGameScripts:', error);
-    }
-}
 
     function setupEventListeners() {
       const videoContainer = document.querySelector('#station .video-container');
@@ -91,6 +54,7 @@ function Home() {
     }
 
     initializeSupabase();
+    setupEventListeners();
 
     const twitterScript = document.createElement('script');
     twitterScript.src = 'https://platform.twitter.com/widgets.js';
@@ -144,22 +108,6 @@ function Home() {
         <section id="welcome" className="section">
           <h1>Lawb Headquarters</h1>
           <p>Lawbsters seem nice but a human controlled by a lobster will never amount to anything without a roadmap.</p>
-          <h2>Lawb Meme Generator</h2>
-          <div id="meme-generator">
-            <label htmlFor="collection-selector">Select Collection:</label>
-            <select id="collection-selector"></select>
-            <label htmlFor="top-text">Top Text:</label>
-            <input type="text" id="top-text" />
-            <label htmlFor="bottom-text">Bottom Text:</label>
-            <input type="text" id="bottom-text" />
-            <img id="fetch-image" src="/images/fetch.gif" alt="Fetch Lawb" className="gif-button" />
-            <img id="generate-meme" src="/images/addtext.gif" alt="Add Text" className="gif-button" />
-            <img id="deep-fry" src="/images/deepfry.gif" alt="Deep Fry" className="gif-button" />
-            <div id="imageContainer"></div>
-          </div>
-          <img id="generated-meme" style={{ display: 'none' }} alt="" />
-          <canvas id="meme-canvas" style={{ display: 'none' }}></canvas>
-
           <div id="lawb-token">
             <img src="/images/lawbticker.gif" alt="ticker $lawb" className="section-image" />
             <h1><a href="https://dexscreener.com/solana/dtxvuypheobwo66afefp9mfgt2e14c6ufexnvxwnvep" target="_blank" rel="noopener noreferrer">🦞 $LAWB</a></h1>

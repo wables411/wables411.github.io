@@ -3,26 +3,22 @@ import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
 export default defineConfig({
-  plugins: [react({ jsxRuntime: 'automatic', fastRefresh: true })],
+  plugins: [react({ jsxRuntime: 'automatic' })],
   base: '/',
-  publicDir: 'public', // Copies /public/ to /dist/
-  assetsInclude: ['**/*.gif', '**/*.png', '**/*.jpg', '**/*.ico'], // Include images
+  publicDir: 'public',
+  assetsInclude: ['**/*.gif', '**/*.png', '**/*.jpg', '**/*.ico', '**/*.mp4'],
   server: {
     port: 3001,
     open: '/',
     historyApiFallback: true,
-    fs: { strict: true },
   },
   build: {
     outDir: 'dist',
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
         lawbchess: resolve(__dirname, 'lawbchess.html'),
-        loadImages: resolve(__dirname, 'src/loadImages.js'),
-        loadImages2: resolve(__dirname, 'src/loadImages2.js'),
-        loadImages3: resolve(__dirname, 'src/loadImages3.js'),
-        memeGenerator: resolve(__dirname, 'src/meme-generator.js'),
         chess: resolve(__dirname, 'src/chess.js'),
         leaderboard: resolve(__dirname, 'src/leaderboard.js'),
         database: resolve(__dirname, 'src/database.js'),
@@ -30,22 +26,22 @@ export default defineConfig({
         aiWorker: resolve(__dirname, 'src/aiWorker.js'),
       },
       output: {
-        entryFileNames: ({ name }) => {
-          if (name === 'memeGenerator') return 'assets/memeGenerator.js';
-          return 'assets/[name]-[hash].js'; // Other JS files keep hash
-        },
+        entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: ({ name }) => {
-          if (/\.(gif|png|jpg|ico)$/.test(name)) {
-            return 'images/[name].[ext]'; // Images to /dist/images/
+          if (/\.(gif|png|jpg|ico|mp4)$/.test(name)) {
+            return 'images/[name].[ext]';
           }
           if (/\.(css)$/.test(name)) {
-            return 'assets/[name].[ext]'; // CSS to /dist/assets/
+            return 'assets/[name].[ext]';
           }
-          if (/\.(html)$/.test(name)) {
-            return '[name].[ext]'; // HTML to /dist/
-          }
-          return 'assets/[name].[ext]';
+          return '[name].[ext]';
+        },
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'wagmi'],
+          wallet: ['@reown/appkit', '@reown/appkit-adapter-wagmi'],
+          query: ['@tanstack/react-query'],
+          router: ['react-router-dom'],
         },
       },
     },
