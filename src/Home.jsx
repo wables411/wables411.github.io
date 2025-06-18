@@ -34,26 +34,37 @@ function Home() {
       }
     };
 
-    async function loadGameScripts() {
+  async function loadGameScripts() {
   try {
     const scripts = [
       '/assets/loadImages.js',
       '/assets/loadImages2.js',
       '/assets/loadImages3.js',
-      '/assets/memeGenerator.js'
+      '/assets/memeGenerator.js',
     ];
+    // Wait for DOM to be ready
+    await new Promise(resolve => {
+      if (document.getElementById('meme-generator')) resolve();
+      else setTimeout(() => resolve(), 100);
+    });
     for (const src of scripts) {
       await new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = src;
-        script.async = true; // Ensure async loading
-        script.onload = resolve;
-        script.onerror = () => reject(new Error(`Failed to load ${src}`));
+        script.async = true;
+        script.onload = () => {
+          console.log(`Loaded: ${src}`);
+          resolve();
+        };
+        script.onerror = () => {
+          console.error(`Failed to load: ${src}`);
+          reject(new Error(`Failed to load ${src}`));
+        };
         document.body.appendChild(script);
       });
     }
     console.log('All scripts loaded, calling loadCollections');
-    loadCollections(); // Call directly after loading
+    loadCollections();
   } catch (error) {
     console.error('Error in loadGameScripts:', error);
   }

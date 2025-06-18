@@ -41,4 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     console.error('Collection selector or image container not found:', { selector, imageContainer });
   }
+  document.addEventListener('DOMContentLoaded', initMemeGenerator);
+// Fallback: Run after a delay if DOM isn't ready
+setTimeout(initMemeGenerator, 1000);
 });
