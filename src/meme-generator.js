@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     { name: 'Lawbstarz', path: '/images/collections/Lawbstarz/Lawbstarz', count: 100 }
   ];
 
-  const selector = document.getElementById('collectionSelector');
+  const selector = document.getElementById('collection-selector'); // Change from 'collectionSelector'
   const imageContainer = document.getElementById('imageContainer');
 
   if (selector && imageContainer) {

@@ -144,6 +144,7 @@ function Home() {
             <img id="fetch-image" src="/images/fetch.gif" alt="Fetch Lawb" className="gif-button" />
             <img id="generate-meme" src="/images/addtext.gif" alt="Add Text" className="gif-button" />
             <img id="deep-fry" src="/images/deepfry.gif" alt="Deep Fry" className="gif-button" />
+            <div id="imageContainer"></div>
           </div>
           <img id="generated-meme" style={{ display: 'none' }} alt="" />
           <canvas id="meme-canvas" style={{ display: 'none' }}></canvas>
